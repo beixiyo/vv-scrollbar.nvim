@@ -1,0 +1,97 @@
+local fn = vim.fn
+
+local geometry = require('vv-scrollbar.core.geometry')
+local state = require('vv-scrollbar.core.state')
+local view = require('vv-scrollbar.core.view')
+
+local M = {}
+
+local ns = vim.api.nvim_create_namespace('vv-scrollbar.mouse')
+local LEFT_MOUSE = vim.keycode('<LeftMouse>')
+local LEFT_DRAG = vim.keycode('<LeftDrag>')
+local LEFT_RELEASE = vim.keycode('<LeftRelease>')
+local ESC = vim.keycode('<Esc>')
+
+---@type fun()?
+local refresh
+
+local function redraw()
+  if refresh then refresh() end
+  vim.cmd.redraw()
+end
+
+---@param bar VVScrollbarBar
+---@param mouse_row integer
+local function start_drag(bar, mouse_row)
+  local in_thumb = mouse_row >= bar.thumb_row and mouse_row < bar.thumb_row + bar.thumb_height
+  local offset = in_thumb
+    and mouse_row - bar.thumb_row
+    or math.floor(bar.thumb_height / 2)
+
+  state.dragging = { parent = bar.parent, offset = offset, moved = false }
+  geometry.scroll_to_bar_row(bar.parent, mouse_row - offset)
+  redraw()
+end
+
+---@param position table
+local function continue_drag(position)
+  local drag = state.dragging
+  if not drag then return end
+
+  local row = geometry.screenrow_to_bar_row(drag.parent, position.screenrow)
+  if row == nil then return end
+
+  drag.moved = true
+  geometry.scroll_to_bar_row(drag.parent, row - drag.offset)
+  redraw()
+end
+
+local function finish_drag()
+  local drag = state.dragging
+  if not drag then return end
+  state.dragging = nil
+  if drag.moved then redraw() end
+end
+
+---@param key string
+---@return string?
+local function on_key(key)
+  if key == LEFT_MOUSE then
+    local position = fn.getmousepos()
+    local bar = view.hit_test(position.screenrow, position.screencol)
+    if not bar then return nil end
+
+    local bar_position = fn.win_screenpos(bar.win)
+    start_drag(bar, position.screenrow - bar_position[1])
+    return ''
+  end
+
+  if not state.dragging then return nil end
+
+  if key == LEFT_DRAG then
+    continue_drag(fn.getmousepos())
+    return ''
+  end
+
+  if key == LEFT_RELEASE then
+    finish_drag()
+    return ''
+  end
+
+  if key == ESC then finish_drag() end
+  return nil
+end
+
+---@param refresh_callback fun()
+function M.attach(refresh_callback)
+  refresh = refresh_callback
+  vim.on_key(on_key, ns)
+end
+
+function M.detach()
+  state.dragging = nil
+  refresh = nil
+  vim.on_key(nil, ns)
+end
+
+return M
