@@ -139,12 +139,21 @@ vim.w[win].vv_scrollbar_disabled = true
 恢复时将变量设为 `nil` 或 `false`，再执行 `:VVScrollbarRefresh`。`vv-git.nvim`
 会自动为左侧基准 diff 窗口设置该变量，仅保留右侧工作区的滚动条
 
+需要把滚动条作为 marker 轨道常驻时，可设置：
+
+```lua
+vim.w[win].vv_scrollbar_always_show = true
+```
+
+`vv-git.nvim` 会为右侧 diff 窗口自动设置，避免折叠、换行或 diff filler 导致轨道
+随滚动位置出现或消失
+
 ## Marker 配置
 
 | 选项 | 默认值 | 数据来源 |
 |------|--------|----------|
 | `markers.diagnostics` | `true` | `vim.diagnostic.get()`，同一投影行优先显示最高严重级别 |
-| `markers.git` | `true` | `vv-utils.git.diff_lines()` 的行级 `A / C / D` |
+| `markers.git` | `true` | `vv-utils.git.diff_lines()` 的 worktree / staged 行级 `A / C / D`；支持 `vv-git` scratch buffer |
 | `markers.search` | `true` | 当前 `/` 寄存器匹配结果 |
 | `markers.marks` | `true` | 当前 buffer 与全局的字母 mark |
 | `markers.quickfix` | `true` | quickfix 与当前窗口 loclist |

@@ -46,6 +46,8 @@ local function should_show(win)
   if vim.wo[win].winfixbuf then return false end
   if geometry.win_height(win) <= 0 or api.nvim_win_get_width(win) <= 0 then return false end
 
+  if vim.w[win].vv_scrollbar_always_show then return true end
+
   local line_count = api.nvim_buf_line_count(buf)
   local topline = fn.line('w0', win)
   local botline = fn.line('w$', win)

@@ -40,6 +40,15 @@ local win, buf = scrollbar_window()
 assert(scrollbar.get_config().width == 2, 'default width is not 2')
 assert(api.nvim_win_get_width(win) == 2, 'window width is not 2')
 
+local parent = api.nvim_get_current_win()
+local top_thumb_row = state.bars[parent].thumb_row
+api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
+view.refresh()
+assert(state.bars[parent].thumb_row > top_thumb_row, 'thumb did not move after scrolling to the bottom')
+api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
+view.refresh()
+assert(state.bars[parent].thumb_row == top_thumb_row, 'thumb did not return after scrolling to the top')
+
 local namespace = api.nvim_get_namespaces()['vv-scrollbar']
 local extmarks = api.nvim_buf_get_extmarks(buf, namespace, 0, -1, { details = true })
 local found_two_cell_thumb = false
@@ -81,7 +90,6 @@ for _, extmark in ipairs(cursor_extmarks) do
 end
 assert(found_two_cell_cursor, 'cursor marker does not cover 2 cells')
 
-local parent = api.nvim_get_current_win()
 vim.w[parent].vv_scrollbar_disabled = true
 view.refresh()
 assert(state.bars[parent] == nil, 'window-local disable did not hide the scrollbar')
@@ -130,6 +138,70 @@ local layout_updated = vim.wait(200, function()
   return cfg.col == api.nvim_win_get_width(parent) - cfg.width
 end, 10)
 assert(layout_updated, 'scrollbar position stayed stale after closing a split')
+
+local tmp_dir = vim.fn.tempname()
+vim.fn.mkdir(tmp_dir, 'p')
+local git_path = tmp_dir .. '/sample.txt'
+local base_lines = {}
+for index = 1, 399 do base_lines[index] = ('line %03d'):format(index) end
+vim.fn.writefile(base_lines, git_path)
+vim.fn.system({ 'git', '-C', tmp_dir, 'init', '-q' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'config', 'user.name', 'vv-scrollbar test' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'config', 'user.email', 'test@example.com' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'add', 'sample.txt' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'commit', '-qm', 'initial' })
+
+local staged_lines = vim.deepcopy(base_lines)
+table.insert(staged_lines, 200, 'staged line')
+vim.fn.writefile(staged_lines, git_path)
+vim.fn.system({ 'git', '-C', tmp_dir, 'add', 'sample.txt' })
+
+scrollbar.setup({
+  markers = {
+    diagnostics = false,
+    git = true,
+    search = false,
+    marks = false,
+    quickfix = false,
+    cursor = false,
+  },
+})
+
+local original_buf = api.nvim_win_get_buf(parent)
+local staged_buf = api.nvim_create_buf(false, true)
+api.nvim_set_option_value('buftype', 'nowrite', { buf = staged_buf })
+api.nvim_buf_set_lines(staged_buf, 0, -1, false, staged_lines)
+api.nvim_set_option_value('modifiable', false, { buf = staged_buf })
+vim.b[staged_buf].vv_scrollbar_git_source = {
+  root = tmp_dir,
+  path = 'sample.txt',
+  mode = 'staged',
+  side = 'new',
+}
+api.nvim_win_set_buf(parent, staged_buf)
+
+local staged_marker_loaded = vim.wait(3000, function()
+  local git_marks = state.git_marks[staged_buf]
+  return git_marks and git_marks[200] == 'A'
+end, 10)
+assert(staged_marker_loaded, 'visible staged scratch buffer did not load cached git markers')
+
+view.refresh()
+local staged_bar = state.bars[parent]
+assert(staged_bar and api.nvim_buf_is_valid(staged_bar.buf), 'staged scratch buffer has no scrollbar')
+local staged_extmarks = api.nvim_buf_get_extmarks(staged_bar.buf, namespace, 0, -1, { details = true })
+local found_staged_marker = false
+for _, extmark in ipairs(staged_extmarks) do
+  local virt_text = extmark[4].virt_text
+  if virt_text and virt_text[1] and virt_text[1][2] == 'VVGitAdded' then
+    found_staged_marker = true
+    break
+  end
+end
+assert(found_staged_marker, 'staged git marker was not rendered on the scrollbar')
+
+api.nvim_win_set_buf(parent, original_buf)
+vim.fn.delete(tmp_dir, 'rf')
 
 scrollbar.disable()
 for _, candidate in ipairs(api.nvim_list_wins()) do

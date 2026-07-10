@@ -60,7 +60,7 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout)
     callback = schedule_layout_refresh,
   })
 
-  api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
+  api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost', 'BufWinEnter' }, {
     group = state.augroup,
     callback = function(args)
       git.refresh(args.buf, enqueue_refresh)
