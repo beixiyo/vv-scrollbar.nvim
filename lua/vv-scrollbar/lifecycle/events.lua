@@ -7,16 +7,23 @@ local M = {}
 
 ---@param schedule_refresh fun()
 ---@param refresh_visible_git fun()
-function M.attach(schedule_refresh, refresh_visible_git)
+---@param refresh_layout fun()
+function M.attach(schedule_refresh, refresh_visible_git, refresh_layout)
   state.augroup = api.nvim_create_augroup('VVScrollbar', { clear = true })
+
+  local event_refresh_pending = false
+  local function enqueue_refresh()
+    if event_refresh_pending then return end
+    event_refresh_pending = true
+
+    vim.schedule(function()
+      event_refresh_pending = false
+      schedule_refresh()
+    end)
+  end
 
   api.nvim_create_autocmd({
     'WinScrolled',
-    'WinEnter',
-    'WinLeave',
-    'BufWinEnter',
-    'TabEnter',
-    'VimResized',
     'TextChanged',
     'TextChangedI',
     'DiagnosticChanged',
@@ -25,14 +32,39 @@ function M.attach(schedule_refresh, refresh_visible_git)
     'QuickFixCmdPost',
   }, {
     group = state.augroup,
-    callback = schedule_refresh,
+    callback = enqueue_refresh,
+  })
+
+  local layout_refresh_pending = false
+  local function schedule_layout_refresh()
+    if layout_refresh_pending then return end
+    layout_refresh_pending = true
+
+    vim.schedule(function()
+      layout_refresh_pending = false
+      refresh_layout()
+    end)
+  end
+
+  api.nvim_create_autocmd({
+    'WinNew',
+    'WinClosed',
+    'WinEnter',
+    'WinLeave',
+    'WinResized',
+    'BufWinEnter',
+    'TabEnter',
+    'VimResized',
+  }, {
+    group = state.augroup,
+    callback = schedule_layout_refresh,
   })
 
   api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
     group = state.augroup,
     callback = function(args)
-      git.refresh(args.buf, schedule_refresh)
-      schedule_refresh()
+      git.refresh(args.buf, enqueue_refresh)
+      enqueue_refresh()
     end,
   })
 
@@ -40,7 +72,7 @@ function M.attach(schedule_refresh, refresh_visible_git)
     group = state.augroup,
     callback = function()
       refresh_visible_git()
-      schedule_refresh()
+      enqueue_refresh()
     end,
   })
 
@@ -49,7 +81,7 @@ function M.attach(schedule_refresh, refresh_visible_git)
     pattern = 'VVGitStatusChanged',
     callback = function()
       refresh_visible_git()
-      schedule_refresh()
+      enqueue_refresh()
     end,
   })
 

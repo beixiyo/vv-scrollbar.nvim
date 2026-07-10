@@ -48,7 +48,7 @@ function M.enable()
   ensure_refresh_throttle()
   state.enabled = true
   highlights.setup()
-  events.attach(schedule_refresh, refresh_visible_git)
+  events.attach(schedule_refresh, refresh_visible_git, refresh)
   mouse.attach(refresh)
   refresh_visible_git()
   schedule_refresh()

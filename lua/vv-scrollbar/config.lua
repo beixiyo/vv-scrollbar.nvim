@@ -44,6 +44,7 @@ local SEV = vim.diagnostic.severity
 ---@field search_line_limit integer 搜索投影最大行数 @default 20000
 ---@field excluded_filetypes string[] 排除的 filetype @default { 'terminal', 'toggleterm', ... }
 ---@field excluded_buftypes string[] 排除的 buftype @default { 'nofile', 'terminal', 'prompt', 'quickfix' }
+---@field window_filter? fun(win:integer, buf:integer):boolean 窗口过滤器，返回 false 时隐藏滚动条 @default nil
 ---@field markers VVScrollbarMarkerConfig 标记开关
 ---@field symbols VVScrollbarSymbolsConfig 标记字符
 ---@field highlights VVScrollbarHighlightConfig 高亮定义
@@ -64,6 +65,7 @@ local defaults = {
     'dashboard', 'vv-explorer', 'vv-git', 'vv-task-panel',
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
+  window_filter = nil,
   markers = {
     diagnostics = true,
     git = true,

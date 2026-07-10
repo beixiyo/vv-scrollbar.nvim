@@ -53,6 +53,7 @@ require('vv-scrollbar').setup({
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
+  window_filter = nil,
 
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
@@ -123,8 +124,20 @@ require('vv-scrollbar').setup({
 | `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
 | `excluded_filetypes` | `string[]` | 见完整配置 | 不显示滚动条的 filetype |
 | `excluded_buftypes` | `string[]` | 见完整配置 | 不显示滚动条的 buftype |
+| `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
 
 当窗口比配置宽度更窄时，实际宽度会自动收缩，避免浮窗越过父窗口
+
+### 窗口级控制
+
+插件或临时窗口可以通过窗口变量关闭自己的滚动条：
+
+```lua
+vim.w[win].vv_scrollbar_disabled = true
+```
+
+恢复时将变量设为 `nil` 或 `false`，再执行 `:VVScrollbarRefresh`。`vv-git.nvim`
+会自动为左侧基准 diff 窗口设置该变量，仅保留右侧工作区的滚动条
 
 ## Marker 配置
 

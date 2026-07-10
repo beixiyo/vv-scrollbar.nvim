@@ -9,6 +9,17 @@ local markers = require('vv-scrollbar.features.markers')
 local M = {}
 
 local ns = api.nvim_create_namespace('vv-scrollbar')
+local retry_pending = false
+
+local function retry_refresh()
+  if retry_pending then return end
+  retry_pending = true
+
+  vim.defer_fn(function()
+    retry_pending = false
+    M.refresh()
+  end, 20)
+end
 
 ---@param win integer
 ---@return boolean
@@ -16,8 +27,20 @@ local function should_show(win)
   local cfg = config.current()
   if not api.nvim_win_is_valid(win) or not geometry.is_ordinary_window(win) then return false end
   if cfg.current_only and win ~= api.nvim_get_current_win() then return false end
+  if vim.w[win].vv_scrollbar_disabled then return false end
 
   local buf = api.nvim_win_get_buf(win)
+  if cfg.window_filter then
+    local ok, visible = pcall(cfg.window_filter, win, buf)
+    if not ok then
+      vim.notify_once(
+        'vv-scrollbar: window_filter failed: ' .. tostring(visible),
+        vim.log.levels.ERROR
+      )
+      return false
+    end
+    if visible == false then return false end
+  end
   if geometry.list_has(cfg.excluded_filetypes, vim.bo[buf].filetype) then return false end
   if geometry.list_has(cfg.excluded_buftypes, vim.bo[buf].buftype) then return false end
   if vim.wo[win].winfixbuf then return false end
@@ -189,9 +212,13 @@ function M.refresh()
       keep[win] = true
       local ok, err = pcall(render, win)
       if not ok then
-        vim.schedule(function()
-          vim.notify('vv-scrollbar: render failed: ' .. tostring(err), vim.log.levels.ERROR)
-        end)
+        if tostring(err):find('E565:', 1, true) then
+          retry_refresh()
+        else
+          vim.schedule(function()
+            vim.notify('vv-scrollbar: render failed: ' .. tostring(err), vim.log.levels.ERROR)
+          end)
+        end
       end
     end
   end
