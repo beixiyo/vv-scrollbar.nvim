@@ -31,6 +31,8 @@ for index = 1, 400 do lines[index] = ('line %03d'):format(index) end
 api.nvim_buf_set_lines(0, 0, -1, false, lines)
 
 local scrollbar = require('vv-scrollbar')
+local parent = api.nvim_get_current_win()
+local width_before_scrollbar = api.nvim_win_get_width(parent)
 scrollbar.setup({
   markers = marker_config,
 })
@@ -39,8 +41,12 @@ view.refresh()
 local win, buf = scrollbar_window()
 assert(scrollbar.get_config().width == 2, 'default width is not 2')
 assert(api.nvim_win_get_width(win) == 2, 'window width is not 2')
+assert(
+  api.nvim_win_get_width(parent) == width_before_scrollbar - 3,
+  'scrollbar did not reserve its width and split separator from the parent window'
+)
+assert(api.nvim_win_get_config(win).relative == '', 'scrollbar is still a floating window')
 
-local parent = api.nvim_get_current_win()
 local top_thumb_row = state.bars[parent].thumb_row
 api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
 view.refresh()
@@ -135,7 +141,7 @@ local layout_updated = vim.wait(200, function()
   if not bar or not api.nvim_win_is_valid(bar.win) then return false end
 
   local cfg = api.nvim_win_get_config(bar.win)
-  return cfg.col == api.nvim_win_get_width(parent) - cfg.width
+  return cfg.relative == '' and api.nvim_win_get_width(bar.win) == scrollbar.get_config().width
 end, 10)
 assert(layout_updated, 'scrollbar position stayed stale after closing a split')
 

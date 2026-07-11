@@ -74,6 +74,7 @@ local function create_bar(parent)
     thumb_height = 1,
     height = 1,
     width = 0,
+    track_width = 0,
   }
 
   state.bars[parent] = bar
@@ -96,33 +97,30 @@ end
 
 ---@param parent integer
 ---@param bar VVScrollbarBar
----@param height integer
-local function sync_window(parent, bar, height)
+local function sync_window(parent, bar)
   local cfg = config.current()
-  local available_width = math.max(api.nvim_win_get_width(parent) - cfg.right_offset, 1)
-  local width = math.min(cfg.width, available_width)
-  local col = math.max(api.nvim_win_get_width(parent) - width - cfg.right_offset, 0)
-  local win_config = {
-    win = parent,
-    relative = 'win',
-    style = 'minimal',
-    border = 'none',
-    focusable = false,
-    mouse = true,
-    zindex = cfg.zindex,
-    width = width,
-    height = height,
-    row = 0,
-    col = col,
-  }
+  local available_width = math.max(api.nvim_win_get_width(parent) - 1, 1)
+  local track_width = math.min(cfg.width, available_width)
+  local width = math.min(track_width + cfg.right_offset, available_width)
 
   if not (bar.win and api.nvim_win_is_valid(bar.win)) then
-    local create_config = vim.tbl_extend('force', win_config, { noautocmd = true })
-    bar.win = api.nvim_open_win(bar.buf, false, create_config)
+    bar.win = api.nvim_open_win(bar.buf, false, {
+      win = parent,
+      split = 'right',
+      style = 'minimal',
+      noautocmd = true,
+      width = width,
+    })
     require('vv-utils.ui_window').hide_chrome(bar.win)
   else
-    api.nvim_win_set_config(bar.win, win_config)
+    api.nvim_win_set_width(bar.win, width)
   end
+
+  vim.wo[bar.win].winfixbuf = true
+  vim.wo[bar.win].winfixwidth = true
+  vim.wo[bar.win].wrap = false
+  vim.wo[bar.win].statusline = ' '
+  bar.track_width = math.min(track_width, api.nvim_win_get_width(bar.win))
 
   api.nvim_set_option_value('winblend', cfg.winblend, { win = bar.win, scope = 'local' })
   api.nvim_set_option_value(
@@ -159,7 +157,7 @@ local function render(parent)
   bar.thumb_row = viewport.thumb_row
   bar.thumb_height = viewport.thumb_height
 
-  sync_window(parent, bar, viewport.height)
+  sync_window(parent, bar)
   local width = api.nvim_win_get_width(bar.win)
   ensure_lines(bar, viewport.height, width)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
@@ -169,8 +167,9 @@ local function render(parent)
     and state.dragging.parent == parent
     and state.dragging.moved
   local thumb_hl = dragging and 'VVScrollbarHover' or 'VVScrollbarThumb'
-  local thumb_text = string.rep(markers.cell(cfg.symbols.thumb), width)
-  local track_text = string.rep(' ', width)
+  local track_width = bar.track_width
+  local thumb_text = string.rep(markers.cell(cfg.symbols.thumb), track_width)
+  local track_text = string.rep(' ', track_width)
 
   for row = 0, viewport.height - 1 do
     local in_thumb = row >= viewport.thumb_row and row < viewport.thumb_row + viewport.thumb_height
@@ -185,7 +184,7 @@ local function render(parent)
     local marker = row_markers[row]
     if marker then
       local marker_text = marker.fill_width
-        and string.rep(marker.text, width)
+        and string.rep(marker.text, track_width)
         or marker.text
       api.nvim_buf_set_extmark(bar.buf, ns, row, 0, {
         virt_text = { { marker_text, marker.hl } },
@@ -245,7 +244,7 @@ function M.hit_test(screenrow, screencol)
       local position = fn.win_screenpos(bar.win)
       local top = position[1]
       local left = position[2]
-      local width = api.nvim_win_get_width(bar.win)
+      local width = bar.track_width
       local height = api.nvim_win_get_height(bar.win)
       local inside_rows = screenrow >= top and screenrow < top + height
       local inside_columns = screencol >= left and screencol < left + width

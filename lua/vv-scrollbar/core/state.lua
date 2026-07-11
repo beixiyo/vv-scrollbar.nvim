@@ -6,6 +6,7 @@
 ---@field thumb_height integer
 ---@field height integer
 ---@field width integer
+---@field track_width integer
 
 ---@class VVScrollbarDragState
 ---@field parent integer
