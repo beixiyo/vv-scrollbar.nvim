@@ -21,11 +21,18 @@
 - 使用真实分栏预留宽度，不会覆盖父窗口的行末文本
 - 宽度可配置，轨道与 thumb 会占满实际宽度，默认 `2` 格
 - Neovim 会在父窗口与滚动条分栏之间保留 `1` 格窗口分隔列
-- 当前光标标记占满滚动条宽度，其余 marker 保持单字符显示
+- 当前光标标记占满滚动条宽度，Git 使用双轨，其余 marker 保持单字符显示
 - 支持多窗口，也可只显示当前窗口
 - 内置 diagnostics、Git diff、搜索、Vim marks、quickfix / loclist、光标位置标记
 - 自动响应滚动、窗口切换、尺寸变化、文本修改、诊断变化和 Git 状态变化
 - 纯 Lua 实现，UI 与异步基础能力统一复用 `vv-utils.nvim`
+
+## Git 双轨规则
+
+普通文件窗口的两格轨道分别承载两套 Git 状态：左格表示 `HEAD → Index` 的
+**staged** 改动，右格表示 `Index → Worktree` 的 **unstaged** 改动。同一行暂存后
+再次修改时两格可以同时染色，不通过优先级互相覆盖。staged marker 会先从 Index 行号
+映射到当前 Worktree buffer；`vv-git` 的 staged scratch buffer 仍只使用左格
 
 ## 安装
 
@@ -50,8 +57,6 @@ require('vv-scrollbar').setup({
   current_only = false,
   width = 2,
   right_offset = 0,
-  zindex = 45,
-  winblend = 0,
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
@@ -119,8 +124,6 @@ require('vv-scrollbar').setup({
 | `current_only` | `boolean` | `false` | 只为当前窗口显示滚动条 |
 | `width` | `integer` | `2` | 轨道宽度，单位为屏幕格；最小值为 `1` |
 | `right_offset` | `integer` | `0` | 距父窗口右边缘的偏移格数；最小值为 `0` |
-| `zindex` | `integer` | `45` | 滚动条浮窗的 z-index |
-| `winblend` | `integer` | `0` | 滚动条浮窗透明度 |
 | `min_thumb` | `integer` | `2` | thumb 最小高度；最小值为 `1` |
 | `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间；`0` 表示不延迟 |
 | `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
@@ -155,7 +158,7 @@ vim.w[win].vv_scrollbar_always_show = true
 | 选项 | 默认值 | 数据来源 |
 |------|--------|----------|
 | `markers.diagnostics` | `true` | `vim.diagnostic.get()`，同一投影行优先显示最高严重级别 |
-| `markers.git` | `true` | `vv-utils.git.diff_lines()` 的 worktree / staged 行级 `A / C / D`；支持 `vv-git` scratch buffer |
+| `markers.git` | `true` | 普通文件通过 `diff_line_sets()` 显示 staged / unstaged 双轨；支持 `vv-git` scratch buffer |
 | `markers.search` | `true` | 当前 `/` 寄存器匹配结果 |
 | `markers.marks` | `true` | 当前 buffer 与全局的字母 mark |
 | `markers.quickfix` | `true` | quickfix 与当前窗口 loclist |

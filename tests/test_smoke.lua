@@ -188,7 +188,7 @@ api.nvim_win_set_buf(parent, staged_buf)
 
 local staged_marker_loaded = vim.wait(3000, function()
   local git_marks = state.git_marks[staged_buf]
-  return git_marks and git_marks[200] == 'A'
+  return git_marks and git_marks.staged and git_marks.staged[200] == 'A'
 end, 10)
 assert(staged_marker_loaded, 'visible staged scratch buffer did not load cached git markers')
 
@@ -206,7 +206,40 @@ for _, extmark in ipairs(staged_extmarks) do
 end
 assert(found_staged_marker, 'staged git marker was not rendered on the scrollbar')
 
+local worktree_lines = vim.deepcopy(staged_lines)
+worktree_lines[200] = 'staged line edited again'
+vim.fn.writefile(worktree_lines, git_path)
+local worktree_buf = vim.fn.bufadd(git_path)
+vim.fn.bufload(worktree_buf)
+api.nvim_win_set_buf(parent, worktree_buf)
+require('vv-scrollbar.features.git').refresh(worktree_buf, view.refresh)
+
+local dual_git_loaded = vim.wait(3000, function()
+  local sets = state.git_marks[worktree_buf]
+  return sets
+    and sets.staged and sets.staged[200] == 'A'
+    and sets.unstaged and sets.unstaged[200] == 'C'
+end, 10)
+assert(dual_git_loaded, 'ordinary buffer did not load staged and unstaged markers together')
+
+view.refresh()
+local dual_bar = state.bars[parent]
+local dual_extmarks = api.nvim_buf_get_extmarks(dual_bar.buf, namespace, 0, -1, { details = true })
+local found_dual_git_marker = false
+for _, extmark in ipairs(dual_extmarks) do
+  local virt_text = extmark[4].virt_text
+  if virt_text and virt_text[1] and virt_text[2]
+    and virt_text[1][2] == 'VVGitAdded'
+    and virt_text[2][2] == 'VVGitModified'
+  then
+    found_dual_git_marker = true
+    break
+  end
+end
+assert(found_dual_git_marker, 'scrollbar did not render staged left and unstaged right')
+
 api.nvim_win_set_buf(parent, original_buf)
+api.nvim_buf_delete(worktree_buf, { force = true })
 vim.fn.delete(tmp_dir, 'rf')
 
 scrollbar.disable()

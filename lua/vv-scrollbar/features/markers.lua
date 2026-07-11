@@ -83,14 +83,40 @@ local function add_git(markers, viewport)
   local cfg = config.current()
   if not cfg.markers.git then return end
 
-  for line, kind in pairs(state.git_marks[viewport.buf] or {}) do
-    add_marker(
-      markers,
-      geometry.line_to_row(line, viewport.line_count, viewport.height),
-      cfg.symbols.git[kind],
-      git_hl[kind],
-      kind == 'D' and 70 or 65
-    )
+  local sets = state.git_marks[viewport.buf] or {}
+  local rows = {}
+  for channel, line_markers in pairs(sets) do
+    for line, kind in pairs(line_markers) do
+      local row = geometry.line_to_row(line, viewport.line_count, viewport.height)
+      rows[row] = rows[row] or {}
+      local current = rows[row][channel]
+      local priority = kind == 'D' and 70 or 65
+      if not current or priority > current.priority then
+        rows[row][channel] = { kind = kind, priority = priority }
+      end
+    end
+  end
+
+  for row, channels in pairs(rows) do
+    local chunks = {}
+    local priority = 65
+    local channel_names = cfg.width >= 2 and { 'staged', 'unstaged' } or { 'merged' }
+    for _, channel in ipairs(channel_names) do
+      local marker = channel == 'merged'
+        and (channels.unstaged or channels.staged)
+        or channels[channel]
+      if marker then
+        chunks[#chunks + 1] = { M.cell(cfg.symbols.git[marker.kind]), git_hl[marker.kind] }
+        priority = math.max(priority, marker.priority)
+      else
+        chunks[#chunks + 1] = { ' ', 'VVScrollbarTrack' }
+      end
+    end
+
+    local current = markers[row]
+    if not current or current.priority <= priority then
+      markers[row] = { chunks = chunks, priority = priority }
+    end
   end
 end
 

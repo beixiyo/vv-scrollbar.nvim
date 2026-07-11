@@ -31,7 +31,7 @@ function M.refresh(buf, schedule_refresh)
   end
 
   state.git_pending[buf] = true
-  require('vv-utils.git').diff_lines(path, function(markers)
+  local function done(markers)
     state.git_pending[buf] = nil
     if not api.nvim_buf_is_loaded(buf) then
       state.git_marks[buf] = nil
@@ -40,7 +40,15 @@ function M.refresh(buf, schedule_refresh)
 
     state.git_marks[buf] = markers
     schedule_refresh()
-  end, opts)
+  end
+
+  if opts then
+    require('vv-utils.git').diff_lines(path, function(markers)
+      done({ staged = markers or {}, unstaged = {} })
+    end, opts)
+  else
+    require('vv-utils.git').diff_line_sets(path, done)
+  end
 end
 
 ---@param schedule_refresh fun()

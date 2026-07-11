@@ -122,7 +122,6 @@ local function sync_window(parent, bar)
   vim.wo[bar.win].statusline = ' '
   bar.track_width = math.min(track_width, api.nvim_win_get_width(bar.win))
 
-  api.nvim_set_option_value('winblend', cfg.winblend, { win = bar.win, scope = 'local' })
   api.nvim_set_option_value(
     'winhighlight',
     'Normal:VVScrollbarTrack,NormalFloat:VVScrollbarTrack,EndOfBuffer:VVScrollbarTrack',
@@ -183,11 +182,10 @@ local function render(parent)
 
     local marker = row_markers[row]
     if marker then
-      local marker_text = marker.fill_width
-        and string.rep(marker.text, track_width)
-        or marker.text
+      local marker_text = marker.text
+      if marker.fill_width then marker_text = string.rep(marker.text, track_width) end
       api.nvim_buf_set_extmark(bar.buf, ns, row, 0, {
-        virt_text = { { marker_text, marker.hl } },
+        virt_text = marker.chunks or { { marker_text, marker.hl } },
         virt_text_pos = 'overlay',
         hl_mode = 'combine',
         priority = marker.priority,

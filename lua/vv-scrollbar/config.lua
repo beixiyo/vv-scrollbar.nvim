@@ -37,8 +37,6 @@ local SEV = vim.diagnostic.severity
 ---@field current_only boolean 是否只显示当前窗口 @default false
 ---@field width integer 轨道宽度，单位为屏幕列 @default 2
 ---@field right_offset integer 距窗口右边缘的偏移列数 @default 0
----@field zindex integer 浮窗 zindex @default 45
----@field winblend integer 浮窗透明度 @default 0
 ---@field min_thumb integer thumb 最小高度 @default 2
 ---@field throttle_ms integer UI 刷新节流间隔 @default 30
 ---@field search_line_limit integer 搜索投影最大行数 @default 20000
@@ -54,8 +52,6 @@ local defaults = {
   current_only = false,
   width = 2,
   right_offset = 0,
-  zindex = 45,
-  winblend = 0,
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
