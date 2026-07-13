@@ -1,40 +1,50 @@
-<h1 align="center">vv-scrollbar.nvim</h1>
+<div align="center">
 
-<p align="center">
-  <em>Neovim 自绘滚动条 — 完整轨道、点击跳转、原生拖拽与代码状态标记</em>
-</p>
+# vv-scrollbar.nvim
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Neovim-0.11+-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Requires Neovim 0.11+" />
-  <img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" />
-</p>
+English | <a href="./README.zh-CN.md">中文</a>
+
+<img src="./docs/assets/vv-scrollbar.png" alt="vv-scrollbar demo" width="900" />
+
+Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfiles</a>.
+
+<em>A custom Neovim scrollbar with a full track, click-to-jump, native dragging, and code-state markers</em>
+
+<br />
+
+<img src="https://img.shields.io/badge/Neovim-0.11+-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Requires Neovim 0.11+" />
+<img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
+<img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" />
+
+</div>
 
 ---
 
-## 特性
+## Requirements
 
-- 完整窗口高度的背景轨道，以及按可见内容比例计算的 thumb
-- 点击轨道直接跳转；拖动 thumb 时保留鼠标抓取位置
-- 普通点击不触发拖拽色，实际移动后才显示 hover 状态
-- 与 `vv-utils.scroll` 协作，滚动条交互不会被自动平滑滚动拉回旧位置
-- 使用真实分栏预留宽度，不会覆盖父窗口的行末文本
-- 宽度可配置，轨道与 thumb 会占满实际宽度，默认 `2` 格
-- Neovim 会在父窗口与滚动条分栏之间保留 `1` 格窗口分隔列
-- 当前光标标记占满滚动条宽度，Git 使用双轨，其余 marker 保持单字符显示
-- 支持多窗口，也可只显示当前窗口
-- 内置 diagnostics、Git diff、搜索、Vim marks、quickfix / loclist、光标位置标记
-- 自动响应滚动、窗口切换、尺寸变化、文本修改、诊断变化和 Git 状态变化
-- 纯 Lua 实现，UI 与异步基础能力统一复用 `vv-utils.nvim`
+- [vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim) — required for shared scrolling, Git, highlighting, and timer utilities
+- [Git](https://github.com/git/git) — optional; required only for staged and unstaged marker tracks
 
-## Git 双轨规则
+## Features
 
-普通文件窗口的两格轨道分别承载两套 Git 状态：左格表示 `HEAD → Index` 的
-**staged** 改动，右格表示 `Index → Worktree` 的 **unstaged** 改动。同一行暂存后
-再次修改时两格可以同时染色，不通过优先级互相覆盖。staged marker 会先从 Index 行号
-映射到当前 Worktree buffer；`vv-git` 的 staged scratch buffer 仍只使用左格
+- A full-height background track and a thumb sized from the visible-content ratio
+- Click the track to jump, or drag the thumb while preserving the original grab offset
+- A normal click does not show the drag color; hover styling starts only after movement
+- Integration with `vv-utils.scroll` prevents automatic smooth scrolling from pulling interactions back to an old view
+- A real split reserves width, so the scrollbar never covers text at the end of a parent-window line
+- Configurable width with track and thumb filling the available cells; the default is two cells
+- Neovim keeps one separator cell between the parent window and scrollbar split
+- Cursor markers fill the scrollbar width, Git uses two tracks, and other markers remain one character wide
+- Multiple windows are supported, with an option to display only the current window
+- Built-in diagnostics, Git diff, search, Vim marks, quickfix/loclist, and cursor markers
+- Automatic updates for scrolling, window changes, resizing, text edits, diagnostics, and Git state
+- Pure Lua implementation sharing UI and async infrastructure through `vv-utils.nvim`
 
-## 安装
+## Dual Git tracks
+
+The two cells in a normal file window carry independent Git states. The left cell represents staged changes from `HEAD` to the index, while the right cell represents unstaged changes from the index to the worktree. A line modified again after staging can color both tracks instead of losing one state to priority. Staged coordinates are mapped from the index onto the current worktree buffer. A staged scratch buffer created by `vv-git` uses only the left track.
+
+## Installation
 
 ```lua
 {
@@ -46,10 +56,9 @@
 }
 ```
 
-需要 Neovim `0.11+`。鼠标交互依赖 `nvim_open_win({ mouse = true })` 和
-`vim.on_key()` 消费鼠标事件
+Neovim 0.11 or newer is required. Mouse interaction relies on `nvim_open_win({ mouse = true })` and `vim.on_key()` to consume mouse events.
 
-## 完整配置
+## Complete configuration
 
 ```lua
 require('vv-scrollbar').setup({
@@ -80,147 +89,129 @@ require('vv-scrollbar').setup({
   },
 
   symbols = {
-    thumb = ' ',
-    cursor = '█',
-    search = '•',
-    mark = '◆',
-    quickfix = '■',
+    thumb = ' ', cursor = '█', search = '•', mark = '◆', quickfix = '■',
     diagnostics = {
       [vim.diagnostic.severity.ERROR] = '●',
       [vim.diagnostic.severity.WARN] = '●',
       [vim.diagnostic.severity.INFO] = '●',
       [vim.diagnostic.severity.HINT] = '●',
     },
-    git = {
-      A = '▎',
-      C = '▎',
-      D = '󰆐',
-    },
+    git = { A = '▎', C = '▎', D = '󰆐' },
   },
 
   highlights = {
-    track = { bg = '#20242b' },
-    thumb = { bg = '#3b4252' },
-    hover = { bg = '#4b5568' },
-    cursor = { fg = '#7aa2f7' },
-    search = { fg = '#ff9e64' },
-    mark = { fg = '#bb9af7' },
-    quickfix = { fg = '#e0af68' },
-    diag_error = { fg = '#f7768e' },
-    diag_warn = { fg = '#e0af68' },
-    diag_info = { fg = '#7dcfff' },
+    track = { bg = '#20242b' }, thumb = { bg = '#3b4252' },
+    hover = { bg = '#4b5568' }, cursor = { fg = '#7aa2f7' },
+    search = { fg = '#ff9e64' }, mark = { fg = '#bb9af7' },
+    quickfix = { fg = '#e0af68' }, diag_error = { fg = '#f7768e' },
+    diag_warn = { fg = '#e0af68' }, diag_info = { fg = '#7dcfff' },
     diag_hint = { fg = '#1abc9c' },
   },
 })
 ```
 
-`setup()` 每次都从默认配置重新合并传入值，不会继承上一次调用中未再次提供的字段
+Every `setup()` call merges its arguments into the defaults from scratch. It does not inherit fields omitted from the latest call.
 
-## 基础配置
+## Basic configuration
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `enabled` | `boolean` | `true` | `setup()` 后是否立即启用 |
-| `current_only` | `boolean` | `false` | 只为当前窗口显示滚动条 |
-| `width` | `integer` | `2` | 轨道宽度，单位为屏幕格；最小值为 `1` |
-| `right_offset` | `integer` | `0` | 距父窗口右边缘的偏移格数；最小值为 `0` |
-| `min_thumb` | `integer` | `2` | thumb 最小高度；最小值为 `1` |
-| `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间；`0` 表示不延迟 |
-| `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
-| `excluded_filetypes` | `string[]` | 见完整配置 | 不显示滚动条的 filetype |
-| `excluded_buftypes` | `string[]` | 见完整配置 | 不显示滚动条的 buftype |
-| `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | Enable immediately after setup |
+| `current_only` | `boolean` | `false` | Show a scrollbar only for the current window |
+| `width` | `integer` | `2` | Track width in screen cells; minimum one |
+| `right_offset` | `integer` | `0` | Offset from the parent window's right edge; minimum zero |
+| `min_thumb` | `integer` | `2` | Minimum thumb height; minimum one |
+| `throttle_ms` | `integer` | `30` | Refresh throttle outside direct mouse interaction; zero disables delay |
+| `search_line_limit` | `integer` | `20000` | Skip search projection above this line count |
+| `excluded_filetypes` | `string[]` | See complete config | Filetypes without scrollbars |
+| `excluded_buftypes` | `string[]` | See complete config | Buftypes without scrollbars |
+| `window_filter` | `fun(win, buf): boolean` | `nil` | Return false to suppress a window |
 
-当窗口比配置宽度更窄时，实际宽度会自动收缩，避免浮窗越过父窗口
+The effective width shrinks automatically when a window is narrower than the configured value.
 
-### 窗口级控制
+### Per-window control
 
-插件或临时窗口可以通过窗口变量关闭自己的滚动条：
+Plugins and temporary windows can disable their own scrollbar:
 
 ```lua
 vim.w[win].vv_scrollbar_disabled = true
 ```
 
-恢复时将变量设为 `nil` 或 `false`，再执行 `:VVScrollbarRefresh`。`vv-git.nvim`
-会自动为左侧基准 diff 窗口设置该变量，仅保留右侧工作区的滚动条
+Set it to `nil` or `false`, then run `:VVScrollbarRefresh` to restore it. `vv-git.nvim` disables the left baseline diff window and keeps the right worktree scrollbar.
 
-需要把滚动条作为 marker 轨道常驻时，可设置：
+To keep the scrollbar permanently visible as a marker track:
 
 ```lua
 vim.w[win].vv_scrollbar_always_show = true
 ```
 
-`vv-git.nvim` 会为右侧 diff 窗口自动设置，避免折叠、换行或 diff filler 导致轨道
-随滚动位置出现或消失
+`vv-git.nvim` sets this for its right diff window so wrapping, folds, and diff filler do not make the track appear or disappear while scrolling.
 
-## Marker 配置
+## Marker configuration
 
-| 选项 | 默认值 | 数据来源 |
-|------|--------|----------|
-| `markers.diagnostics` | `true` | `vim.diagnostic.get()`，同一投影行优先显示最高严重级别 |
-| `markers.git` | `true` | 普通文件通过 `diff_line_sets()` 显示 staged / unstaged 双轨；支持 `vv-git` scratch buffer |
-| `markers.search` | `true` | 当前 `/` 寄存器匹配结果 |
-| `markers.marks` | `true` | 当前 buffer 与全局的字母 mark |
-| `markers.quickfix` | `true` | quickfix 与当前窗口 loclist |
-| `markers.cursor` | `true` | 当前活动窗口的光标行，横向占满滚动条宽度 |
+| Option | Default | Source |
+|---|---|---|
+| `markers.diagnostics` | `true` | `vim.diagnostic.get()`; the highest severity wins on a projected row |
+| `markers.git` | `true` | Staged and unstaged tracks from `diff_line_sets()`, including `vv-git` scratch buffers |
+| `markers.search` | `true` | Matches for the current `/` register |
+| `markers.marks` | `true` | Buffer-local and global letter marks |
+| `markers.quickfix` | `true` | Quickfix and current-window loclist entries |
+| `markers.cursor` | `true` | Active-window cursor row, spanning the whole scrollbar width |
 
-同一投影行出现多个 marker 时按优先级只显示一个：光标 > 诊断 > Git >
-quickfix / loclist > mark > 搜索
+When several markers project to one row, priority is cursor, diagnostics, Git, quickfix/loclist, marks, then search.
 
-## 符号配置
+## Symbol configuration
 
-| 选项 | 默认值 | 说明 |
-|------|--------|------|
-| `symbols.thumb` | `' '` | thumb 填充字符，会重复填满滚动条宽度 |
-| `symbols.cursor` | `'█'` | 当前光标标记，会重复填满滚动条宽度 |
-| `symbols.search` | `'•'` | 搜索命中标记 |
-| `symbols.mark` | `'◆'` | Vim mark 标记 |
-| `symbols.quickfix` | `'■'` | quickfix / loclist 标记 |
-| `symbols.diagnostics` | 四种 severity 映射 | 诊断标记字符 |
-| `symbols.git` | `{ A, C, D }` | Git 新增、修改、删除标记字符 |
+| Option | Default | Description |
+|---|---|---|
+| `symbols.thumb` | `' '` | Repeated across the full scrollbar width |
+| `symbols.cursor` | `'█'` | Repeated across the full scrollbar width |
+| `symbols.search` | `'•'` | Search match |
+| `symbols.mark` | `'◆'` | Vim mark |
+| `symbols.quickfix` | `'■'` | Quickfix or loclist entry |
+| `symbols.diagnostics` | Four severity mappings | Diagnostic marker characters |
+| `symbols.git` | `{ A, C, D }` | Added, changed, and deleted markers |
 
-每个符号只读取第一个字符。除 thumb 和 cursor 外，其余 marker 不会横向重复
+Only the first character of each symbol is used. Markers other than thumb and cursor are not repeated horizontally.
 
-## 高亮配置
+## Highlight configuration
 
-| 配置项 | 注册的高亮组 | 用途 |
-|--------|--------------|------|
-| `highlights.track` | `VVScrollbarTrack` | 背景轨道 |
-| `highlights.thumb` | `VVScrollbarThumb` | 当前可见范围 |
-| `highlights.hover` | `VVScrollbarHover` | 实际拖拽中的 thumb |
-| `highlights.cursor` | `VVScrollbarCursor` | 当前光标位置 |
-| `highlights.search` | `VVScrollbarSearch` | 搜索命中 |
-| `highlights.mark` | `VVScrollbarMark` | Vim mark |
-| `highlights.quickfix` | `VVScrollbarQuickfix` | quickfix / loclist |
-| `highlights.diag_error` | `VVScrollbarDiagnosticError` | Error 诊断 |
-| `highlights.diag_warn` | `VVScrollbarDiagnosticWarn` | Warn 诊断 |
-| `highlights.diag_info` | `VVScrollbarDiagnosticInfo` | Info 诊断 |
-| `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint 诊断 |
+| Setting | Highlight group | Purpose |
+|---|---|---|
+| `highlights.track` | `VVScrollbarTrack` | Background track |
+| `highlights.thumb` | `VVScrollbarThumb` | Visible range |
+| `highlights.hover` | `VVScrollbarHover` | Thumb during an actual drag |
+| `highlights.cursor` | `VVScrollbarCursor` | Cursor position |
+| `highlights.search` | `VVScrollbarSearch` | Search matches |
+| `highlights.mark` | `VVScrollbarMark` | Vim marks |
+| `highlights.quickfix` | `VVScrollbarQuickfix` | Quickfix and loclist |
+| `highlights.diag_error` | `VVScrollbarDiagnosticError` | Error diagnostics |
+| `highlights.diag_warn` | `VVScrollbarDiagnosticWarn` | Warning diagnostics |
+| `highlights.diag_info` | `VVScrollbarDiagnosticInfo` | Info diagnostics |
+| `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint diagnostics |
 
-Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`、
-`VVGitModified`、`VVGitDeleted`。所有高亮会在 `ColorScheme` 后重新注册
+Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from `vv-utils.git.register_hl()`. All highlights are registered again after `ColorScheme`.
 
-## 鼠标交互
+## Mouse interaction
 
-| 操作 | 行为 |
-|------|------|
-| 点击轨道 | 以点击点为中心放置 thumb，并立即跳转对应视口 |
-| 按下 thumb | 保持原位置，不切换 hover 色 |
-| 拖动 thumb | 保留按下时的抓取偏移，并实时更新视口 |
-| 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |
-| 松开鼠标 | 结束拖拽并恢复普通 thumb 高亮 |
+| Action | Behavior |
+|---|---|
+| Click the track | Center the thumb on the click and jump immediately |
+| Press the thumb | Keep the current position without changing to the hover color |
+| Drag the thumb | Preserve the grab offset and update the viewport continuously |
+| Drag beyond the track | Snap to the beginning or end of the file |
+| Release | End dragging and restore the normal thumb highlight |
 
-滚动条跳转和拖拽使用 `vv-utils.scroll.with_auto_suppressed()`，因此即使启用了
-`vv-utils.scroll` 的自动跳转动画，也不会出现先跳到目标、回到旧位置、再动画到目标的回弹
+Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so automatic jump animation cannot bounce from the target back to the old position before animating again.
 
-## 命令
+## Commands
 
-| 命令 | 说明 |
-|------|------|
-| `:VVScrollbarEnable` | 启用滚动条 |
-| `:VVScrollbarDisable` | 禁用滚动条并关闭所有滚动条浮窗 |
-| `:VVScrollbarToggle` | 切换启用状态 |
-| `:VVScrollbarRefresh` | 重新获取可见文件的 Git marker 并立即刷新 |
+| Command | Description |
+|---|---|
+| `:VVScrollbarEnable` | Enable the scrollbar |
+| `:VVScrollbarDisable` | Disable it and close every scrollbar window |
+| `:VVScrollbarToggle` | Toggle the enabled state |
+| `:VVScrollbarRefresh` | Reload Git markers for visible files and redraw immediately |
 
 ## Lua API
 
@@ -235,22 +226,22 @@ scrollbar.toggle()
 local current_config = scrollbar.get_config()
 ```
 
-`get_config()` 返回深拷贝，修改返回值不会影响插件内部配置
+`get_config()` returns a deep copy, so changing it does not mutate internal state.
 
-## 模块结构
+## Module structure
 
 ```text
 lua/vv-scrollbar/
-├── core/        几何计算、运行状态与浮窗渲染
-├── features/    Git 数据和 marker 收集
-├── input/       鼠标 press / drag / release 状态机
-├── lifecycle/   autocmd 生命周期
-├── ui/          高亮注册
-├── config.lua   默认配置与合并
-└── init.lua     对外生命周期 API
+├── core/        Geometry, runtime state, and floating-window rendering
+├── features/    Git data and marker collection
+├── input/       Mouse press, drag, and release state machine
+├── lifecycle/   Autocommand lifecycle
+├── ui/          Highlight registration
+├── config.lua   Defaults and merging
+└── init.lua     Public lifecycle API
 ```
 
-## 测试
+## Testing
 
 ```bash
 nvim --headless -u NONE -l tests/test_smoke.lua
