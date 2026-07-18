@@ -58,8 +58,9 @@
 }
 ```
 
-需要 Neovim `0.11+`。鼠标交互依赖 `nvim_open_win({ mouse = true })` 和
-`vim.on_key()` 消费鼠标事件
+需要 Neovim `0.11+`。滚动条是一个 `style = 'minimal'` 的分屏窗口；鼠标交互完全由
+`vim.on_key()` 拦截 `<LeftMouse>`/`<LeftDrag>`/`<LeftRelease>`，再用 `getmousepos()`
+的屏幕坐标命中滚动条实现
 
 ## 完整配置
 

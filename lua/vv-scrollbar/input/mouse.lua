@@ -61,8 +61,11 @@ local function on_key(key)
     local bar = view.hit_test(position.screenrow, position.screencol)
     if not bar then return nil end
 
-    local bar_position = fn.win_screenpos(bar.win)
-    start_drag(bar, position.screenrow - bar_position[1])
+    -- 用与 continue_drag 相同的换算（screenrow_to_bar_row 会按父窗 winbar 高度校正），
+    -- 保证首次点击落点与渲染后的 thumb 行对齐；直接减 bar 窗顶行在父窗有 winbar 时会偏 1 行
+    local row = geometry.screenrow_to_bar_row(bar.parent, position.screenrow)
+    if row == nil then return nil end
+    start_drag(bar, row)
     return ''
   end
 
