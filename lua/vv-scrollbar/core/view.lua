@@ -156,9 +156,15 @@ local function render(parent)
   bar.thumb_row = viewport.thumb_row
   bar.thumb_height = viewport.thumb_height
 
+  -- 父窗有 winbar 时，bar 是无 winbar 的右分屏兄弟窗：bar 的 buffer 行 0 落在父窗
+  -- winbar 所在屏行，而 viewport（thumb_row/marker）是以父窗「内容区」为 0 的坐标
+  -- 若不偏移，thumb/marker 会整体上移 1 行（winbar 行被画上 track、最底内容行无标记）
+  -- 故把所有 extmark 行整体下移 winbar 高度，顶部空出的行留作空白 track
+  local winbar_offset = geometry.win_has_winbar(parent) and 1 or 0
+
   sync_window(parent, bar)
   local width = api.nvim_win_get_width(bar.win)
-  ensure_lines(bar, viewport.height, width)
+  ensure_lines(bar, viewport.height + winbar_offset, width)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
   local row_markers = markers.collect(parent, viewport)
@@ -171,8 +177,9 @@ local function render(parent)
   local track_text = string.rep(' ', track_width)
 
   for row = 0, viewport.height - 1 do
+    local buf_row = row + winbar_offset
     local in_thumb = row >= viewport.thumb_row and row < viewport.thumb_row + viewport.thumb_height
-    api.nvim_buf_set_extmark(bar.buf, ns, row, 0, {
+    api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
       virt_text = {
         { in_thumb and thumb_text or track_text, in_thumb and thumb_hl or 'VVScrollbarTrack' },
       },
@@ -184,7 +191,7 @@ local function render(parent)
     if marker then
       local marker_text = marker.text
       if marker.fill_width then marker_text = string.rep(marker.text, track_width) end
-      api.nvim_buf_set_extmark(bar.buf, ns, row, 0, {
+      api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
         virt_text = marker.chunks or { { marker_text, marker.hl } },
         virt_text_pos = 'overlay',
         hl_mode = 'combine',
