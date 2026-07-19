@@ -75,7 +75,7 @@ require('vv-scrollbar').setup({
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
     'dropbar_menu', 'dropbar_menu_fzf', 'DressingInput', 'noice',
     'prompt', 'TelescopePrompt', 'dashboard', 'vv-explorer', 'vv-git',
-    'vv-task-panel',
+    'vv-task-panel', 'vv-task-panel-tasks',
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
 

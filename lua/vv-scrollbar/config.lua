@@ -58,7 +58,7 @@ local defaults = {
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
     'dropbar_menu', 'dropbar_menu_fzf', 'DressingInput', 'noice', 'prompt', 'TelescopePrompt',
-    'dashboard', 'vv-explorer', 'vv-git', 'vv-task-panel',
+    'dashboard', 'vv-explorer', 'vv-git', 'vv-task-panel', 'vv-task-panel-tasks',
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
   window_filter = nil,
