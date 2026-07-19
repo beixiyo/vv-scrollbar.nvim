@@ -49,5 +49,16 @@ move('ggzt')
 bar = state.bars[win]
 assert(bar and api.nvim_win_is_valid(bar.win), 'always_show track disappeared after returning to the top')
 
+for _, ft in ipairs({ 'vv-task-panel', 'vv-task-panel-tasks' }) do
+  vim.bo.filetype = ft
+  view.refresh()
+  assert(state.bars[win] == nil, ft .. ' should not create a scrollbar')
+
+  vim.bo.filetype = 'lua'
+  view.refresh()
+  bar = state.bars[win]
+  assert(bar and api.nvim_win_is_valid(bar.win), 'scrollbar did not return after leaving ' .. ft)
+end
+
 scrollbar.disable()
-print('PASS: stable visibility at top/down/top and persistent marker track')
+print('PASS: stable visibility and private panel filetype exclusions')
