@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- `highlights.hover` 重命名为 `highlights.active`；按下 thumb 时立即生效，并在拖拽期间保持
+
 ### Added
 
 - 默认开启的 `map_view` 单色 Braille 全文件预览

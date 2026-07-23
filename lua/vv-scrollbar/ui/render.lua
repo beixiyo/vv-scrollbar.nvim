@@ -124,7 +124,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   bar.row_markers = row_markers
   bar.marker_hits = {}
 
-  local thumb_hl = dragging and dragging.moved and 'VVScrollbarHover' or 'VVScrollbarThumb'
+  local thumb_hl = dragging and 'VVScrollbarActive' or 'VVScrollbarThumb'
   local thumb_text = string.rep(markers.cell(cfg.symbols.thumb), track_width)
   local track_text = string.rep(' ', track_width)
 

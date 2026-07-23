@@ -12,7 +12,7 @@ function M.setup()
     VVScrollbarMapView = highlights.map_view,
     VVScrollbarMapCursor = highlights.map_cursor,
     VVScrollbarThumb = highlights.thumb,
-    VVScrollbarHover = highlights.hover,
+    VVScrollbarActive = highlights.active,
     VVScrollbarCursor = highlights.cursor,
     VVScrollbarSearch = highlights.search,
     VVScrollbarMark = highlights.mark,

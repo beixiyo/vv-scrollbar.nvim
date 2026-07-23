@@ -113,10 +113,9 @@ local function continue_drag(position)
 end
 
 local function finish_drag()
-  local drag = state.dragging
-  if not drag then return end
+  if not state.dragging then return end
   state.dragging = nil
-  if drag.moved or drag.map_top then redraw() end
+  redraw()
 end
 
 ---@param key string

@@ -29,7 +29,7 @@
 - 默认开启的 Braille 代码地图，支持自适应宽度、缓存与延迟重建
 - 完整窗口高度的背景轨道，以及按可见内容比例计算的 thumb
 - 点击轨道直接跳转；拖动 thumb 时保留鼠标抓取位置
-- 普通点击不触发拖拽色，实际移动后才显示 hover 状态
+- 按下 thumb 立即显示 active 色，拖拽时保持相同反馈
 - 与 `vv-utils.scroll` 协作，滚动条交互不会被自动平滑滚动拉回旧位置
 - 使用真实分栏预留宽度，不会覆盖父窗口的行末文本
 - 宽度可配置，轨道与 thumb 会占满实际宽度，默认 `2` 格
@@ -172,7 +172,7 @@ require('vv-scrollbar').setup({
     map_view = { fg = '#565f89' },
     map_cursor = { fg = '#7aa2f7' },
     thumb = { bg = '#3b4252' },
-    hover = { bg = '#4b5568' },
+    active = { bg = '#5b6478' },
     cursor = { fg = '#7aa2f7' },
     search = { fg = '#ff9e64' },
     mark = { fg = '#bb9af7' },
@@ -314,7 +314,7 @@ quickfix / loclist > mark > 搜索
 | `highlights.map_view` | `VVScrollbarMapView` | 单色代码地图前景 |
 | `highlights.map_cursor` | `VVScrollbarMapCursor` | 当前行 Braille dots 或细线 |
 | `highlights.thumb` | `VVScrollbarThumb` | 当前可见范围 |
-| `highlights.hover` | `VVScrollbarHover` | 实际拖拽中的 thumb |
+| `highlights.active` | `VVScrollbarActive` | 按下或拖拽中的 thumb |
 | `highlights.cursor` | `VVScrollbarCursor` | 当前光标位置 |
 | `highlights.search` | `VVScrollbarSearch` | 搜索命中 |
 | `highlights.mark` | `VVScrollbarMark` | Vim mark |
@@ -352,7 +352,7 @@ require('vv-scrollbar').setup({
 | 操作 | 行为 |
 |------|------|
 | 点击轨道 | 以点击点为中心放置 thumb，并立即跳转对应视口 |
-| 按下 thumb | 保持原位置，不切换 hover 色 |
+| 按下 thumb | 保持原位置并立即切换为 active 色 |
 | 拖动 thumb | 保留按下时的抓取偏移，并实时更新视口 |
 | 停在地图上下边缘 | 按配置速度持续平移冻结的地图 viewport |
 | 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |

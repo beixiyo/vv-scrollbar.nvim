@@ -30,7 +30,7 @@ Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfile
 - A default-enabled Braille code map with adaptive width and a cached, debounced renderer
 - A full-height background track and a thumb sized from the visible-content ratio
 - Click the track to jump, or drag the thumb while preserving the original grab offset
-- A normal click does not show the drag color; hover styling starts only after movement
+- Pressing the thumb immediately shows its active color; dragging keeps the same feedback
 - Integration with `vv-utils.scroll` prevents automatic smooth scrolling from pulling interactions back to an old view
 - A real split reserves width, so the scrollbar never covers text at the end of a parent-window line
 - Configurable width with track and thumb filling the available cells; the default is two cells
@@ -160,7 +160,7 @@ require('vv-scrollbar').setup({
     map_view = { fg = '#565f89' },
     map_cursor = { fg = '#7aa2f7' },
     thumb = { bg = '#3b4252' },
-    hover = { bg = '#4b5568' }, cursor = { fg = '#7aa2f7' },
+    active = { bg = '#5b6478' }, cursor = { fg = '#7aa2f7' },
     search = { fg = '#ff9e64' }, mark = { fg = '#bb9af7' },
     quickfix = { fg = '#e0af68' }, diag_error = { fg = '#f7768e' },
     diag_warn = { fg = '#e0af68' }, diag_info = { fg = '#7dcfff' },
@@ -296,7 +296,7 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.map_view` | `VVScrollbarMapView` | Monochrome code-map foreground |
 | `highlights.map_cursor` | `VVScrollbarMapCursor` | Current-line Braille dots or slim line |
 | `highlights.thumb` | `VVScrollbarThumb` | Visible range |
-| `highlights.hover` | `VVScrollbarHover` | Thumb during an actual drag |
+| `highlights.active` | `VVScrollbarActive` | Thumb while pressed or dragged |
 | `highlights.cursor` | `VVScrollbarCursor` | Cursor position |
 | `highlights.search` | `VVScrollbarSearch` | Search matches |
 | `highlights.mark` | `VVScrollbarMark` | Vim marks |
@@ -333,7 +333,7 @@ the cell entirely requires a floating window, which would cover the parent windo
 | Action | Behavior |
 |---|---|
 | Click the track | Center the thumb on the click and jump immediately |
-| Press the thumb | Keep the current position without changing to the hover color |
+| Press the thumb | Keep the current position and immediately use the active color |
 | Drag the thumb | Preserve the grab offset and update the viewport continuously |
 | Hold near the map edge | Keep panning the frozen map viewport at the configured speed |
 | Drag beyond the track | Snap to the beginning or end of the file |
