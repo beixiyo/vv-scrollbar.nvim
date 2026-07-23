@@ -19,6 +19,7 @@ return {
   },
   interaction = {
     right_click = 'toggle_view',
+    cursor_on_drag = 'follow',
   },
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',

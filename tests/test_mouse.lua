@@ -12,8 +12,11 @@ local cursor_calls = {}
 local wheel_calls = {}
 local viewport_updates = 0
 local right_click_action = 'toggle_view'
+local cursor_on_drag = 'follow'
 local toggle_view_calls = 0
 local right_click_context
+local cursor_anchor = { screen_row = 5, curswant = 0, scrolloff = 5 }
+local cursor_follow_ends = 0
 local bar = {
   win = 13,
   parent = 12,
@@ -34,6 +37,7 @@ package.loaded['vv-scrollbar.config'] = {
     return {
       interaction = {
         right_click = right_click_action,
+        cursor_on_drag = cursor_on_drag,
       },
       map_view = {
         marker_click = 'center',
@@ -48,11 +52,22 @@ package.loaded['vv-scrollbar.core.geometry'] = {
   screenrow_to_bar_row = function(_, screenrow) return screenrow end,
   screenrow_to_bar_row_raw = function(_, screenrow) return screenrow end,
   bar_row_to_line = function(_, row) return row + 100 end,
-  scroll_to_bar_row = function(_, row)
-    scroll_calls[#scroll_calls + 1] = { kind = 'bar', row = row }
+  begin_cursor_follow = function() return cursor_anchor end,
+  end_cursor_follow = function(_, anchor)
+    assert(anchor == nil or anchor == cursor_anchor, 'unexpected cursor anchor ended')
+    if anchor then cursor_follow_ends = cursor_follow_ends + 1 end
   end,
-  scroll_to_line = function(_, line, align)
-    scroll_calls[#scroll_calls + 1] = { kind = 'line', line = line, align = align }
+  scroll_to_bar_row = function(_, row, anchor)
+    scroll_calls[#scroll_calls + 1] = { kind = 'bar', row = row, anchor = anchor }
+  end,
+  scroll_to_line = function(_, line, align, anchor, preferred_cursor_line)
+    scroll_calls[#scroll_calls + 1] = {
+      kind = 'line',
+      line = line,
+      align = align,
+      anchor = anchor,
+      preferred_cursor_line = preferred_cursor_line,
+    }
   end,
   set_cursor_line = function(win, line)
     cursor_calls[#cursor_calls + 1] = { win = win, line = line }
@@ -138,12 +153,21 @@ right_click_action = 'toggle_view'
 assert(on_key(vim.keycode('<LeftMouse>')) == '', 'thumb press was not consumed')
 assert(state.dragging, 'thumb press did not enter active state')
 assert(state.dragging.map_top == nil, 'plain thumb press froze the map projection')
+assert(state.dragging.cursor_anchor == cursor_anchor, 'thumb press lost its cursor anchor')
 assert(#scroll_calls == 0, 'plain thumb press unexpectedly scrolled the source window')
 assert(refresh_count == 1, 'thumb press did not redraw its active state')
 
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'thumb release was not consumed')
 assert(state.dragging == nil, 'thumb release did not clear active state')
+assert(cursor_follow_ends == 1, 'thumb release did not restore cursor follow state')
 assert(#cursor_calls == 0, 'plain thumb click unexpectedly moved the cursor')
+
+cursor_on_drag = 'keep'
+assert(on_key(vim.keycode('<LeftMouse>')) == '', 'keep-mode thumb press was not consumed')
+assert(state.dragging.cursor_anchor == nil, 'keep cursor mode still captured an anchor')
+assert(on_key(vim.keycode('<LeftRelease>')) == '', 'keep-mode thumb release was not consumed')
+assert(cursor_follow_ends == 1, 'keep mode restored a cursor anchor it never captured')
+cursor_on_drag = 'follow'
 
 for clicks = 2, 4 do
   local press = vim.keycode(('<%d-LeftMouse>'):format(clicks))
@@ -160,6 +184,11 @@ assert(on_key(vim.keycode('<LeftMouse>')) == '', 'track press was not consumed')
 assert(#scroll_calls == 1, 'track press did not perform exactly one jump')
 assert(state.dragging.map_top == nil, 'track press froze the map before dragging')
 assert(state.dragging.click_line == 13, 'track press lost its exact source line')
+assert(
+  scroll_calls[#scroll_calls].anchor == cursor_anchor
+    and scroll_calls[#scroll_calls].preferred_cursor_line == 13,
+  'track press did not place the cursor before capturing its drag position'
+)
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'track click release was not consumed')
 assert(
   #cursor_calls == 1
@@ -173,6 +202,10 @@ mouse_position.screenrow = 14
 assert(on_key(vim.keycode('<LeftDrag>')) == '', 'track drag was not consumed')
 assert(viewport_updates == 1, 'track drag did not update the viewport')
 assert(state.dragging.map_top == 21, 'track drag did not retain its updated frozen map top')
+assert(
+  scroll_calls[#scroll_calls].anchor == cursor_anchor,
+  'viewport drag did not pass its cursor anchor to geometry'
+)
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'track release was not consumed')
 assert(#cursor_calls == 1, 'track drag incorrectly used click cursor placement')
 
@@ -241,7 +274,14 @@ vim.keymap.set('n', '<ScrollWheelDown>', function()
   mapped_wheel_calls = mapped_wheel_calls + 1
 end)
 
+assert(on_key(vim.keycode('<LeftMouse>')) == '', 'detach fixture did not start dragging')
+local ends_before_detach = cursor_follow_ends
 mouse.detach()
+assert(state.dragging == nil, 'detach did not clear active dragging')
+assert(
+  cursor_follow_ends == ends_before_detach + 1,
+  'detach did not restore cursor follow state'
+)
 mouse.attach(
   function() refresh_count = refresh_count + 1 end,
   function() toggle_view_calls = toggle_view_calls + 1 end

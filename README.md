@@ -68,6 +68,7 @@ require('vv-scrollbar').setup({
   },
   interaction = {
     right_click = 'toggle_view',
+    cursor_on_drag = 'follow',
   },
 
   excluded_filetypes = {
@@ -179,6 +180,7 @@ Every `setup()` call merges its arguments into the defaults from scratch. It doe
 | `cursor.width` | `integer` | `1` | Width of the slim current-line marker |
 | `cursor.symbol` | `string` | `'▕'` | Character used by the slim current-line marker |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
+| `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | Keep the cursor on the same source-window screen row while dragging, or preserve its source line when possible |
 | `excluded_filetypes` | `string[]` | See complete config | Filetypes without scrollbars |
 | `excluded_buftypes` | `string[]` | See complete config | Buftypes without scrollbars |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | Return false to suppress a window |
@@ -326,13 +328,18 @@ the cell entirely requires a floating window, which would cover the parent windo
 |---|---|
 | Click the track | Center the thumb, jump, and place the cursor on the projected source line |
 | Press the thumb | Keep the current position and immediately use the active color |
-| Drag the thumb | Preserve the grab offset and update the viewport continuously |
+| Drag the thumb | Preserve the grab offset, update the viewport continuously, and keep the cursor on the same source-window screen row |
 | Hold near the map edge | Keep panning the frozen map viewport at the configured speed |
 | Drag beyond the track | Snap to the beginning or end of the file |
 | Right-click the scrollbar | Toggle between map view and the classic scrollbar |
 | Release or press Esc | End dragging, resume source/map synchronization, and restore the thumb |
 
 Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so automatic jump animation cannot bounce from the target back to the old position before animating again.
+
+Set `interaction.cursor_on_drag = 'keep'` to preserve the original source line when possible.
+`follow` moves by actual display rows, so soft wrapping and closed folds no longer pin the cursor to
+a `scrolloff` edge. It temporarily ignores `scrolloff` while dragging and restores it on release,
+Esc, or plugin disable.
 
 Setting `interaction.right_click = false` disables the action while still consuming right-button events over the scrollbar to prevent a native selection. A callback can replace the default action:
 

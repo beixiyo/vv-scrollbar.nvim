@@ -52,13 +52,19 @@ end
 
 ---@param bar VVScrollbarBar
 ---@param row integer
-local function scroll_to_row(bar, row)
+---@param cursor_anchor? VVScrollbarCursorAnchor
+local function scroll_to_row(bar, row, cursor_anchor)
   local layout = bar.map_layout
   if layout and layout.mode == 'viewport' then
-    geometry.scroll_to_line(bar.parent, map_view.row_to_line(layout, row), 'top')
+    geometry.scroll_to_line(
+      bar.parent,
+      map_view.row_to_line(layout, row),
+      'top',
+      cursor_anchor
+    )
     return
   end
-  geometry.scroll_to_bar_row(bar.parent, row)
+  geometry.scroll_to_bar_row(bar.parent, row, cursor_anchor)
 end
 
 ---@param bar VVScrollbarBar
@@ -75,7 +81,10 @@ local function apply_viewport_drag(bar, drag)
     config.current().map_view.interaction
   )
   drag.map_top = result.top_row
-  geometry.scroll_to_line(bar.parent, result.source_line, 'top')
+  if drag.last_source_line ~= result.source_line then
+    drag.last_source_line = result.source_line
+    geometry.scroll_to_line(bar.parent, result.source_line, 'top', drag.cursor_anchor)
+  end
   redraw()
   return result.repeat_edge
 end
@@ -109,19 +118,31 @@ local function start_drag(bar, mouse_row)
         and map_view.row_to_line(bar.map_layout, mouse_row)
       or geometry.bar_row_to_line(bar.parent, mouse_row)
   end
+  local cursor_anchor
+  if config.current().interaction.cursor_on_drag == 'follow' then
+    cursor_anchor = geometry.begin_cursor_follow(bar.parent)
+  end
 
-  state.dragging = {
+  local drag = {
     parent = bar.parent,
     offset = offset,
     moved = false,
     click_line = click_line,
     map_top = nil,
+    cursor_anchor = cursor_anchor,
   }
+  state.dragging = drag
 
   -- 按住已有 thumb 只切换 active 样式，不重复做一次比例换算；后者受取整、fold
   -- 等因素影响，可能让源窗口和地图在按下 / 松开时各跳一次
   if click_line then
-    geometry.scroll_to_line(bar.parent, click_line, 'center')
+    geometry.scroll_to_line(
+      bar.parent,
+      click_line,
+      'center',
+      cursor_anchor,
+      cursor_anchor and click_line or nil
+    )
   end
   redraw()
 end
@@ -146,7 +167,11 @@ local function continue_drag(position)
 
   local row = geometry.screenrow_to_bar_row(drag.parent, position.screenrow)
   if row == nil then return end
-  scroll_to_row(bar, row - drag.offset)
+  row = row - drag.offset
+  if drag.last_bar_row == row then return end
+
+  drag.last_bar_row = row
+  scroll_to_row(bar, row, drag.cursor_anchor)
   redraw()
 end
 
@@ -154,6 +179,7 @@ local function finish_drag()
   local drag = state.dragging
   if not drag then return end
 
+  geometry.end_cursor_follow(drag.parent, drag.cursor_anchor)
   state.dragging = nil
   if not drag.moved and drag.click_line then
     geometry.set_cursor_line(drag.parent, drag.click_line)
@@ -243,6 +269,9 @@ function M.attach(refresh_callback, toggle_view_callback)
 end
 
 function M.detach()
+  if state.dragging then
+    geometry.end_cursor_follow(state.dragging.parent, state.dragging.cursor_anchor)
+  end
   state.dragging = nil
   right_click.reset()
   refresh = nil

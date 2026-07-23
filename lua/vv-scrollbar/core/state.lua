@@ -43,6 +43,14 @@
 ---@field map_top? integer
 ---@field mouse_row? integer
 ---@field edge_pending? boolean
+---@field cursor_anchor? VVScrollbarCursorAnchor
+---@field last_source_line? integer
+---@field last_bar_row? integer
+
+---@class VVScrollbarCursorAnchor
+---@field screen_row integer
+---@field curswant integer
+---@field scrolloff integer
 
 ---@class VVScrollbarViewportDragResult
 ---@field top_row integer

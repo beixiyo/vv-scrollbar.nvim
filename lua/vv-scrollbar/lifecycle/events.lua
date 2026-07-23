@@ -25,11 +25,19 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout, refresh
 
   api.nvim_create_autocmd({
     'WinScrolled',
+    'CursorMoved',
+    'CursorMovedI',
+  }, {
+    group = state.augroup,
+    callback = function()
+      if not state.dragging then enqueue_refresh() end
+    end,
+  })
+
+  api.nvim_create_autocmd({
     'TextChanged',
     'TextChangedI',
     'DiagnosticChanged',
-    'CursorMoved',
-    'CursorMovedI',
     'QuickFixCmdPost',
   }, {
     group = state.augroup,
