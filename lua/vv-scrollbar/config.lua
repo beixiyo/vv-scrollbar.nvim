@@ -41,14 +41,23 @@ local SEV = vim.diagnostic.severity
 ---@field width integer 细线宽度 @default 1
 ---@field symbol string 细线字符 @default '▎'
 
+---@class VVScrollbarMapViewInteractionConfig
+---@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
+---@field edge_margin integer 触发边缘平移的地图行数 @default 2
+---@field edge_speed integer 每次边缘平移的最大地图行数 @default 2
+---@field edge_interval integer 持续边缘平移的时间间隔，单位 ms @default 50
+---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
+
 ---@class VVScrollbarMapViewConfig
 ---@field enabled boolean 是否显示代码地图 @default true
----@field mode 'fit' 当前地图布局模式 @default 'fit'
+---@field mode 'viewport'|'fit' 地图布局模式 @default 'viewport'
 ---@field width 'auto'|integer 地图模式宽度 @default 'auto'
 ---@field min_width integer 自动宽度下限 @default 8
 ---@field max_width integer 自动宽度上限 @default 16
 ---@field width_ratio number 自动宽度占父布局的比例 @default 0.14
 ---@field x_multiplier integer 每个横向采样点覆盖的源代码屏幕列数 @default 4
+---@field y_multiplier integer 每个纵向 Braille dot 覆盖的源代码行数 @default 1
+---@field min_thumb integer viewport 模式的 thumb 最小高度 @default 2
 ---@field max_lines_per_dot integer 每个纵向地图点最多采样的源代码行数，0 表示不限制 @default 8
 ---@field tab_width 'buffer'|integer tab 显示宽度 @default 'buffer'
 ---@field include_whitespace boolean 是否把空白字符绘制为代码点 @default false
@@ -60,6 +69,7 @@ local SEV = vim.diagnostic.severity
 ---@field marker_position 'left'|'right' marker 浮动侧 @default 'right'
 ---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
 ---@field cursor VVScrollbarMapViewCursorConfig 当前行样式
+---@field interaction VVScrollbarMapViewInteractionConfig 鼠标交互配置
 
 ---@class VVScrollbarConfig
 ---@field enabled boolean 是否启用 @default true
@@ -94,12 +104,14 @@ local defaults = {
   window_filter = nil,
   map_view = {
     enabled = true,
-    mode = 'fit',
+    mode = 'viewport',
     width = 'auto',
     min_width = 8,
     max_width = 16,
     width_ratio = 0.14,
     x_multiplier = 4,
+    y_multiplier = 1,
+    min_thumb = 2,
     max_lines_per_dot = 8,
     tab_width = 'buffer',
     include_whitespace = false,
@@ -115,6 +127,13 @@ local defaults = {
       side = 'right',
       width = 1,
       symbol = '▎',
+    },
+    interaction = {
+      edge_scroll = true,
+      edge_margin = 2,
+      edge_speed = 2,
+      edge_interval = 50,
+      snap_to_edges = true,
     },
   },
   markers = {
@@ -182,6 +201,15 @@ local function positive_number(value, fallback)
   return number
 end
 
+---@param value any
+---@param fallback integer
+---@return integer
+local function non_negative_integer(value, fallback)
+  local number = tonumber(value)
+  if not number then return fallback end
+  return math.max(math.floor(number), 0)
+end
+
 ---@param opts? VVScrollbarConfig
 ---@return VVScrollbarConfig
 function M.apply(opts)
@@ -214,6 +242,16 @@ function M.apply(opts)
     defaults.map_view.x_multiplier
   )
 
+  current.map_view.y_multiplier = positive_integer(
+    current.map_view.y_multiplier,
+    defaults.map_view.y_multiplier
+  )
+
+  current.map_view.min_thumb = positive_integer(
+    current.map_view.min_thumb,
+    defaults.map_view.min_thumb
+  )
+
   current.map_view.max_lines_per_dot = math.max(
     math.floor(
       tonumber(current.map_view.max_lines_per_dot) or defaults.map_view.max_lines_per_dot
@@ -238,7 +276,9 @@ function M.apply(opts)
     defaults.map_view.max_lines
   )
 
-  current.map_view.mode = 'fit'
+  if not vim.tbl_contains({ 'viewport', 'fit' }, current.map_view.mode) then
+    current.map_view.mode = defaults.map_view.mode
+  end
   current.map_view.large_file_behavior = 'scrollbar'
   if current.map_view.marker_position ~= 'left' then
     current.map_view.marker_position = 'right'
@@ -260,6 +300,26 @@ function M.apply(opts)
       or current.map_view.cursor.symbol == ''
   then
     current.map_view.cursor.symbol = defaults.map_view.cursor.symbol
+  end
+  local interaction = current.map_view.interaction
+  local default_interaction = defaults.map_view.interaction
+  if type(interaction.edge_scroll) ~= 'boolean' then
+    interaction.edge_scroll = default_interaction.edge_scroll
+  end
+  interaction.edge_margin = non_negative_integer(
+    interaction.edge_margin,
+    default_interaction.edge_margin
+  )
+  interaction.edge_speed = positive_integer(
+    interaction.edge_speed,
+    default_interaction.edge_speed
+  )
+  interaction.edge_interval = positive_integer(
+    interaction.edge_interval,
+    default_interaction.edge_interval
+  )
+  if type(interaction.snap_to_edges) ~= 'boolean' then
+    interaction.snap_to_edges = default_interaction.snap_to_edges
   end
   current.right_offset = math.max(
     math.floor(tonumber(current.right_offset) or defaults.right_offset),

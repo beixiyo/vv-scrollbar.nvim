@@ -88,15 +88,14 @@ local function render(parent)
 
   window.sync(parent, bar, has_map_view)
   local dragging = state.dragging
-    and state.dragging.parent == parent
-    and state.dragging.moved
+  if not dragging or dragging.parent ~= parent then dragging = nil end
   render_ui.render(
     parent,
     bar,
     viewport,
     has_map_view,
     winbar_offset,
-    dragging or false,
+    dragging,
     M.refresh
   )
 end

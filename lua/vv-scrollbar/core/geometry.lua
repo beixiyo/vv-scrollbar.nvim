@@ -161,9 +161,17 @@ end
 ---@param win integer
 ---@param screenrow integer
 ---@return integer?
-function M.screenrow_to_bar_row(win, screenrow)
+function M.screenrow_to_bar_row_raw(win, screenrow)
   if not api.nvim_win_is_valid(win) then return nil end
-  local row = screenrow - parent_screen_top(win)
+  return screenrow - parent_screen_top(win)
+end
+
+---@param win integer
+---@param screenrow integer
+---@return integer?
+function M.screenrow_to_bar_row(win, screenrow)
+  local row = M.screenrow_to_bar_row_raw(win, screenrow)
+  if row == nil then return nil end
   return M.clamp(row, 0, math.max(M.win_height(win) - 1, 0))
 end
 

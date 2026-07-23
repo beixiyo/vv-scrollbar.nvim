@@ -86,12 +86,14 @@ require('vv-scrollbar').setup({
 
   map_view = {
     enabled = true,
-    mode = 'fit',
+    mode = 'viewport',
     width = 'auto',
     min_width = 8,
     max_width = 16,
     width_ratio = 0.14,
     x_multiplier = 4,
+    y_multiplier = 1,
+    min_thumb = 2,
     max_lines_per_dot = 8,
     tab_width = 'buffer',
     include_whitespace = false,
@@ -107,6 +109,13 @@ require('vv-scrollbar').setup({
       side = 'right',
       width = 1,
       symbol = '▎',
+    },
+    interaction = {
+      edge_scroll = true,
+      edge_margin = 2,
+      edge_speed = 2,
+      edge_interval = 50,
+      snap_to_edges = true,
     },
   },
 
@@ -178,18 +187,21 @@ require('vv-scrollbar').setup({
 
 ## Map View 配置
 
-`map_view` 默认开启。阶段 1 使用 `fit` 模式，把完整 buffer 投影成单色 Braille
-代码地图；原有 thumb 仍按源窗口可见比例计算，并通过背景色叠在地图上，不遮住字符
+`map_view` 默认开启。`viewport` 模式按固定 Braille 比例渲染完整 buffer，再根据源窗口
+滚动位置显示对应地图切片；thumb 使用地图绝对坐标，并通过背景色叠在地图上，不遮住字符
+需要把全文压入当前窗口高度时，可以切换为 `fit`
 
 | 选项 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `map_view.enabled` | `boolean` | `true` | 显示代码地图；设为 `false` 恢复经典滚动条 |
-| `map_view.mode` | `'fit'` | `'fit'` | 将完整 buffer 压入滚动条高度 |
+| `map_view.mode` | `'viewport'\|'fit'` | `'viewport'` | 滚动固定比例地图，或将完整 buffer 压入窗口高度 |
 | `map_view.width` | `'auto'\|integer` | `'auto'` | 自动或固定地图宽度 |
 | `map_view.min_width` | `integer` | `8` | 自动宽度下限 |
 | `map_view.max_width` | `integer` | `16` | 自动宽度上限 |
 | `map_view.width_ratio` | `number` | `0.14` | 自动宽度占父布局的比例 |
 | `map_view.x_multiplier` | `integer` | `4` | 一个横向点代表的源代码屏幕列数 |
+| `map_view.y_multiplier` | `integer` | `1` | 一个纵向 Braille dot 代表的源代码行数 |
+| `map_view.min_thumb` | `integer` | `2` | `viewport` 模式的 thumb 最小高度 |
 | `map_view.max_lines_per_dot` | `integer` | `8` | 每个纵向点最多采样的源代码行数；`0` 表示不限制 |
 | `map_view.tab_width` | `'buffer'\|integer` | `'buffer'` | 投影时使用的 tab 显示宽度 |
 | `map_view.include_whitespace` | `boolean` | `false` | 把空白字符也绘制为地图点 |
@@ -203,6 +215,11 @@ require('vv-scrollbar').setup({
 | `map_view.cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
 | `map_view.cursor.width` | `integer` | `1` | 当前行细线宽度 |
 | `map_view.cursor.symbol` | `string` | `'▎'` | 当前行细线字符 |
+| `map_view.interaction.edge_scroll` | `boolean` | `true` | 拖拽接近地图上下边缘时自动平移 |
+| `map_view.interaction.edge_margin` | `integer` | `2` | 触发边缘平移的地图行数 |
+| `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
+| `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
+| `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
 
 地图按 buffer 内容、投影尺寸和相关配置缓存。滚动、光标移动与 thumb 拖拽只复用
 缓存结果，不会重新扫描源代码
@@ -307,8 +324,9 @@ require('vv-scrollbar').setup({
 | 点击轨道 | 以点击点为中心放置 thumb，并立即跳转对应视口 |
 | 按下 thumb | 保持原位置，不切换 hover 色 |
 | 拖动 thumb | 保留按下时的抓取偏移，并实时更新视口 |
+| 停在地图上下边缘 | 按配置速度持续平移冻结的地图 viewport |
 | 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |
-| 松开鼠标 | 结束拖拽并恢复普通 thumb 高亮 |
+| 松开鼠标或按 Esc | 结束拖拽、恢复 source/map 同步和普通 thumb 高亮 |
 
 滚动条跳转和拖拽使用 `vv-utils.scroll.with_auto_suppressed()`，因此即使启用了
 `vv-utils.scroll` 的自动跳转动画，也不会出现先跳到目标、回到旧位置、再动画到目标的回弹

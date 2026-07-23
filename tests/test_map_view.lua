@@ -51,7 +51,12 @@ view.refresh()
 local bar = state.bars[parent]
 assert(bar and api.nvim_win_is_valid(bar.win), 'default map view did not create a scrollbar')
 assert(scrollbar.get_config().map_view.enabled, 'map view is not enabled by default')
+assert(scrollbar.get_config().map_view.mode == 'viewport', 'viewport mode is not the default')
 assert(bar.track_width >= 8 and bar.track_width <= 16, 'auto map width escaped configured bounds')
+assert(
+  bar.map_layout and bar.map_layout.content_height > bar.height,
+  'long buffer map height is still coupled to the window height'
+)
 assert(
   api.nvim_get_option_value('winhighlight', { win = parent })
     == original_winhighlight .. ',WinSeparator:VVScrollbarSeparator',
@@ -72,6 +77,30 @@ assert(
   table.concat(map_lines):find('[^ ]'),
   'map view buffer did not contain a visible code preview'
 )
+
+api.nvim_win_call(parent, function() vim.cmd('normal! 201Gzt') end)
+view.refresh()
+bar = state.bars[parent]
+assert(bar.map_layout.top_row > 0, 'source scrolling did not move the map viewport')
+assert(
+  bar.thumb_row > 0 and bar.thumb_row + bar.thumb_height < bar.height,
+  'middle source viewport did not keep the map thumb visible'
+)
+
+api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
+view.refresh()
+bar = state.bars[parent]
+assert(
+  bar.map_layout.top_row == bar.map_layout.content_height - bar.height,
+  'file end did not anchor the map viewport end'
+)
+assert(
+  bar.thumb_row + bar.thumb_height == bar.height,
+  'file end did not anchor the map thumb'
+)
+
+api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
+view.refresh()
 
 local blank_buf = api.nvim_create_buf(false, false)
 local blank_lines = {}
@@ -101,6 +130,57 @@ runtime_config.markers.git = true
 runtime_config.markers.cursor = true
 scrollbar.setup(runtime_config)
 local geometry = require('vv-scrollbar.core.geometry')
+
+state.git_marks[source_buf] = {
+  staged = { [1] = 'A' },
+  unstaged = {},
+}
+view.refresh()
+bar = state.bars[parent]
+local layer_namespace = api.nvim_get_namespaces()['vv-scrollbar']
+local function empty_git_lane_uses(expected_hl)
+  local extmarks = api.nvim_buf_get_extmarks(
+    bar.buf,
+    layer_namespace,
+    0,
+    -1,
+    { details = true }
+  )
+  for _, extmark in ipairs(extmarks) do
+    local virt_text = extmark[4].virt_text
+    if virt_text
+        and virt_text[1] and virt_text[1][2] == 'VVGitAdded'
+        and virt_text[2] and virt_text[2][1] == ' '
+    then
+      return virt_text[2][2] == expected_hl
+    end
+  end
+  return false
+end
+
+assert(
+  empty_git_lane_uses('VVScrollbarThumb'),
+  'empty Git lane cut a hole in the thumb background'
+)
+assert(
+  bar.row_markers[0].chunks[2][2] == 'VVScrollbarTrack',
+  'thumb composition mutated cached Git marker chunks'
+)
+state.dragging = {
+  parent = parent,
+  offset = 0,
+  moved = true,
+  map_top = bar.map_layout.top_row,
+}
+view.refresh()
+bar = state.bars[parent]
+assert(
+  empty_git_lane_uses('VVScrollbarHover'),
+  'empty Git lane cut a hole in the hover background'
+)
+state.dragging = nil
+view.refresh()
+
 local staged_line
 local unstaged_line
 for line = 2, #source_lines do

@@ -12,7 +12,9 @@ local function render(lines, width, opts)
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   local result = renderer.render(buf, 1, width, vim.tbl_deep_extend('force', {
+    mode = 'fit',
     x_multiplier = 1,
+    y_multiplier = 1,
     max_lines_per_dot = 8,
     tab_width = 4,
     include_whitespace = false,
@@ -52,4 +54,20 @@ assert(
   'fit projection left the final source lines above the map bottom'
 )
 
-print('PASS: Braille renderer, UTF-8 cells, tabs, whitespace, full-height fit')
+local compact_buf = api.nvim_create_buf(false, true)
+api.nvim_buf_set_lines(compact_buf, 0, -1, false, { 'x', 'x' })
+local compact = renderer.render(compact_buf, 2, 1, {
+  mode = 'viewport',
+  x_multiplier = 1,
+  y_multiplier = 1,
+  max_lines_per_dot = 8,
+  tab_width = 4,
+  include_whitespace = false,
+})
+api.nvim_buf_delete(compact_buf, { force = true })
+assert(
+  vim.fn.str2list(compact[1])[1] == 0x2803 and compact[2] == ' ',
+  'viewport projection stretched a short file instead of keeping fixed scale'
+)
+
+print('PASS: Braille renderer, UTF-8, tabs, whitespace, fit and viewport projection')

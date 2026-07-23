@@ -66,6 +66,22 @@ local function sample_row(start_row, end_row, sample_count, sample)
   return math.floor(start_row + (end_row - start_row) * ratio + 0.5)
 end
 
+---@param map_y integer
+---@param line_count integer
+---@param vertical_points integer
+---@param opts VVScrollbarMapViewConfig
+---@return integer
+---@return integer
+local function source_range(map_y, line_count, vertical_points, opts)
+  if opts.mode == 'viewport' then
+    local start_row = map_y * opts.y_multiplier + 1
+    return start_row, math.min(start_row + opts.y_multiplier - 1, line_count)
+  end
+
+  return math.ceil(map_y * line_count / vertical_points) + 1,
+    math.ceil((map_y + 1) * line_count / vertical_points)
+end
+
 ---@param buf integer
 ---@param height integer
 ---@param width integer
@@ -90,8 +106,7 @@ function M.render(buf, height, width, opts)
   end
 
   for map_y = 0, vertical_points - 1 do
-    local start_row = math.ceil(map_y * line_count / vertical_points) + 1
-    local end_row = math.ceil((map_y + 1) * line_count / vertical_points)
+    local start_row, end_row = source_range(map_y, line_count, vertical_points, opts)
     local group_size = end_row - start_row + 1
     if group_size <= 0 then goto continue_map_row end
 
