@@ -12,9 +12,18 @@ assert(
     and defaults.edge_margin == 2
     and defaults.edge_speed == 2
     and defaults.edge_interval == 50
-    and defaults.snap_to_edges
-    and defaults.right_click == 'toggle_view',
+    and defaults.snap_to_edges,
   'viewport interaction defaults are incomplete'
+)
+assert(
+  config.current().interaction.right_click == 'toggle_view',
+  'right-click default is incomplete'
+)
+assert(
+  config.current().cursor.style == 'line'
+    and config.current().cursor.symbol == '▕'
+    and config.current().map_view.marker_layout == 'right',
+  'shared visual defaults are incomplete'
 )
 
 local layout = {
@@ -82,40 +91,51 @@ local sanitized = config.apply({
       edge_speed = 0,
       edge_interval = 0,
       snap_to_edges = 'invalid',
-      right_click = 'invalid',
     },
   },
-}).map_view.interaction
+  interaction = {
+    right_click = 'invalid',
+  },
+})
+local sanitized_interaction = sanitized.map_view.interaction
 assert(
-  sanitized.edge_scroll
-    and sanitized.edge_margin == 0
-    and sanitized.edge_speed == 1
-    and sanitized.edge_interval == 1
-    and sanitized.snap_to_edges
-    and sanitized.right_click == 'toggle_view',
+  sanitized_interaction.edge_scroll
+    and sanitized_interaction.edge_margin == 0
+    and sanitized_interaction.edge_speed == 1
+    and sanitized_interaction.edge_interval == 1
+    and sanitized_interaction.snap_to_edges
+    and sanitized.interaction.right_click == 'toggle_view',
   'invalid viewport interaction options were not normalized'
 )
 
 local custom_right_click = function() end
 local right_click_options = config.apply({
-  map_view = {
-    interaction = {
-      right_click = custom_right_click,
-    },
+  interaction = {
+    right_click = custom_right_click,
   },
-}).map_view.interaction
+}).interaction
 assert(
   right_click_options.right_click == custom_right_click,
   'custom right-click callback was not preserved'
 )
 
 right_click_options = config.apply({
-  map_view = {
-    interaction = {
-      right_click = false,
-    },
+  interaction = {
+    right_click = false,
   },
-}).map_view.interaction
+}).interaction
 assert(right_click_options.right_click == false, 'disabled right-click action was not preserved')
+
+local invalid_shared = config.apply({
+  cursor = false,
+  interaction = false,
+  show_on_short_buffers = 'invalid',
+})
+assert(
+  invalid_shared.cursor.style == 'line'
+    and invalid_shared.interaction.right_click == 'toggle_view'
+    and invalid_shared.show_on_short_buffers,
+  'invalid shared options were not normalized'
+)
 
 print('PASS: grab offset, edge pan, continuous scroll, snapping and configurable fallbacks')

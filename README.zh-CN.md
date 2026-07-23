@@ -59,7 +59,17 @@ require('vv-scrollbar').setup({
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
+  show_on_short_buffers = true,
   window_filter = nil,
+  cursor = {
+    style = 'line',
+    side = 'right',
+    width = 1,
+    symbol = '▕',
+  },
+  interaction = {
+    right_click = 'toggle_view',
+  },
 
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
@@ -85,25 +95,17 @@ require('vv-scrollbar').setup({
     debounce_ms = 150,
     max_lines = 50000,
     large_file_behavior = 'scrollbar',
-    show_on_short_buffers = true,
     preserve_map_under_thumb = true,
-    marker_layout = 'overlay',
+    marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
     marker_click = 'center',
-    cursor = {
-      style = 'dots',
-      side = 'right',
-      width = 1,
-      symbol = '▎',
-    },
     interaction = {
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
-      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',
@@ -184,6 +186,12 @@ require('vv-scrollbar').setup({
 | `min_thumb` | `integer` | `2` | thumb 最小高度；最小值为 `1` |
 | `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间；`0` 表示不延迟 |
 | `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
+| `show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示当前滚动条视图 |
+| `cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'line'` | 两种视图的当前行样式；`dots` 在基础滚动条中使用细线 |
+| `cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
+| `cursor.width` | `integer` | `1` | 当前行细线宽度 |
+| `cursor.symbol` | `string` | `'▕'` | 当前行细线字符 |
+| `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
 | `excluded_filetypes` | `string[]` | 见完整配置 | 不显示滚动条的 filetype |
 | `excluded_buftypes` | `string[]` | 见完整配置 | 不显示滚动条的 buftype |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
@@ -212,22 +220,16 @@ require('vv-scrollbar').setup({
 | `map_view.include_whitespace` | `boolean` | `false` | 把空白字符也绘制为地图点 |
 | `map_view.debounce_ms` | `integer` | `150` | buffer 变化后重建地图的延迟 |
 | `map_view.max_lines` | `integer` | `50000` | 超过该行数时回退经典滚动条 |
-| `map_view.show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示地图 |
 | `map_view.preserve_map_under_thumb` | `boolean` | `true` | thumb 背景下继续显示地图字符 |
-| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'overlay'` | marker 浮在地图上，或保留左/右独立 lane |
+| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | marker 浮在地图上，或保留左/右独立 lane |
 | `map_view.marker_lane_width` | `integer` | `2` | 左/右 marker lane 占用的列数 |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 点击 marker 后按精确源代码行定位 |
-| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | 当前行样式；基础滚动条中 `dots` 使用细线，`full` 保留旧整行样式 |
-| `map_view.cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
-| `map_view.cursor.width` | `integer` | `1` | 当前行细线宽度 |
-| `map_view.cursor.symbol` | `string` | `'▎'` | 当前行细线字符 |
 | `map_view.interaction.edge_scroll` | `boolean` | `true` | 拖拽接近地图上下边缘时自动平移 |
 | `map_view.interaction.edge_margin` | `integer` | `2` | 触发边缘平移的地图行数 |
 | `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
 | `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
-| `map_view.interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 出现可见关闭折叠时的行为 |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | diff 窗口的行为 |
@@ -349,16 +351,14 @@ require('vv-scrollbar').setup({
 滚动条跳转和拖拽使用 `vv-utils.scroll.with_auto_suppressed()`，因此即使启用了
 `vv-utils.scroll` 的自动跳转动画，也不会出现先跳到目标、回到旧位置、再动画到目标的回弹
 
-`right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区。
+`interaction.right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区。
 也可以提供函数替换默认动作：
 
 ```lua
-map_view = {
-  interaction = {
-    right_click = function(context)
-      vim.notify(('clicked %s'):format(context.view))
-    end,
-  },
+interaction = {
+  right_click = function(context)
+    vim.notify(('clicked %s'):format(context.view))
+  end,
 }
 ```
 

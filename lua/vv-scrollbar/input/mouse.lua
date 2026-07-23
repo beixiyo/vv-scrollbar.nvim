@@ -122,8 +122,6 @@ local function start_drag(bar, mouse_row)
   -- 等因素影响，可能让源窗口和地图在按下 / 松开时各跳一次
   if click_line then
     geometry.scroll_to_line(bar.parent, click_line, 'center')
-  elseif not in_thumb then
-    scroll_to_row(bar, mouse_row - offset)
   end
   redraw()
 end

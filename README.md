@@ -58,7 +58,17 @@ require('vv-scrollbar').setup({
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
+  show_on_short_buffers = true,
   window_filter = nil,
+  cursor = {
+    style = 'line',
+    side = 'right',
+    width = 1,
+    symbol = '▕',
+  },
+  interaction = {
+    right_click = 'toggle_view',
+  },
 
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
@@ -84,25 +94,17 @@ require('vv-scrollbar').setup({
     debounce_ms = 150,
     max_lines = 50000,
     large_file_behavior = 'scrollbar',
-    show_on_short_buffers = true,
     preserve_map_under_thumb = true,
-    marker_layout = 'overlay',
+    marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
     marker_click = 'center',
-    cursor = {
-      style = 'dots',
-      side = 'right',
-      width = 1,
-      symbol = '▎',
-    },
     interaction = {
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
-      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',
@@ -171,6 +173,12 @@ Every `setup()` call merges its arguments into the defaults from scratch. It doe
 | `min_thumb` | `integer` | `2` | Minimum thumb height; minimum one |
 | `throttle_ms` | `integer` | `30` | Refresh throttle outside direct mouse interaction; zero disables delay |
 | `search_line_limit` | `integer` | `20000` | Skip search projection above this line count |
+| `show_on_short_buffers` | `boolean` | `true` | Keep the active scrollbar view visible when the file does not need scrolling |
+| `cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'line'` | Current-line style in either view; `dots` uses a slim line in the classic scrollbar |
+| `cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
+| `cursor.width` | `integer` | `1` | Width of the slim current-line marker |
+| `cursor.symbol` | `string` | `'▕'` | Character used by the slim current-line marker |
+| `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
 | `excluded_filetypes` | `string[]` | See complete config | Filetypes without scrollbars |
 | `excluded_buftypes` | `string[]` | See complete config | Buftypes without scrollbars |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | Return false to suppress a window |
@@ -200,22 +208,16 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.include_whitespace` | `boolean` | `false` | Render whitespace as map points |
 | `map_view.debounce_ms` | `integer` | `150` | Delay before rebuilding a changed buffer |
 | `map_view.max_lines` | `integer` | `50000` | Fall back to the classic scrollbar above this line count |
-| `map_view.show_on_short_buffers` | `boolean` | `true` | Keep the map visible when the file does not need scrolling |
 | `map_view.preserve_map_under_thumb` | `boolean` | `true` | Preserve preview characters under the thumb background |
-| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'overlay'` | Float markers over the map or reserve a left/right lane |
+| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | Float markers over the map or reserve a left/right lane |
 | `map_view.marker_lane_width` | `integer` | `2` | Width reserved by left/right marker lanes |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker |
-| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | Current-line style; in the classic scrollbar, `dots` uses a slim line and `full` keeps the legacy full-row marker |
-| `map_view.cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
-| `map_view.cursor.width` | `integer` | `1` | Width of the slim current-line marker |
-| `map_view.cursor.symbol` | `string` | `'▎'` | Character used by the slim current-line marker |
 | `map_view.interaction.edge_scroll` | `boolean` | `true` | Pan the map while dragging near its top or bottom edge |
 | `map_view.interaction.edge_margin` | `integer` | `2` | Map rows that activate edge panning |
 | `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
 | `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
-| `map_view.interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while a closed fold is visible |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior for diff windows |
@@ -332,15 +334,13 @@ the cell entirely requires a floating window, which would cover the parent windo
 
 Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so automatic jump animation cannot bounce from the target back to the old position before animating again.
 
-Setting `right_click = false` disables the action while still consuming right-button events over the scrollbar to prevent a native selection. A callback can replace the default action:
+Setting `interaction.right_click = false` disables the action while still consuming right-button events over the scrollbar to prevent a native selection. A callback can replace the default action:
 
 ```lua
-map_view = {
-  interaction = {
-    right_click = function(context)
-      vim.notify(('clicked %s'):format(context.view))
-    end,
-  },
+interaction = {
+  right_click = function(context)
+    vim.notify(('clicked %s'):format(context.view))
+  end,
 }
 ```
 

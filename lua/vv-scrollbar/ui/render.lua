@@ -74,6 +74,57 @@ local function set_marker_hits(bar, row, marker, win_col, marker_width)
   if #hits > 0 then bar.marker_hits[row] = hits end
 end
 
+---@param bar VVScrollbarBar
+---@param buf_row integer
+---@param cfg VVScrollbarConfig
+---@param start_col integer
+---@param width integer
+---@param dots_start_col? integer
+---@param dots_end_col? integer
+local function render_cursor(
+  bar,
+  buf_row,
+  cfg,
+  start_col,
+  width,
+  dots_start_col,
+  dots_end_col
+)
+  local cursor = cfg.cursor
+  if cursor.style == 'hidden' or width <= 0 then return end
+
+  if cursor.style == 'dots'
+      and dots_start_col
+      and dots_end_col
+      and dots_end_col > dots_start_col
+  then
+    api.nvim_buf_set_extmark(bar.buf, ns, buf_row, dots_start_col, {
+      end_col = dots_end_col,
+      hl_group = 'VVScrollbarMapCursor',
+      priority = LAYER_PRIORITY.cursor,
+    })
+    return
+  end
+
+  local full = cursor.style == 'full'
+  local cursor_width = full and width or math.min(cursor.width, width)
+  local symbol = markers.cell(full and cfg.symbols.cursor or cursor.symbol)
+  local win_col = start_col
+    + (not full and cursor.side == 'right' and width - cursor_width or 0)
+
+  api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+    virt_text = {
+      {
+        string.rep(symbol, cursor_width),
+        full and 'VVScrollbarCursor' or 'VVScrollbarMapCursor',
+      },
+    },
+    virt_text_win_col = win_col,
+    hl_mode = 'combine',
+    priority = LAYER_PRIORITY.cursor,
+  })
+end
+
 ---@param parent integer
 ---@param bar VVScrollbarBar
 ---@param viewport table
@@ -182,36 +233,15 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
       end
 
       if row == cursor_row and map_end_col > map_start_col then
-        local cursor = cfg.map_view.cursor
-        if cursor.style == 'dots' then
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, map_start_col, {
-            end_col = map_end_col,
-            hl_group = 'VVScrollbarMapCursor',
-            priority = LAYER_PRIORITY.cursor,
-          })
-        elseif cursor.style == 'line' then
-          local symbol = markers.cell(cursor.symbol)
-          local cursor_width = math.min(cursor.width, map_columns.map_width)
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-            virt_text = { { string.rep(symbol, cursor_width), 'VVScrollbarMapCursor' } },
-            virt_text_win_col = map_columns.map_start_col
-              + (cursor.side == 'right' and map_columns.map_width - cursor_width or 0),
-            hl_mode = 'combine',
-            priority = LAYER_PRIORITY.cursor,
-          })
-        elseif cursor.style == 'full' then
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-            virt_text = {
-              {
-                string.rep(markers.cell(cfg.symbols.cursor), map_columns.map_width),
-                'VVScrollbarCursor',
-              },
-            },
-            virt_text_win_col = map_columns.map_start_col,
-            hl_mode = 'combine',
-            priority = LAYER_PRIORITY.cursor,
-          })
-        end
+        render_cursor(
+          bar,
+          buf_row,
+          cfg,
+          map_columns.map_start_col,
+          map_columns.map_width,
+          map_start_col,
+          map_end_col
+        )
       end
     else
       api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
@@ -223,31 +253,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
       })
 
       if row == cursor_row then
-        local cursor = cfg.map_view.cursor
-        if cursor.style == 'full' then
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-            virt_text = {
-              {
-                string.rep(markers.cell(cfg.symbols.cursor), track_width),
-                'VVScrollbarCursor',
-              },
-            },
-            virt_text_pos = 'overlay',
-            hl_mode = 'combine',
-            priority = LAYER_PRIORITY.cursor,
-          })
-        elseif cursor.style ~= 'hidden' then
-          local symbol = markers.cell(cursor.symbol)
-          local cursor_width = math.min(cursor.width, track_width)
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-            virt_text = { { string.rep(symbol, cursor_width), 'VVScrollbarMapCursor' } },
-            virt_text_win_col = cursor.side == 'right'
-                and track_width - cursor_width
-              or 0,
-            hl_mode = 'combine',
-            priority = LAYER_PRIORITY.cursor,
-          })
-        end
+        render_cursor(bar, buf_row, cfg, 0, track_width)
       end
     end
 
@@ -269,12 +275,8 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
         hl_mode = 'combine',
         priority = marker.priority,
       }
-      if has_map_view then
-        extmark.virt_text_win_col = win_col
-        set_marker_hits(bar, row, marker, win_col, marker_width)
-      else
-        extmark.virt_text_pos = 'overlay'
-      end
+      extmark.virt_text_win_col = win_col
+      set_marker_hits(bar, row, marker, win_col, marker_width)
       api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, extmark)
     end
   end

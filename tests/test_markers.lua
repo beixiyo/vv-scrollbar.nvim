@@ -31,10 +31,7 @@ state.git_marks[0] = {
 }
 
 local viewport = { buf = 0, line_count = 100, height = 20 }
-local map_marker = markers.collect(0, viewport, {
-  cursor = false,
-  track_width = 8,
-})[0]
+local map_marker = markers.collect(0, viewport, { track_width = 8 })[0]
 assert(#map_marker.chunks == 2, 'map width did not preserve staged and unstaged Git tracks')
 assert(#map_marker.hits == 2, 'dual Git tracks did not expose independent hit targets')
 assert(
@@ -50,10 +47,7 @@ assert(
   'unstaged Git track lost its source line or relative hit span'
 )
 
-local narrow_marker = markers.collect(0, viewport, {
-  cursor = false,
-  track_width = 1,
-})[0]
+local narrow_marker = markers.collect(0, viewport, { track_width = 1 })[0]
 assert(#narrow_marker.chunks == 1, 'one-cell track did not merge Git channels')
 assert(
   #narrow_marker.hits == 1 and narrow_marker.hits[1].source_line == 2,

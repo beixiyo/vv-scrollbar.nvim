@@ -47,7 +47,7 @@ local function should_show(win)
   if vim.wo[win].winfixbuf then return false end
   if geometry.win_height(win) <= 0 or api.nvim_win_get_width(win) <= 0 then return false end
 
-  if map_view.resolve_mode(win, buf) and cfg.map_view.show_on_short_buffers then return true end
+  if cfg.show_on_short_buffers then return true end
   if vim.w[win].vv_scrollbar_always_show then return true end
 
   local line_count = api.nvim_buf_line_count(buf)

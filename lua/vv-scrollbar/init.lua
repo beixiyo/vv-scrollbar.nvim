@@ -49,12 +49,12 @@ local function refresh_colors()
   refresh()
 end
 
----@return 'map_view'|'scrollbar'
+---@return boolean map_view_enabled
 function M.toggle_view()
   local map_config = config.current().map_view
   map_config.enabled = not map_config.enabled
   refresh()
-  return map_config.enabled and 'map_view' or 'scrollbar'
+  return map_config.enabled
 end
 
 function M.enable()

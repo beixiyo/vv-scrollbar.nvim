@@ -33,11 +33,11 @@ local M = {}
 ---@field quickfix boolean 是否显示 quickfix / loclist @default true
 ---@field cursor boolean 是否显示光标位置 @default true
 
----@class VVScrollbarMapViewCursorConfig
----@field style 'dots'|'line'|'full'|'hidden' 当前行样式 @default 'dots'
+---@class VVScrollbarCursorConfig
+---@field style 'dots'|'line'|'full'|'hidden' 当前行样式 @default 'line'
 ---@field side 'left'|'right' 细线所在侧 @default 'right'
 ---@field width integer 细线宽度 @default 1
----@field symbol string 细线字符 @default '▎'
+---@field symbol string 细线字符 @default '▕'
 
 ---@class VVScrollbarRightClickContext
 ---@field win integer 源代码窗口
@@ -49,13 +49,15 @@ local M = {}
 
 ---@alias VVScrollbarRightClickAction false|'toggle_view'|fun(context: VVScrollbarRightClickContext)
 
+---@class VVScrollbarInteractionConfig
+---@field right_click VVScrollbarRightClickAction 右键动作；false 关闭动作，自定义函数接收点击上下文 @default 'toggle_view'
+
 ---@class VVScrollbarMapViewInteractionConfig
 ---@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
 ---@field edge_margin integer 触发边缘平移的地图行数 @default 2
 ---@field edge_speed integer 每次边缘平移的最大地图行数 @default 2
 ---@field edge_interval integer 持续边缘平移的时间间隔，单位 ms @default 50
 ---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
----@field right_click VVScrollbarRightClickAction 右键动作；false 关闭动作，自定义函数接收点击上下文 @default 'toggle_view'
 
 ---@class VVScrollbarMapViewDegradationConfig
 ---@field folds 'viewport'|'fit'|'scrollbar' 可见关闭折叠时的降级方式 @default 'fit'
@@ -87,13 +89,11 @@ local M = {}
 ---@field debounce_ms integer 文本变化后重建地图的延迟 @default 150
 ---@field max_lines integer 允许生成地图的最大文件行数 @default 50000
 ---@field large_file_behavior 'scrollbar' 超过行数限制时的降级方式 @default 'scrollbar'
----@field show_on_short_buffers boolean 文件无需滚动时是否仍显示代码地图 @default true
 ---@field preserve_map_under_thumb boolean thumb 是否仅叠加背景并保留地图字符 @default true
----@field marker_layout 'overlay'|'left'|'right' marker 与地图的列布局 @default 'overlay'
+---@field marker_layout 'overlay'|'left'|'right' marker 与地图的列布局 @default 'right'
 ---@field marker_lane_width integer 独立 marker lane 宽度 @default 2
 ---@field marker_position 'left'|'right' marker 浮动侧 @default 'right'
 ---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
----@field cursor VVScrollbarMapViewCursorConfig 当前行样式
 ---@field interaction VVScrollbarMapViewInteractionConfig 鼠标交互配置
 ---@field degradation VVScrollbarMapViewDegradationConfig 特殊窗口降级策略
 ---@field syntax VVScrollbarMapViewSyntaxConfig Tree-sitter 语法着色配置
@@ -106,6 +106,9 @@ local M = {}
 ---@field min_thumb integer thumb 最小高度 @default 2
 ---@field throttle_ms integer UI 刷新节流间隔 @default 30
 ---@field search_line_limit integer 搜索投影最大行数 @default 20000
+---@field show_on_short_buffers boolean 文件无需滚动时是否仍显示当前视图 @default true
+---@field cursor VVScrollbarCursorConfig 当前行样式
+---@field interaction VVScrollbarInteractionConfig 通用鼠标交互配置
 ---@field excluded_filetypes string[] 排除的 filetype @default { 'terminal', 'toggleterm', ... }
 ---@field excluded_buftypes string[] 排除的 buftype @default { 'nofile', 'terminal', 'prompt', 'quickfix' }
 ---@field window_filter? fun(win:integer, buf:integer):boolean 窗口过滤器，返回 false 时隐藏滚动条 @default nil
@@ -229,20 +232,35 @@ function M.apply(opts)
   if not vim.tbl_contains({ 'center', 'top', 'scrollbar' }, current.map_view.marker_click) then
     current.map_view.marker_click = defaults.map_view.marker_click
   end
-  if not vim.tbl_contains({ 'dots', 'line', 'full', 'hidden' }, current.map_view.cursor.style) then
-    current.map_view.cursor.style = defaults.map_view.cursor.style
+  if type(current.cursor) ~= 'table' then current.cursor = vim.deepcopy(defaults.cursor) end
+  if not vim.tbl_contains({ 'dots', 'line', 'full', 'hidden' }, current.cursor.style) then
+    current.cursor.style = defaults.cursor.style
   end
-  if current.map_view.cursor.side ~= 'left' then
-    current.map_view.cursor.side = 'right'
+  if current.cursor.side ~= 'left' then
+    current.cursor.side = 'right'
   end
-  current.map_view.cursor.width = positive_integer(
-    current.map_view.cursor.width,
-    defaults.map_view.cursor.width
+  current.cursor.width = positive_integer(
+    current.cursor.width,
+    defaults.cursor.width
   )
-  if type(current.map_view.cursor.symbol) ~= 'string'
-      or current.map_view.cursor.symbol == ''
+  if type(current.cursor.symbol) ~= 'string'
+      or current.cursor.symbol == ''
   then
-    current.map_view.cursor.symbol = defaults.map_view.cursor.symbol
+    current.cursor.symbol = defaults.cursor.symbol
+  end
+  if type(current.show_on_short_buffers) ~= 'boolean' then
+    current.show_on_short_buffers = defaults.show_on_short_buffers
+  end
+  if type(current.interaction) ~= 'table' then
+    current.interaction = vim.deepcopy(defaults.interaction)
+  end
+  local global_interaction = current.interaction
+  local default_global_interaction = defaults.interaction
+  if global_interaction.right_click ~= false
+      and global_interaction.right_click ~= 'toggle_view'
+      and type(global_interaction.right_click) ~= 'function'
+  then
+    global_interaction.right_click = default_global_interaction.right_click
   end
   local interaction = current.map_view.interaction
   local default_interaction = defaults.map_view.interaction
@@ -263,12 +281,6 @@ function M.apply(opts)
   )
   if type(interaction.snap_to_edges) ~= 'boolean' then
     interaction.snap_to_edges = default_interaction.snap_to_edges
-  end
-  if interaction.right_click ~= false
-      and interaction.right_click ~= 'toggle_view'
-      and type(interaction.right_click) ~= 'function'
-  then
-    interaction.right_click = default_interaction.right_click
   end
   local degradation = current.map_view.degradation
   local default_degradation = defaults.map_view.degradation

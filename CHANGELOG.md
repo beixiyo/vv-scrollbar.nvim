@@ -5,6 +5,7 @@
 ### Breaking Changes
 
 - `highlights.hover` 重命名为 `highlights.active`；按下 thumb 时立即生效，并在拖拽期间保持
+- `map_view.cursor`、`map_view.show_on_short_buffers` 与 `map_view.interaction.right_click` 移到顶层 `cursor`、`show_on_short_buffers` 与 `interaction.right_click`
 
 ### Added
 
@@ -22,10 +23,11 @@
 
 ### Changed
 
+- 默认使用右侧 marker lane 与右侧 `▕` 当前行细线，并将共享 cursor、右键和短文件显示配置移到顶层
 - map view 默认改为固定比例的可滚动 `viewport`，并保留 `fit` 兼容模式
 - source viewport、地图切片和绝对 thumb 坐标保持同步，短文件不再纵向拉伸
 - 同一 buffer 的多个窗口分别维护 map viewport、thumb 与窗口生命周期
-- map view 当前行默认只改变已有 Braille dots 的颜色，不再占用额外列或覆盖 Git marker
+- map view 当前行支持 Braille dots 着色或独立细线，不再覆盖 Git marker
 - map view 当前行改用更明亮的默认蓝色，并允许独立配置分栏融合色
 - 父窗口与 map view 之间的 split 分隔列默认融入地图背景，关闭时恢复原高亮
 - 将窗口生命周期、extmark 渲染和刷新编排拆分为独立模块
@@ -35,6 +37,7 @@
 
 ### Fixed
 
+- 基础滚动条 marker 现在遵循左右位置配置并保留精确点击目标；短文件切换形态后不再丢失滚动条
 - 基础滚动条复用细线 cursor 样式，点击轨道时按投影源代码行精确放置光标
 - 点击 map-view 轨道或 marker 后将 cursor 精确落到对应源代码行，拖拽与滚轮仍只滚动视口
 - map-view 上的滚轮事件改为滚动对应源窗口，不再滚走绘制内容

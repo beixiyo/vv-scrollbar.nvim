@@ -137,8 +137,8 @@ local runtime_config = scrollbar.get_config()
 runtime_config.markers.git = true
 runtime_config.markers.cursor = true
 runtime_config.map_view.marker_layout = 'right'
-runtime_config.map_view.cursor.style = 'line'
-runtime_config.map_view.cursor.symbol = '▕'
+runtime_config.cursor.style = 'line'
+runtime_config.cursor.symbol = '▕'
 scrollbar.setup(runtime_config)
 local geometry = require('vv-scrollbar.core.geometry')
 
