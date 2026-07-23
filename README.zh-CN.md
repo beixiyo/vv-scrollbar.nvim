@@ -8,7 +8,7 @@
 
 想要我的 Neovim 配置？查看 <a href="https://github.com/beixiyo/dotfiles">dotfiles</a>
 
-  <em>Neovim 自绘滚动条 — 完整轨道、点击跳转、原生拖拽与代码状态标记</em>
+  <em>以完整交互式滚动条实现的 VS Code 风格 Neovim Minimap</em>
 
 <br />
 
@@ -26,11 +26,29 @@
 
 ## 特性
 
-在 Neovim 中提供类似 VSCode Minimap 的代码滚动地图体验：
+目标是在 Neovim 中提供尽可能接近 VS Code Minimap 的完整交互体验：
 
 - 点击地图或标记快速跳转
 - 拖拽可视区域滚动代码
 - 在地图区域使用鼠标滚轮滚动对应源窗口
+
+## 灵感与区别
+
+代码地图的方向受到
+[Isrothy/neominimap.nvim](https://github.com/Isrothy/neominimap.nvim) 启发。它是一款可扩展的
+Minimap 插件，也证明了 Braille 字符很适合在 Neovim 中呈现代码结构
+
+两款插件的侧重点不同：
+
+| | vv-scrollbar.nvim | neominimap.nvim |
+|---|---|---|
+| 核心定位 | 能完整充当滚动条的 Minimap | 可扩展的代码结构 Minimap |
+| 鼠标交互 | 直接点击轨道与 marker、按住并拖拽 viewport、滚轮滚动源窗口、可配置右键动作 | 可选的点击聚焦与 cursor 同步 |
+| 可视区域 | 地图上叠加可拖拽 thumb，接近 VS Code 的 Minimap slider | 将源窗口 cursor 投影到 Minimap |
+| 设计取向 | 每个源窗口独立附着分屏，可随时切换 map view 与经典滚动条 | 支持浮窗与分屏、自定义 handler、焦点控制及 statusline 组件 |
+
+因此，`vv-scrollbar.nvim` 更强调“滚动条”：地图不只是代码预览，也是导航和滚动源窗口的
+主要交互界面
 
 ## 安装
 
@@ -156,20 +174,20 @@ require('vv-scrollbar').setup({
   },
 
   highlights = {
-    track = { bg = '#20242b' },
-    separator = { fg = '#20242b', bg = '#20242b' },
-    map_view = { fg = '#565f89' },
-    map_cursor = { fg = '#7aa2f7' },
-    thumb = { bg = '#3b4252' },
-    active = { bg = '#5b6478' },
-    cursor = { fg = '#7aa2f7' },
-    search = { fg = '#ff9e64' },
-    mark = { fg = '#bb9af7' },
-    quickfix = { fg = '#e0af68' },
-    diag_error = { fg = '#f7768e' },
-    diag_warn = { fg = '#e0af68' },
-    diag_info = { fg = '#7dcfff' },
-    diag_hint = { fg = '#1abc9c' },
+    track = { bg = 'bg' },
+    separator = { fg = 'bg', bg = 'bg' },
+    map_view = { link = 'Comment' },
+    map_cursor = { link = 'CursorLineNr' },
+    thumb = { link = 'CursorLine' },
+    active = { link = 'Visual' },
+    cursor = { link = 'CursorLineNr' },
+    search = { link = 'Search' },
+    mark = { link = 'Special' },
+    quickfix = { link = 'QuickFixLine' },
+    diag_error = { link = 'DiagnosticError' },
+    diag_warn = { link = 'DiagnosticWarn' },
+    diag_info = { link = 'DiagnosticInfo' },
+    diag_hint = { link = 'DiagnosticHint' },
   },
 })
 ```
@@ -316,10 +334,12 @@ quickfix / loclist > mark > 搜索
 | `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint 诊断 |
 
 Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`、
-`VVGitModified`、`VVGitDeleted`。所有高亮会在 `ColorScheme` 后重新注册
+`VVGitModified`、`VVGitDeleted`。默认配置链接 Neovim 语义高亮组，并在
+`ColorScheme` 后重新注册，因此会自动跟随当前主题
 
-`highlights` 中的每一项都接受标准 `vim.api.nvim_set_hl()` 配置。若使用主题色板，
-可以在插件管理配置中读取当前主题后传入，例如：
+`highlights` 中的每一项都接受标准 `vim.api.nvim_set_hl()` 配置。传入不含 `link`
+的具体样式时，会移除继承的语义链接。若使用主题色板，可以在插件管理配置中读取当前
+主题后传入，例如：
 
 ```lua
 local p = require('tools.palette').get()

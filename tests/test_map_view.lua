@@ -72,12 +72,24 @@ assert(
 )
 assert(
   api.nvim_get_hl(0, { name = 'VVScrollbarMapCursor' }).fg == 0xabcdef,
-  'custom map cursor color was not registered'
+  'custom map cursor color was shadowed by its default semantic link'
 )
 local separator_hl = api.nvim_get_hl(0, { name = 'VVScrollbarSeparator' })
 assert(
   separator_hl.fg == 0x123456 and separator_hl.bg == 0x123456,
   'custom separator color was not registered'
+)
+assert(
+  api.nvim_get_hl(0, { name = 'VVScrollbarMapView', link = true }).link == 'Comment',
+  'default map view highlight does not follow Comment'
+)
+assert(
+  api.nvim_get_hl(0, { name = 'VVScrollbarThumb', link = true }).link == 'CursorLine',
+  'default thumb highlight does not follow CursorLine'
+)
+assert(
+  api.nvim_get_hl(0, { name = 'VVScrollbarActive', link = true }).link == 'Visual',
+  'default active highlight does not follow Visual'
 )
 
 local map_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
