@@ -2,18 +2,9 @@ local api = vim.api
 local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
+local projection = require('vv-scrollbar.core.projection')
 
 local M = {}
-
----@param value number
----@param min number
----@param max number
----@return number
-function M.clamp(value, min, max)
-  if value < min then return min end
-  if value > max then return max end
-  return value
-end
 
 ---@param list any[]?
 ---@param value any
@@ -47,27 +38,6 @@ function M.is_ordinary_window(win)
   return ok and (win_config.relative or '') == ''
 end
 
----@param line integer
----@param line_count integer
----@param height integer
----@return integer
-function M.line_to_row(line, line_count, height)
-  if line_count <= 1 or height <= 1 then return 0 end
-  local row = math.floor(((line - 1) / math.max(line_count - 1, 1)) * (height - 1) + 0.5)
-  return M.clamp(row, 0, height - 1)
-end
-
----@param row integer
----@param line_count integer
----@param height integer
----@return integer
-function M.row_to_line(row, line_count, height)
-  if line_count <= 1 or height <= 1 then return 1 end
-  local ratio = M.clamp(row, 0, height - 1) / (height - 1)
-  local line = math.floor(ratio * (line_count - 1) + 1.5)
-  return M.clamp(line, 1, line_count)
-end
-
 ---@param win integer
 ---@return table
 function M.viewport(win)
@@ -78,7 +48,11 @@ function M.viewport(win)
   local visible = math.max(botline - topline + 1, 1)
   local height = M.win_height(win)
   local thumb_height = math.floor(height * visible / math.max(line_count, 1) + 0.5)
-  thumb_height = M.clamp(thumb_height, math.min(config.current().min_thumb, height), height)
+  thumb_height = projection.clamp(
+    thumb_height,
+    math.min(config.current().min_thumb, height),
+    height
+  )
 
   local max_row = math.max(height - thumb_height, 0)
   local max_top = math.max(line_count - visible, 1)
@@ -94,7 +68,7 @@ function M.viewport(win)
     botline = botline,
     visible = visible,
     height = height,
-    thumb_row = M.clamp(row, 0, max_row),
+    thumb_row = projection.clamp(row, 0, max_row),
     thumb_height = thumb_height,
     max_row = max_row,
     max_top = max_top,
@@ -106,7 +80,7 @@ end
 ---@return integer
 function M.bar_row_to_line(win, row)
   local viewport = M.viewport(win)
-  return M.row_to_line(row, viewport.line_count, viewport.height)
+  return projection.row_to_line(row, viewport.line_count, viewport.height)
 end
 
 ---@param win integer
@@ -120,11 +94,11 @@ local function set_topline(win, target, cursor_anchor, preferred_cursor_line)
     local cursor = api.nvim_win_get_cursor(win)
     local initial_line = cursor[1]
     local line_count = api.nvim_buf_line_count(0)
-    target = M.clamp(target, 1, line_count)
+    target = projection.clamp(target, 1, line_count)
 
     if cursor_anchor then
       if preferred_cursor_line then
-        local cursor_line = M.clamp(preferred_cursor_line, 1, line_count)
+        local cursor_line = projection.clamp(preferred_cursor_line, 1, line_count)
         vim.cmd('keepjumps normal! ' .. cursor_line .. 'Gzz')
       else
         vim.cmd('keepjumps normal! ' .. target .. 'Gzt')
@@ -132,7 +106,11 @@ local function set_topline(win, target, cursor_anchor, preferred_cursor_line)
           vim.cmd('keepjumps normal! Gzb')
         end
 
-        local screen_row = M.clamp(cursor_anchor.screen_row, 1, math.max(M.win_height(win), 1))
+        local screen_row = projection.clamp(
+          cursor_anchor.screen_row,
+          1,
+          math.max(M.win_height(win), 1)
+        )
         vim.cmd('keepjumps normal! ' .. screen_row .. 'H')
       end
 
@@ -194,7 +172,7 @@ function M.scroll_to_bar_row(win, row, cursor_anchor)
   local viewport = M.viewport(win)
   local target = 1
   if viewport.max_row > 0 then
-    local ratio = M.clamp(row, 0, viewport.max_row) / viewport.max_row
+    local ratio = projection.clamp(row, 0, viewport.max_row) / viewport.max_row
     target = math.floor(ratio * viewport.max_top + 1.5)
   end
 
@@ -226,7 +204,7 @@ function M.set_cursor_line(win, line)
   if not api.nvim_win_is_valid(win) then return end
 
   local line_count = api.nvim_buf_line_count(api.nvim_win_get_buf(win))
-  local target = M.clamp(line, 1, line_count)
+  local target = projection.clamp(line, 1, line_count)
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()
     pcall(api.nvim_win_set_cursor, win, { target, 0 })
@@ -256,7 +234,7 @@ end
 function M.screenrow_to_bar_row(win, screenrow)
   local row = M.screenrow_to_bar_row_raw(win, screenrow)
   if row == nil then return nil end
-  return M.clamp(row, 0, math.max(M.win_height(win) - 1, 0))
+  return projection.clamp(row, 0, math.max(M.win_height(win) - 1, 0))
 end
 
 return M

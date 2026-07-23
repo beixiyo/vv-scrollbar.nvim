@@ -53,6 +53,7 @@ local M = {}
 ---@class VVScrollbarInteractionConfig
 ---@field right_click VVScrollbarRightClickAction 右键动作；false 关闭动作，自定义函数接收点击上下文 @default 'toggle_view'
 ---@field cursor_on_drag VVScrollbarDragCursorMode 拖拽时让 cursor 跟随视口或尽量保留原行 @default 'follow'
+---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
 
 ---@class VVScrollbarMapViewInteractionConfig
 ---@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
@@ -95,7 +96,6 @@ local M = {}
 ---@field marker_layout 'overlay'|'left'|'right' marker 与地图的列布局 @default 'right'
 ---@field marker_lane_width integer 独立 marker lane 宽度 @default 2
 ---@field marker_position 'left'|'right' marker 浮动侧 @default 'right'
----@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
 ---@field interaction VVScrollbarMapViewInteractionConfig 鼠标交互配置
 ---@field degradation VVScrollbarMapViewDegradationConfig 特殊窗口降级策略
 ---@field syntax VVScrollbarMapViewSyntaxConfig Tree-sitter 语法着色配置
@@ -231,9 +231,6 @@ function M.apply(opts)
   if current.map_view.marker_position ~= 'left' then
     current.map_view.marker_position = 'right'
   end
-  if not vim.tbl_contains({ 'center', 'top', 'scrollbar' }, current.map_view.marker_click) then
-    current.map_view.marker_click = defaults.map_view.marker_click
-  end
   if type(current.cursor) ~= 'table' then current.cursor = vim.deepcopy(defaults.cursor) end
   if not vim.tbl_contains({ 'dots', 'line', 'full', 'hidden' }, current.cursor.style) then
     current.cursor.style = defaults.cursor.style
@@ -266,6 +263,9 @@ function M.apply(opts)
   end
   if not vim.tbl_contains({ 'follow', 'keep' }, global_interaction.cursor_on_drag) then
     global_interaction.cursor_on_drag = default_global_interaction.cursor_on_drag
+  end
+  if not vim.tbl_contains({ 'center', 'top', 'scrollbar' }, global_interaction.marker_click) then
+    global_interaction.marker_click = default_global_interaction.marker_click
   end
   local interaction = current.map_view.interaction
   local default_interaction = defaults.map_view.interaction

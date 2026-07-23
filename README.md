@@ -69,6 +69,7 @@ require('vv-scrollbar').setup({
   interaction = {
     right_click = 'toggle_view',
     cursor_on_drag = 'follow',
+    marker_click = 'center',
   },
 
   excluded_filetypes = {
@@ -99,7 +100,6 @@ require('vv-scrollbar').setup({
     marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
-    marker_click = 'center',
     interaction = {
       edge_scroll = true,
       edge_margin = 2,
@@ -181,6 +181,7 @@ Every `setup()` call merges its arguments into the defaults from scratch. It doe
 | `cursor.symbol` | `string` | `'▕'` | Character used by the slim current-line marker |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
 | `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | Keep the cursor on the same source-window screen row while dragging, or preserve its source line when possible |
+| `interaction.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker in either view |
 | `excluded_filetypes` | `string[]` | See complete config | Filetypes without scrollbars |
 | `excluded_buftypes` | `string[]` | See complete config | Buftypes without scrollbars |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | Return false to suppress a window |
@@ -214,7 +215,6 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | Float markers over the map or reserve a left/right lane |
 | `map_view.marker_lane_width` | `integer` | `2` | Width reserved by left/right marker lanes |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
-| `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker |
 | `map_view.interaction.edge_scroll` | `boolean` | `true` | Pan the map while dragging near its top or bottom edge |
 | `map_view.interaction.edge_margin` | `integer` | `2` | Map rows that activate edge panning |
 | `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |

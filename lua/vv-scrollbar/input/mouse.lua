@@ -224,7 +224,7 @@ local function on_key(key, typed)
     if row == nil then return nil end
 
     local marker = view.marker_at(bar, row, position.screencol)
-    local marker_click = config.current().map_view.marker_click
+    local marker_click = config.current().interaction.marker_click
     if marker and marker_click ~= 'scrollbar' then
       geometry.scroll_to_line(bar.parent, marker.source_line, marker_click)
       geometry.set_cursor_line(bar.parent, marker.source_line)

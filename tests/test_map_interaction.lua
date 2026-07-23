@@ -17,7 +17,8 @@ assert(
 )
 assert(
   config.current().interaction.right_click == 'toggle_view'
-    and config.current().interaction.cursor_on_drag == 'follow',
+    and config.current().interaction.cursor_on_drag == 'follow'
+    and config.current().interaction.marker_click == 'center',
   'shared interaction defaults are incomplete'
 )
 assert(
@@ -97,6 +98,7 @@ local sanitized = config.apply({
   interaction = {
     right_click = 'invalid',
     cursor_on_drag = 'invalid',
+    marker_click = 'invalid',
   },
 })
 local sanitized_interaction = sanitized.map_view.interaction
@@ -107,7 +109,8 @@ assert(
     and sanitized_interaction.edge_interval == 1
     and sanitized_interaction.snap_to_edges
     and sanitized.interaction.right_click == 'toggle_view'
-    and sanitized.interaction.cursor_on_drag == 'follow',
+    and sanitized.interaction.cursor_on_drag == 'follow'
+    and sanitized.interaction.marker_click == 'center',
   'invalid viewport interaction options were not normalized'
 )
 
@@ -132,9 +135,13 @@ assert(right_click_options.right_click == false, 'disabled right-click action wa
 local kept_cursor = config.apply({
   interaction = {
     cursor_on_drag = 'keep',
+    marker_click = 'top',
   },
 }).interaction
-assert(kept_cursor.cursor_on_drag == 'keep', 'keep cursor drag mode was not preserved')
+assert(
+  kept_cursor.cursor_on_drag == 'keep' and kept_cursor.marker_click == 'top',
+  'shared marker and cursor interaction modes were not preserved'
+)
 
 local invalid_shared = config.apply({
   cursor = false,
@@ -145,6 +152,7 @@ assert(
   invalid_shared.cursor.style == 'line'
     and invalid_shared.interaction.right_click == 'toggle_view'
     and invalid_shared.interaction.cursor_on_drag == 'follow'
+    and invalid_shared.interaction.marker_click == 'center'
     and invalid_shared.show_on_short_buffers,
   'invalid shared options were not normalized'
 )
