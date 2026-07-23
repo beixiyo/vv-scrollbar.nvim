@@ -60,7 +60,7 @@
 ```
 
 需要 Neovim `0.11+`。滚动条是一个 `style = 'minimal'` 的分屏窗口；鼠标交互完全由
-`vim.on_key()` 拦截 `<LeftMouse>`/`<LeftDrag>`/`<LeftRelease>`，再用 `getmousepos()`
+`vim.on_key()` 拦截左键按下、拖拽、松开事件（包括快速多击），再用 `getmousepos()`
 的屏幕坐标命中滚动条实现
 
 ## 完整配置

@@ -57,7 +57,7 @@ The two cells in a normal file window carry independent Git states. The left cel
 }
 ```
 
-Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts `<LeftMouse>`/`<LeftDrag>`/`<LeftRelease>` and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
+Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts left-button press/drag/release events, including rapid multi-clicks, and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
 
 ## Complete configuration
 
