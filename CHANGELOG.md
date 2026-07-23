@@ -11,6 +11,8 @@
 - marker 精确源代码行点击，以及右侧固定窗口列浮动布局
 - marker overlay、左侧 lane、右侧 lane 三种布局
 - folds、wrap、diff 的窗口级 `viewport` / `fit` / `scrollbar` 降级策略
+- Tree-sitter capture 语法着色、injected language 与可配置 capture 映射
+- 语法着色过载保护：大文件可退回单色地图或经典滚动条，高亮片段过多或处理过久时退回单色地图
 - `make test` 一键运行全部 headless 测试
 
 ### Changed
@@ -24,6 +26,7 @@
 - 将窗口生命周期、extmark 渲染和刷新编排拆分为独立模块
 - map cache 改为模块私有状态，避免污染全局运行状态
 - marker 优先级集中为具名常量
+- map cache 使用逐尺寸 generation token 取消过期重建，并在 `ColorScheme` 后刷新语法调色板
 
 ### Fixed
 

@@ -67,6 +67,11 @@
 ---@field marker_start_col integer
 ---@field marker_width integer
 
+---@class VVScrollbarMapHighlight
+---@field start_col integer
+---@field end_col integer
+---@field hl_group string
+
 local M = {
   enabled = false,
   did_setup = false,

@@ -5,6 +5,18 @@ local M = {}
 
 local cache_by_buf = {}
 local pending_by_buf = {}
+local generation_by_buf = {}
+
+---@param capture_map table<string,string|false>?
+---@return string
+local function capture_map_key(capture_map)
+  local entries = {}
+  for capture, group in pairs(capture_map or {}) do
+    entries[#entries + 1] = capture .. '=' .. tostring(group)
+  end
+  table.sort(entries)
+  return table.concat(entries, ',')
+end
 
 ---@param buf integer
 ---@param height integer
@@ -22,6 +34,14 @@ local function cache_key(buf, height, width, opts)
     opts.max_lines_per_dot,
     tab_width,
     opts.include_whitespace and 1 or 0,
+    vim.bo[buf].filetype,
+    opts.syntax and opts.syntax.enabled and 1 or 0,
+    opts.syntax and opts.syntax.max_lines or 0,
+    opts.syntax and opts.syntax.max_bytes or 0,
+    opts.syntax and opts.syntax.max_captures or 0,
+    opts.syntax and opts.syntax.max_time_ms or 0,
+    opts.syntax and opts.syntax.fallback or 'mono',
+    capture_map_key(opts.syntax and opts.syntax.capture_map),
   }, ':')
 end
 
@@ -43,11 +63,13 @@ end
 ---@param height integer
 ---@param width integer
 ---@param opts VVScrollbarMapViewConfig
----@return { tick: integer, lines: string[] }
+---@return { tick: integer, lines: string[], highlights: table<integer,VVScrollbarMapHighlight[]> }
 local function render_and_store(buf, key, height, width, opts)
+  local lines, highlights = renderer.render(buf, height, width, opts)
   local entry = {
     tick = api.nvim_buf_get_changedtick(buf),
-    lines = renderer.render(buf, height, width, opts),
+    lines = lines,
+    highlights = highlights,
   }
   cache_by_buf[buf] = cache_by_buf[buf] or {}
   cache_by_buf[buf][key] = entry
@@ -70,11 +92,26 @@ local function schedule_rebuild(buf, key, tick, height, width, opts, refresh)
   local timer = vim.uv.new_timer()
   if not timer then return end
 
+  generation_by_buf[buf] = generation_by_buf[buf] or {}
+  local generation = (generation_by_buf[buf][key] or 0) + 1
+  generation_by_buf[buf][key] = generation
   pending_by_buf[buf] = pending_by_buf[buf] or {}
-  pending_by_buf[buf][key] = { timer = timer, tick = tick }
+  pending_by_buf[buf][key] = {
+    timer = timer,
+    tick = tick,
+    generation = generation,
+  }
   timer:start(opts.debounce_ms, 0, vim.schedule_wrap(function()
+    local pending = pending_by_buf[buf] and pending_by_buf[buf][key]
+    if not pending or pending.generation ~= generation then return end
     stop_pending(buf, key)
-    if not api.nvim_buf_is_valid(buf) then return end
+    if not api.nvim_buf_is_valid(buf)
+        or not generation_by_buf[buf]
+        or generation_by_buf[buf][key] ~= generation
+        or api.nvim_buf_get_changedtick(buf) ~= tick
+    then
+      return
+    end
 
     render_and_store(buf, key, height, width, opts)
     refresh()
@@ -88,6 +125,7 @@ end
 ---@param refresh fun()
 ---@return string[]
 ---@return string
+---@return table<integer,VVScrollbarMapHighlight[]>
 function M.get(buf, height, width, opts, refresh)
   local key = cache_key(buf, height, width, opts)
   local tick = api.nvim_buf_get_changedtick(buf)
@@ -99,7 +137,9 @@ function M.get(buf, height, width, opts, refresh)
     schedule_rebuild(buf, key, tick, height, width, opts, refresh)
   end
 
-  return cached.lines, table.concat({ buf, key, cached.tick }, ':')
+  return cached.lines,
+    table.concat({ buf, key, cached.tick }, ':'),
+    cached.highlights
 end
 
 ---@param buf integer
@@ -110,6 +150,7 @@ function M.clear(buf)
     for _, key in ipairs(keys) do stop_pending(buf, key) end
   end
   cache_by_buf[buf] = nil
+  generation_by_buf[buf] = nil
 end
 
 function M.clear_all()

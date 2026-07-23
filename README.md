@@ -120,6 +120,18 @@ require('vv-scrollbar').setup({
       wrap = 'viewport',
       diff = 'fit',
     },
+    syntax = {
+      enabled = true,
+      max_lines = 2000,
+      max_bytes = 524288,
+      max_captures = 30000,
+      max_time_ms = 100,
+      fallback = 'mono',
+      capture_map = {
+        -- keyword = 'Keyword',
+        -- comment = false,
+      },
+    },
   },
 
   markers = {
@@ -217,14 +229,18 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while a closed fold is visible |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior for diff windows |
+| `map_view.syntax.enabled` | `boolean` | `true` | Color map cells from Tree-sitter captures |
+| `map_view.syntax.max_lines` | `integer` | `2000` | Maximum lines for syntax coloring; zero disables the limit |
+| `map_view.syntax.max_bytes` | `integer` | `524288` | Maximum bytes for syntax coloring; zero disables the limit |
+| `map_view.syntax.max_captures` | `integer` | `30000` | Maximum Tree-sitter highlight captures read per rebuild; exceeding it makes the whole map use its base color; zero disables the limit |
+| `map_view.syntax.max_time_ms` | `integer` | `100` | Soft limit for reading captures and building color ranges, excluding syntax-tree parsing and Braille rendering; timing out makes the whole map use its base color; zero disables the limit |
+| `map_view.syntax.fallback` | `'mono'\|'scrollbar'` | `'mono'` | When `max_lines` or `max_bytes` is exceeded, keep a monochrome map or disable the map and show the classic scrollbar |
+| `map_view.syntax.capture_map` | `table<string,string\|false>` | `{}` | Override full or root capture names; false uses the base map color |
 
-Map text is cached by buffer content, projection size, and relevant options. Scrolling, cursor
-movement, and thumb dragging reuse the cached text instead of rescanning the source buffer.
-Overlay markers use fixed-window-column virtual text, so right-edge Git tracks do not shift or
-indent the code preview. Left and right lane modes reserve configurable columns instead. The
-default current-line style only recolors existing Braille dots and therefore does
-not compete with Git markers on the same projected row. Clicking a visible marker uses its exact
-source line instead of the proportional scrollbar coordinate.
+Map content is cached by buffer and projection settings, so scrolling and dragging do not rescan
+source code. Syntax colors follow the active Tree-sitter theme and include injected languages;
+use `capture_map` to override colors or false to keep the base map color. Missing parsers or
+highlight queries, excessive captures, and capture-processing timeouts also use the base color.
 
 ### Per-window control
 

@@ -25,7 +25,31 @@ assert(vim.wait(500, function() return refresh_count == 1 end, 10), 'debounced m
 
 local rebuilt = cache.get(buf, 1, 1, config.current().map_view, function() end)
 assert(rebuilt[1] == ' ', 'debounced map cache kept stale source text')
+
 cache.clear(buf)
+api.nvim_buf_set_lines(buf, 0, -1, false, { 'xx' })
+cache.get(buf, 1, 1, config.current().map_view, function() end)
+cache.get(buf, 1, 2, config.current().map_view, function() end)
+api.nvim_buf_set_lines(buf, 0, -1, false, { '  ' })
+
+local multi_width_refreshes = 0
+cache.get(buf, 1, 1, config.current().map_view, function()
+  multi_width_refreshes = multi_width_refreshes + 1
+end)
+cache.get(buf, 1, 2, config.current().map_view, function()
+  multi_width_refreshes = multi_width_refreshes + 1
+end)
+assert(
+  vim.wait(500, function() return multi_width_refreshes == 2 end, 10),
+  'generation tokens canceled a valid rebuild for another map width'
+)
+
+api.nvim_buf_set_lines(buf, 0, -1, false, { 'x' })
+cache.get(buf, 1, 1, config.current().map_view, function()
+  error('cleared cache executed a stale rebuild callback')
+end)
+cache.clear(buf)
+vim.wait(200, function() return false end, 10)
 api.nvim_buf_delete(buf, { force = true })
 
-print('PASS: private map cache, stale reuse, debounce rebuild, cleanup')
+print('PASS: stale reuse, per-key generations, cancellation and cache cleanup')

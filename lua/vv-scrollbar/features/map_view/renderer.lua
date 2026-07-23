@@ -2,6 +2,7 @@ local bit = require('bit')
 
 local api = vim.api
 local fn = vim.fn
+local syntax = require('vv-scrollbar.features.map_view.syntax')
 
 local M = {}
 
@@ -48,6 +49,26 @@ local function add_dot(bitmap, dot_row, dot_col)
   return bit.bor(bitmap, bit.lshift(1, dot_bits[dot_row + 1][dot_col + 1]))
 end
 
+---@param colors table
+---@param row integer
+---@param col integer
+---@param hl_group string
+local function add_color(colors, row, col, hl_group)
+  colors[row] = colors[row] or {}
+  local cell = colors[row][col]
+  if not cell then
+    cell = { counts = {}, best = hl_group, best_count = 0 }
+    colors[row][col] = cell
+  end
+
+  local count = (cell.counts[hl_group] or 0) + 1
+  cell.counts[hl_group] = count
+  if count > cell.best_count then
+    cell.best = hl_group
+    cell.best_count = count
+  end
+end
+
 ---@param code integer
 ---@return integer
 local function display_cell_width(code)
@@ -87,10 +108,12 @@ end
 ---@param width integer
 ---@param opts VVScrollbarMapViewConfig
 ---@return string[]
+---@return table<integer,VVScrollbarMapHighlight[]>
 function M.render(buf, height, width, opts)
-  if height <= 0 or width <= 0 or not api.nvim_buf_is_valid(buf) then return {} end
+  if height <= 0 or width <= 0 or not api.nvim_buf_is_valid(buf) then return {}, {} end
 
   local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+  local resolve_syntax = syntax.resolver(buf, lines, opts.syntax)
   local line_count = #lines
   local vertical_points = height * 4
   local x_multiplier = opts.x_multiplier
@@ -100,6 +123,7 @@ function M.render(buf, height, width, opts)
     or opts.tab_width
 
   local bitmap = {}
+  local colors = {}
   for row = 1, height do
     bitmap[row] = {}
     for col = 1, width do bitmap[row][col] = 0 end
@@ -119,6 +143,7 @@ function M.render(buf, height, width, opts)
       local source_row = sample_row(start_row, end_row, sample_count, sample)
       local line = lines[source_row]
       local display_col = 0
+      local byte_col = 0
       for _, code in ipairs(codepoints(line)) do
         local width
         if code == 0x09 then
@@ -130,6 +155,7 @@ function M.render(buf, height, width, opts)
         if display_col >= max_source_col then break end
 
         if width > 0 and (opts.include_whitespace or not is_whitespace(code)) then
+          local hl_group = resolve_syntax(source_row - 1, byte_col)
           local last_col = math.min(display_col + width - 1, max_source_col - 1)
           for source_col = display_col, last_col do
             local map_x = math.floor(source_col / x_multiplier)
@@ -137,10 +163,12 @@ function M.render(buf, height, width, opts)
             local dot_row = map_y % 4
             local dot_col = map_x % 2
             bitmap[map_row][map_col] = add_dot(bitmap[map_row][map_col], dot_row, dot_col)
+            if hl_group then add_color(colors, map_row, map_col, hl_group) end
           end
         end
 
         display_col = display_col + width
+        byte_col = byte_col + #fn.nr2char(code)
       end
     end
 
@@ -148,12 +176,33 @@ function M.render(buf, height, width, opts)
   end
 
   local result = {}
+  local highlights = {}
   for row = 1, height do
     local chars = {}
     for col = 1, width do chars[col] = bitmap_code(bitmap[row][col]) end
     result[row] = fn.list2str(chars)
+
+    local spans = {}
+    local active
+    local span_start = 1
+    for col = 1, width + 1 do
+      local cell = colors[row] and colors[row][col]
+      local hl_group = cell and cell.best or nil
+      if hl_group ~= active then
+        if active then
+          spans[#spans + 1] = {
+            start_col = span_start - 1,
+            end_col = col - 1,
+            hl_group = active,
+          }
+        end
+        active = hl_group
+        span_start = col
+      end
+    end
+    if #spans > 0 then highlights[row] = spans end
   end
-  return result
+  return result, highlights
 end
 
 return M

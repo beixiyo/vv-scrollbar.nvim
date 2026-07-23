@@ -8,7 +8,8 @@ local M = {}
 ---@param schedule_refresh fun()
 ---@param refresh_visible_git fun()
 ---@param refresh_layout fun()
-function M.attach(schedule_refresh, refresh_visible_git, refresh_layout)
+---@param refresh_colors fun()
+function M.attach(schedule_refresh, refresh_visible_git, refresh_layout, refresh_colors)
   state.augroup = api.nvim_create_augroup('VVScrollbar', { clear = true })
 
   local event_refresh_pending = false
@@ -83,6 +84,11 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout)
       refresh_visible_git()
       enqueue_refresh()
     end,
+  })
+
+  api.nvim_create_autocmd('ColorScheme', {
+    group = state.augroup,
+    callback = function() vim.schedule(refresh_colors) end,
   })
 
   api.nvim_create_autocmd('BufWipeout', {

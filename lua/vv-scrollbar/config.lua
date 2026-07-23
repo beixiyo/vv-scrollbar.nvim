@@ -51,6 +51,15 @@ local M = {}
 ---@field wrap 'viewport'|'fit'|'scrollbar' wrap 窗口的降级方式 @default 'viewport'
 ---@field diff 'viewport'|'fit'|'scrollbar' diff 窗口的降级方式 @default 'fit'
 
+---@class VVScrollbarMapViewSyntaxConfig
+---@field enabled boolean 是否使用 Tree-sitter capture 为地图着色 @default true
+---@field max_lines integer 语法着色最大文件行数，0 表示不限制 @default 2000
+---@field max_bytes integer 语法着色最大文件字节数，0 表示不限制 @default 524288
+---@field max_captures integer 一次地图重建最多读取的 Tree-sitter 高亮片段数；超出后整张地图使用基础单色，0 表示不限制 @default 30000
+---@field max_time_ms integer 读取高亮片段并生成颜色区间的软时间上限，不含语法树解析和 Braille 绘制；超时后整张地图使用基础单色，0 表示不限制 @default 100
+---@field fallback 'mono'|'scrollbar' 文件超过 max_lines 或 max_bytes 时保留单色地图或仅显示经典滚动条 @default 'mono'
+---@field capture_map table<string,string|false> capture 名或根类别到高亮组的覆盖，false 表示使用单色 @default {}
+
 ---@class VVScrollbarMapViewConfig
 ---@field enabled boolean 是否显示代码地图 @default true
 ---@field mode 'viewport'|'fit' 地图布局模式 @default 'viewport'
@@ -76,6 +85,7 @@ local M = {}
 ---@field cursor VVScrollbarMapViewCursorConfig 当前行样式
 ---@field interaction VVScrollbarMapViewInteractionConfig 鼠标交互配置
 ---@field degradation VVScrollbarMapViewDegradationConfig 特殊窗口降级策略
+---@field syntax VVScrollbarMapViewSyntaxConfig Tree-sitter 语法着色配置
 
 ---@class VVScrollbarConfig
 ---@field enabled boolean 是否启用 @default true
@@ -250,6 +260,10 @@ function M.apply(opts)
       degradation[key] = default_degradation[key]
     end
   end
+  current.map_view.syntax = require('vv-scrollbar.config.syntax').normalize(
+    current.map_view.syntax,
+    defaults.map_view.syntax
+  )
   current.right_offset = math.max(
     math.floor(tonumber(current.right_offset) or defaults.right_offset),
     0
