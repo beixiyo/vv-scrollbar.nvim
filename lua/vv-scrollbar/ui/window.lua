@@ -104,6 +104,26 @@ function M.create(parent)
   }
 end
 
+---@param parent integer
+---@param bar VVScrollbarBar
+---@return boolean
+function M.is_attached(parent, bar)
+  if not api.nvim_win_is_valid(parent)
+      or not bar.win
+      or not api.nvim_win_is_valid(bar.win)
+  then
+    return false
+  end
+
+  local parent_position = vim.fn.win_screenpos(parent)
+  local bar_position = vim.fn.win_screenpos(bar.win)
+  local expected_col = parent_position[2] + api.nvim_win_get_width(parent) + 1
+
+  return bar_position[1] == parent_position[1]
+    and bar_position[2] == expected_col
+    and api.nvim_win_get_height(bar.win) == api.nvim_win_get_height(parent)
+end
+
 ---@param bar VVScrollbarBar
 function M.close(bar)
   if bar.win and api.nvim_win_is_valid(bar.win) then
