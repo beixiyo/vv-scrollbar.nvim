@@ -4,6 +4,7 @@ local root = vim.fn.fnamemodify(source, ':p:h:h')
 vim.opt.runtimepath:prepend(root)
 
 local layout = require('vv-scrollbar.features.map_view.layout')
+local geometry = require('vv-scrollbar.core.geometry')
 
 local opts = {
   mode = 'viewport',
@@ -78,5 +79,12 @@ local fit = layout.resolve({
 }, { mode = 'fit' })
 assert(fit.content_height == 20 and fit.top_row == 0, 'fit compatibility mode became scrollable')
 assert(fit.thumb_row == 10 and fit.thumb_height == 2, 'fit mode changed classic thumb geometry')
+
+assert(geometry.row_to_line(0, 400, 20) == 1, 'classic projection lost the first line')
+assert(geometry.row_to_line(19, 400, 20) == 400, 'classic projection lost the last line')
+assert(
+  geometry.line_to_row(geometry.row_to_line(10, 400, 20), 400, 20) == 10,
+  'classic row-to-line projection did not round-trip to the clicked row'
+)
 
 print('PASS: viewport scale, source sync, short files, boundaries, resize, fit fallback')

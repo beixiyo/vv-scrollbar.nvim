@@ -45,7 +45,7 @@ Brings a VS Code-like minimap scrolling experience to Neovim:
 }
 ```
 
-Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts left-button press/drag/release and vertical wheel events, including rapid multi-clicks, and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
+Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts button, drag, release, and vertical wheel events, including rapid multi-clicks, and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
 
 ## Complete configuration
 
@@ -102,6 +102,7 @@ require('vv-scrollbar').setup({
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
+      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',
@@ -205,7 +206,7 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.marker_lane_width` | `integer` | `2` | Width reserved by left/right marker lanes |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker |
-| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | Recolor map dots, draw a line, use the legacy full marker, or hide it |
+| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | Current-line style; in the classic scrollbar, `dots` uses a slim line and `full` keeps the legacy full-row marker |
 | `map_view.cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
 | `map_view.cursor.width` | `integer` | `1` | Width of the slim current-line marker |
 | `map_view.cursor.symbol` | `string` | `'▎'` | Character used by the slim current-line marker |
@@ -214,6 +215,7 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
 | `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
+| `map_view.interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while a closed fold is visible |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior for diff windows |
@@ -266,7 +268,7 @@ When several markers project to one row, priority is cursor, diagnostics, Git, q
 | Option | Default | Description |
 |---|---|---|
 | `symbols.thumb` | `' '` | Repeated across the full scrollbar width |
-| `symbols.cursor` | `'█'` | Repeated across the full scrollbar width |
+| `symbols.cursor` | `'█'` | Fill character used by `cursor.style = 'full'` |
 | `symbols.search` | `'•'` | Search match |
 | `symbols.mark` | `'◆'` | Vim mark |
 | `symbols.quickfix` | `'■'` | Quickfix or loclist entry |
@@ -282,10 +284,10 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.track` | `VVScrollbarTrack` | Background track |
 | `highlights.separator` | `VVScrollbarSeparator` | Separator between the file and scrollbar windows |
 | `highlights.map_view` | `VVScrollbarMapView` | Monochrome code-map foreground |
-| `highlights.map_cursor` | `VVScrollbarMapCursor` | Current-line Braille dots or slim line |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` | Current-line Braille dots or slim line in either view |
 | `highlights.thumb` | `VVScrollbarThumb` | Visible range |
 | `highlights.active` | `VVScrollbarActive` | Thumb while pressed or dragged |
-| `highlights.cursor` | `VVScrollbarCursor` | Cursor position |
+| `highlights.cursor` | `VVScrollbarCursor` | Current-line marker used by the `full` style |
 | `highlights.search` | `VVScrollbarSearch` | Search matches |
 | `highlights.mark` | `VVScrollbarMark` | Vim marks |
 | `highlights.quickfix` | `VVScrollbarQuickfix` | Quickfix and loclist |
@@ -320,14 +322,29 @@ the cell entirely requires a floating window, which would cover the parent windo
 
 | Action | Behavior |
 |---|---|
-| Click the track | Center the thumb on the click and jump immediately |
+| Click the track | Center the thumb, jump, and place the cursor on the projected source line |
 | Press the thumb | Keep the current position and immediately use the active color |
 | Drag the thumb | Preserve the grab offset and update the viewport continuously |
 | Hold near the map edge | Keep panning the frozen map viewport at the configured speed |
 | Drag beyond the track | Snap to the beginning or end of the file |
+| Right-click the scrollbar | Toggle between map view and the classic scrollbar |
 | Release or press Esc | End dragging, resume source/map synchronization, and restore the thumb |
 
 Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so automatic jump animation cannot bounce from the target back to the old position before animating again.
+
+Setting `right_click = false` disables the action while still consuming right-button events over the scrollbar to prevent a native selection. A callback can replace the default action:
+
+```lua
+map_view = {
+  interaction = {
+    right_click = function(context)
+      vim.notify(('clicked %s'):format(context.view))
+    end,
+  },
+}
+```
+
+`context` contains the source `win`, `scrollbar_win`, zero-based track `row`, screen coordinates, and the active `view`.
 
 ## Commands
 
@@ -336,6 +353,7 @@ Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so au
 | `:VVScrollbarEnable` | Enable the scrollbar |
 | `:VVScrollbarDisable` | Disable it and close every scrollbar window |
 | `:VVScrollbarToggle` | Toggle the enabled state |
+| `:VVScrollbarToggleView` | Toggle between map view and the classic scrollbar |
 | `:VVScrollbarRefresh` | Reload Git markers for visible files and redraw immediately |
 
 ## Lua API
@@ -347,6 +365,7 @@ scrollbar.setup({ width = 2 })
 scrollbar.enable()
 scrollbar.disable()
 scrollbar.toggle()
+scrollbar.toggle_view()
 
 local current_config = scrollbar.get_config()
 ```

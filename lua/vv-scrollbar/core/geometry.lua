@@ -57,6 +57,17 @@ function M.line_to_row(line, line_count, height)
   return M.clamp(row, 0, height - 1)
 end
 
+---@param row integer
+---@param line_count integer
+---@param height integer
+---@return integer
+function M.row_to_line(row, line_count, height)
+  if line_count <= 1 or height <= 1 then return 1 end
+  local ratio = M.clamp(row, 0, height - 1) / (height - 1)
+  local line = math.floor(ratio * (line_count - 1) + 1.5)
+  return M.clamp(line, 1, line_count)
+end
+
 ---@param win integer
 ---@return table
 function M.viewport(win)
@@ -88,6 +99,14 @@ function M.viewport(win)
     max_row = max_row,
     max_top = max_top,
   }
+end
+
+---@param win integer
+---@param row integer
+---@return integer
+function M.bar_row_to_line(win, row)
+  local viewport = M.viewport(win)
+  return M.row_to_line(row, viewport.line_count, viewport.height)
 end
 
 ---@param win integer

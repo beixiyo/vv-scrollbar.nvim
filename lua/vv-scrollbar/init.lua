@@ -49,6 +49,14 @@ local function refresh_colors()
   refresh()
 end
 
+---@return 'map_view'|'scrollbar'
+function M.toggle_view()
+  local map_config = config.current().map_view
+  map_config.enabled = not map_config.enabled
+  refresh()
+  return map_config.enabled and 'map_view' or 'scrollbar'
+end
+
 function M.enable()
   if state.enabled then return end
 
@@ -56,7 +64,7 @@ function M.enable()
   state.enabled = true
   highlights.setup()
   events.attach(schedule_refresh, refresh_visible_git, refresh, refresh_colors)
-  mouse.attach(refresh)
+  mouse.attach(refresh, M.toggle_view)
   refresh_visible_git()
   schedule_refresh()
 end
@@ -94,6 +102,7 @@ function M.setup(opts)
     api.nvim_create_user_command('VVScrollbarEnable', M.enable, {})
     api.nvim_create_user_command('VVScrollbarDisable', M.disable, {})
     api.nvim_create_user_command('VVScrollbarToggle', M.toggle, {})
+    api.nvim_create_user_command('VVScrollbarToggleView', M.toggle_view, {})
     api.nvim_create_user_command('VVScrollbarRefresh', function()
       refresh_visible_git()
       refresh()

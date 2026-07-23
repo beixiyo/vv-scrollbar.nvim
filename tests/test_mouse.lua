@@ -11,7 +11,11 @@ local scroll_calls = {}
 local cursor_calls = {}
 local wheel_calls = {}
 local viewport_updates = 0
+local right_click_action = 'toggle_view'
+local toggle_view_calls = 0
+local right_click_context
 local bar = {
+  win = 13,
   parent = 12,
   thumb_row = 4,
   thumb_height = 3,
@@ -32,6 +36,7 @@ package.loaded['vv-scrollbar.config'] = {
         marker_click = 'center',
         interaction = {
           edge_interval = 50,
+          right_click = right_click_action,
         },
       },
     }
@@ -40,6 +45,7 @@ package.loaded['vv-scrollbar.config'] = {
 package.loaded['vv-scrollbar.core.geometry'] = {
   screenrow_to_bar_row = function(_, screenrow) return screenrow end,
   screenrow_to_bar_row_raw = function(_, screenrow) return screenrow end,
+  bar_row_to_line = function(_, row) return row + 100 end,
   scroll_to_bar_row = function(_, row)
     scroll_calls[#scroll_calls + 1] = { kind = 'bar', row = row }
   end,
@@ -93,10 +99,39 @@ vim.on_key = function(callback)
 end
 
 local mouse = require('vv-scrollbar.input.mouse')
-mouse.attach(function() refresh_count = refresh_count + 1 end)
+mouse.attach(
+  function() refresh_count = refresh_count + 1 end,
+  function() toggle_view_calls = toggle_view_calls + 1 end
+)
 vim.on_key = original_on_key
 
 assert(on_key, 'mouse handler was not attached')
+
+assert(on_key(vim.keycode('<RightMouse>')) == '', 'right click over the bar was not consumed')
+assert(toggle_view_calls == 1, 'right click did not toggle the scrollbar view')
+assert(on_key(vim.keycode('<RightRelease>')) == '', 'right release over the bar was not consumed')
+
+assert(on_key(vim.keycode('<2-RightMouse>')) == '', 'right double-click escaped to Neovim')
+assert(toggle_view_calls == 1, 'right double-click toggled the scrollbar view twice')
+assert(on_key(vim.keycode('<2-RightRelease>')) == '', 'right double-release escaped to Neovim')
+
+right_click_action = false
+assert(on_key(vim.keycode('<RightMouse>')) == '', 'disabled right click escaped to Neovim')
+assert(toggle_view_calls == 1, 'disabled right click still toggled the scrollbar view')
+assert(on_key(vim.keycode('<RightRelease>')) == '', 'disabled right release escaped to Neovim')
+
+right_click_action = function(context) right_click_context = context end
+assert(on_key(vim.keycode('<RightMouse>')) == '', 'custom right click was not consumed')
+assert(
+  right_click_context
+    and right_click_context.win == bar.parent
+    and right_click_context.scrollbar_win == bar.win
+    and right_click_context.row == mouse_position.screenrow
+    and right_click_context.view == 'map_view',
+  'custom right-click callback received incorrect context'
+)
+assert(on_key(vim.keycode('<RightRelease>')) == '', 'custom right release escaped to Neovim')
+right_click_action = 'toggle_view'
 
 assert(on_key(vim.keycode('<LeftMouse>')) == '', 'thumb press was not consumed')
 assert(state.dragging, 'thumb press did not enter active state')
@@ -139,13 +174,36 @@ assert(state.dragging.map_top == 21, 'track drag did not retain its updated froz
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'track release was not consumed')
 assert(#cursor_calls == 1, 'track drag incorrectly used click cursor placement')
 
+bar.map_layout = nil
+mouse_position.screenrow = 15
+local classic_scroll_count = #scroll_calls
+assert(on_key(vim.keycode('<LeftMouse>')) == '', 'classic track press was not consumed')
+assert(
+  #scroll_calls == classic_scroll_count + 1
+    and scroll_calls[#scroll_calls].kind == 'line'
+    and scroll_calls[#scroll_calls].line == 115
+    and scroll_calls[#scroll_calls].align == 'center',
+  'classic track click did not use its projected source line'
+)
+assert(on_key(vim.keycode('<LeftRelease>')) == '', 'classic track release was not consumed')
+assert(
+  #cursor_calls == 2
+    and cursor_calls[2].win == bar.parent
+    and cursor_calls[2].line == 115,
+  'classic track click did not place the cursor on its projected source line'
+)
+bar.map_layout = {
+  mode = 'viewport',
+  top_row = 21,
+}
+
 marker_hit = true
 assert(on_key(vim.keycode('<2-LeftMouse>')) == '', 'marker double-click press escaped')
 assert(state.dragging == nil, 'marker click unexpectedly started dragging')
 assert(
-  #cursor_calls == 2
-    and cursor_calls[2].win == bar.parent
-    and cursor_calls[2].line == 80,
+  #cursor_calls == 3
+    and cursor_calls[3].win == bar.parent
+    and cursor_calls[3].line == 80,
   'marker click did not place the cursor on its exact source line'
 )
 assert(on_key(vim.keycode('<2-LeftRelease>')) == '', 'marker double-click release escaped')
@@ -167,6 +225,8 @@ assert(
 hit_bar = false
 assert(on_key(vim.keycode('<2-LeftMouse>')) == nil, 'double-click outside the bar was swallowed')
 assert(on_key(vim.keycode('<2-LeftRelease>')) == nil, 'release outside the bar was swallowed')
+assert(on_key(vim.keycode('<RightMouse>')) == nil, 'right click outside the bar was swallowed')
+assert(on_key(vim.keycode('<RightRelease>')) == nil, 'right release outside the bar was swallowed')
 assert(
   on_key(mapped_key, vim.keycode('<ScrollWheelUp>')) == nil,
   'wheel event outside the bar was swallowed'
@@ -180,7 +240,10 @@ vim.keymap.set('n', '<ScrollWheelDown>', function()
 end)
 
 mouse.detach()
-mouse.attach(function() refresh_count = refresh_count + 1 end)
+mouse.attach(
+  function() refresh_count = refresh_count + 1 end,
+  function() toggle_view_calls = toggle_view_calls + 1 end
+)
 vim.api.nvim_feedkeys(vim.keycode('<ScrollWheelDown>'), 'mtx', false)
 
 assert(mapped_wheel_calls == 0, 'wheel mapping ran before vv-scrollbar could redirect it')
@@ -190,4 +253,4 @@ vim.fn.getmousepos = original_getmousepos
 vim.keymap.del('n', '<ScrollWheelDown>')
 mouse.detach()
 
-print('PASS: exact click cursor, wheel redirect, deferred map freeze, and multi-click isolation')
+print('PASS: clicks, right-click actions, wheel redirect, deferred map freeze, and multi-click isolation')

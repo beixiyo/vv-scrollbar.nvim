@@ -51,6 +51,7 @@ return {
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
+      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',

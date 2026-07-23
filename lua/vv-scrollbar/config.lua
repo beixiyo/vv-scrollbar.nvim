@@ -4,10 +4,10 @@ local M = {}
 ---@field track vim.api.keyset.highlight 轨道背景 @default { bg = '#20242b' }
 ---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = '#20242b', bg = '#20242b' }
 ---@field map_view vim.api.keyset.highlight 代码地图 @default { fg = '#565f89' }
----@field map_cursor vim.api.keyset.highlight 地图当前行细标记 @default { fg = '#7aa2f7' }
+---@field map_cursor vim.api.keyset.highlight 当前行 Braille dots 或细线 @default { fg = '#7aa2f7' }
 ---@field thumb vim.api.keyset.highlight 当前视口 thumb @default { bg = '#3b4252' }
 ---@field active vim.api.keyset.highlight 按下或拖拽中的 thumb @default { bg = '#5b6478' }
----@field cursor vim.api.keyset.highlight 光标位置 @default { fg = '#7aa2f7' }
+---@field cursor vim.api.keyset.highlight full 样式的当前行标记 @default { fg = '#7aa2f7' }
 ---@field search vim.api.keyset.highlight 搜索命中 @default { fg = '#ff9e64' }
 ---@field mark vim.api.keyset.highlight mark 位置 @default { fg = '#bb9af7' }
 ---@field quickfix vim.api.keyset.highlight quickfix / loclist 位置 @default { fg = '#e0af68' }
@@ -18,7 +18,7 @@ local M = {}
 
 ---@class VVScrollbarSymbolsConfig
 ---@field thumb string thumb 填充字符 @default ' '
----@field cursor string 光标标记 @default '█'
+---@field cursor string full 样式的当前行字符 @default '█'
 ---@field search string 搜索标记 @default '•'
 ---@field mark string mark 标记 @default '◆'
 ---@field quickfix string quickfix / loclist 标记 @default '■'
@@ -39,12 +39,23 @@ local M = {}
 ---@field width integer 细线宽度 @default 1
 ---@field symbol string 细线字符 @default '▎'
 
+---@class VVScrollbarRightClickContext
+---@field win integer 源代码窗口
+---@field scrollbar_win integer 滚动条窗口
+---@field row integer 滚动条内的零基行号
+---@field screenrow integer 屏幕行号
+---@field screencol integer 屏幕列号
+---@field view 'map_view'|'scrollbar' 点击时的滚动条形态
+
+---@alias VVScrollbarRightClickAction false|'toggle_view'|fun(context: VVScrollbarRightClickContext)
+
 ---@class VVScrollbarMapViewInteractionConfig
 ---@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
 ---@field edge_margin integer 触发边缘平移的地图行数 @default 2
 ---@field edge_speed integer 每次边缘平移的最大地图行数 @default 2
 ---@field edge_interval integer 持续边缘平移的时间间隔，单位 ms @default 50
 ---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
+---@field right_click VVScrollbarRightClickAction 右键动作；false 关闭动作，自定义函数接收点击上下文 @default 'toggle_view'
 
 ---@class VVScrollbarMapViewDegradationConfig
 ---@field folds 'viewport'|'fit'|'scrollbar' 可见关闭折叠时的降级方式 @default 'fit'
@@ -252,6 +263,12 @@ function M.apply(opts)
   )
   if type(interaction.snap_to_edges) ~= 'boolean' then
     interaction.snap_to_edges = default_interaction.snap_to_edges
+  end
+  if interaction.right_click ~= false
+      and interaction.right_click ~= 'toggle_view'
+      and type(interaction.right_click) ~= 'function'
+  then
+    interaction.right_click = default_interaction.right_click
   end
   local degradation = current.map_view.degradation
   local default_degradation = defaults.map_view.degradation

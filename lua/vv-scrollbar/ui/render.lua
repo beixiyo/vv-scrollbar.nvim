@@ -4,6 +4,7 @@ local api = vim.api
 local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
+local geometry = require('vv-scrollbar.core.geometry')
 local map_view = require('vv-scrollbar.features.map_view')
 local markers = require('vv-scrollbar.features.markers')
 local content = require('vv-scrollbar.ui.content')
@@ -112,13 +113,18 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
   local row_markers = markers.collect(parent, viewport, {
-    cursor = not has_map_view,
     track_width = map_columns and map_columns.marker_width or track_width,
   })
   local cursor_row
-  if map_layout and cfg.markers.cursor and parent == api.nvim_get_current_win() then
+  if cfg.markers.cursor and parent == api.nvim_get_current_win() then
     local cursor = api.nvim_win_get_cursor(parent)
-    cursor_row = map_view.line_to_row(map_layout, cursor[1])
+    cursor_row = map_layout
+        and map_view.line_to_row(map_layout, cursor[1])
+      or geometry.line_to_row(
+        cursor[1],
+        viewport.line_count,
+        viewport.height
+      )
   end
 
   bar.row_markers = row_markers
@@ -215,6 +221,34 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
         virt_text_pos = 'overlay',
         priority = LAYER_PRIORITY.map,
       })
+
+      if row == cursor_row then
+        local cursor = cfg.map_view.cursor
+        if cursor.style == 'full' then
+          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+            virt_text = {
+              {
+                string.rep(markers.cell(cfg.symbols.cursor), track_width),
+                'VVScrollbarCursor',
+              },
+            },
+            virt_text_pos = 'overlay',
+            hl_mode = 'combine',
+            priority = LAYER_PRIORITY.cursor,
+          })
+        elseif cursor.style ~= 'hidden' then
+          local symbol = markers.cell(cursor.symbol)
+          local cursor_width = math.min(cursor.width, track_width)
+          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+            virt_text = { { string.rep(symbol, cursor_width), 'VVScrollbarMapCursor' } },
+            virt_text_win_col = cursor.side == 'right'
+                and track_width - cursor_width
+              or 0,
+            hl_mode = 'combine',
+            priority = LAYER_PRIORITY.cursor,
+          })
+        end
+      end
     end
 
     local marker = row_markers[row]

@@ -4,6 +4,7 @@ local config = require('vv-scrollbar.config')
 local geometry = require('vv-scrollbar.core.geometry')
 local state = require('vv-scrollbar.core.state')
 local map_view = require('vv-scrollbar.features.map_view')
+local right_click = require('vv-scrollbar.input.right_click')
 local viewport_drag = require('vv-scrollbar.input.viewport_drag')
 local view = require('vv-scrollbar.core.view')
 
@@ -41,6 +42,8 @@ local WHEEL_DIRECTIONS = {
 
 ---@type fun()?
 local refresh
+---@type fun()?
+local toggle_view
 
 local function redraw()
   if refresh then refresh() end
@@ -100,10 +103,12 @@ local function start_drag(bar, mouse_row)
   local offset = in_thumb
     and mouse_row - bar.thumb_row
     or math.floor(bar.thumb_height / 2)
-  local click_line = not in_thumb
-      and bar.map_layout
-      and map_view.row_to_line(bar.map_layout, mouse_row)
-    or nil
+  local click_line
+  if not in_thumb then
+    click_line = bar.map_layout
+        and map_view.row_to_line(bar.map_layout, mouse_row)
+      or geometry.bar_row_to_line(bar.parent, mouse_row)
+  end
 
   state.dragging = {
     parent = bar.parent,
@@ -181,6 +186,9 @@ local function on_key(key, typed)
     return ''
   end
 
+  local right_result = right_click.handle(key, typed, toggle_view)
+  if right_result ~= nil then return right_result end
+
   if key_value(LEFT_PRESSES, key, typed) then
     local position = fn.getmousepos()
     local bar = view.hit_test(position.screenrow, position.screencol)
@@ -229,14 +237,18 @@ local function on_key(key, typed)
 end
 
 ---@param refresh_callback fun()
-function M.attach(refresh_callback)
+---@param toggle_view_callback? fun()
+function M.attach(refresh_callback, toggle_view_callback)
   refresh = refresh_callback
+  toggle_view = toggle_view_callback
   vim.on_key(on_key, ns)
 end
 
 function M.detach()
   state.dragging = nil
+  right_click.reset()
   refresh = nil
+  toggle_view = nil
   vim.on_key(nil, ns)
 end
 
