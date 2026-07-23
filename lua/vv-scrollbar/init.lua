@@ -73,7 +73,6 @@ function M.disable()
   if not state.enabled then return end
 
   state.enabled = false
-  state.dragging = nil
   mouse.detach()
   events.detach()
   view.close_all()

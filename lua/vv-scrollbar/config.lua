@@ -48,9 +48,11 @@ local M = {}
 ---@field view 'map_view'|'scrollbar' 点击时的滚动条形态
 
 ---@alias VVScrollbarRightClickAction false|'toggle_view'|fun(context: VVScrollbarRightClickContext)
+---@alias VVScrollbarDragCursorMode 'follow'|'keep'
 
 ---@class VVScrollbarInteractionConfig
 ---@field right_click VVScrollbarRightClickAction 右键动作；false 关闭动作，自定义函数接收点击上下文 @default 'toggle_view'
+---@field cursor_on_drag VVScrollbarDragCursorMode 拖拽时让 cursor 跟随视口或尽量保留原行 @default 'follow'
 
 ---@class VVScrollbarMapViewInteractionConfig
 ---@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
@@ -261,6 +263,9 @@ function M.apply(opts)
       and type(global_interaction.right_click) ~= 'function'
   then
     global_interaction.right_click = default_global_interaction.right_click
+  end
+  if not vim.tbl_contains({ 'follow', 'keep' }, global_interaction.cursor_on_drag) then
+    global_interaction.cursor_on_drag = default_global_interaction.cursor_on_drag
   end
   local interaction = current.map_view.interaction
   local default_interaction = defaults.map_view.interaction

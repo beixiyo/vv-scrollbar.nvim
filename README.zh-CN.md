@@ -69,6 +69,7 @@ require('vv-scrollbar').setup({
   },
   interaction = {
     right_click = 'toggle_view',
+    cursor_on_drag = 'follow',
   },
 
   excluded_filetypes = {
@@ -192,6 +193,7 @@ require('vv-scrollbar').setup({
 | `cursor.width` | `integer` | `1` | 当前行细线宽度 |
 | `cursor.symbol` | `string` | `'▕'` | 当前行细线字符 |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
+| `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | 拖拽时让 cursor 保持在源窗口相同屏幕行，或尽量保留原代码行 |
 | `excluded_filetypes` | `string[]` | 见完整配置 | 不显示滚动条的 filetype |
 | `excluded_buftypes` | `string[]` | 见完整配置 | 不显示滚动条的 buftype |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
@@ -342,7 +344,7 @@ require('vv-scrollbar').setup({
 |------|------|
 | 点击轨道 | 以点击点为中心放置 thumb，跳转并把 cursor 放到对应投影源代码行 |
 | 按下 thumb | 保持原位置并立即切换为 active 色 |
-| 拖动 thumb | 保留按下时的抓取偏移，并实时更新视口 |
+| 拖动 thumb | 保留抓取偏移，实时更新视口，并让 cursor 保持在源窗口相同屏幕行 |
 | 停在地图上下边缘 | 按配置速度持续平移冻结的地图 viewport |
 | 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |
 | 右键单击滚动条 | 在 map-view 与基础滚动条之间切换 |
@@ -350,6 +352,10 @@ require('vv-scrollbar').setup({
 
 滚动条跳转和拖拽使用 `vv-utils.scroll.with_auto_suppressed()`，因此即使启用了
 `vv-utils.scroll` 的自动跳转动画，也不会出现先跳到目标、回到旧位置、再动画到目标的回弹
+
+`interaction.cursor_on_drag = 'keep'` 可以恢复尽量保留原代码行的行为。`follow` 按实际
+display row 移动，因此软换行和关闭折叠不会再把 cursor 压到 `scrolloff` 边缘；拖拽期间
+暂时忽略 `scrolloff`，松开、按 Esc 或禁用插件时立即恢复
 
 `interaction.right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区。
 也可以提供函数替换默认动作：

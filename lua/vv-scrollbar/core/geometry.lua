@@ -111,13 +111,35 @@ end
 
 ---@param win integer
 ---@param target integer
-local function set_topline(win, target)
+---@param cursor_anchor? VVScrollbarCursorAnchor
+---@param preferred_cursor_line? integer
+local function set_topline(win, target, cursor_anchor, preferred_cursor_line)
   if not api.nvim_win_is_valid(win) then return end
 
   api.nvim_win_call(win, function()
     local cursor = api.nvim_win_get_cursor(win)
     local initial_line = cursor[1]
-    target = M.clamp(target, 1, api.nvim_buf_line_count(0))
+    local line_count = api.nvim_buf_line_count(0)
+    target = M.clamp(target, 1, line_count)
+
+    if cursor_anchor then
+      if preferred_cursor_line then
+        local cursor_line = M.clamp(preferred_cursor_line, 1, line_count)
+        vim.cmd('keepjumps normal! ' .. cursor_line .. 'Gzz')
+      else
+        vim.cmd('keepjumps normal! ' .. target .. 'Gzt')
+        if fn.line('w$') == fn.line('$') then
+          vim.cmd('keepjumps normal! Gzb')
+        end
+
+        local screen_row = M.clamp(cursor_anchor.screen_row, 1, math.max(M.win_height(win), 1))
+        vim.cmd('keepjumps normal! ' .. screen_row .. 'H')
+      end
+
+      cursor_anchor.screen_row = fn.winline()
+      fn.winrestview({ curswant = cursor_anchor.curswant })
+      return
+    end
 
     vim.cmd('keepjumps normal! ' .. target .. 'Gzt')
     if fn.line('w$') == fn.line('$') then
@@ -130,6 +152,7 @@ local function set_topline(win, target)
 
     vim.cmd('keepjumps normal! L')
     local effective_bottom = fn.line('.')
+
     if initial_line > effective_bottom then return end
 
     pcall(api.nvim_win_set_cursor, win, cursor)
@@ -137,8 +160,35 @@ local function set_topline(win, target)
 end
 
 ---@param win integer
+---@return VVScrollbarCursorAnchor?
+function M.begin_cursor_follow(win)
+  if not api.nvim_win_is_valid(win) then return nil end
+
+  local anchor
+  api.nvim_win_call(win, function()
+    local view = fn.winsaveview()
+
+    anchor = {
+      screen_row = fn.winline(),
+      curswant = view.curswant,
+      scrolloff = vim.wo[win].scrolloff,
+    }
+    vim.wo[win].scrolloff = 0
+  end)
+  return anchor
+end
+
+---@param win integer
+---@param cursor_anchor? VVScrollbarCursorAnchor
+function M.end_cursor_follow(win, cursor_anchor)
+  if not cursor_anchor or not api.nvim_win_is_valid(win) then return end
+  vim.wo[win].scrolloff = cursor_anchor.scrolloff
+end
+
+---@param win integer
 ---@param row integer
-function M.scroll_to_bar_row(win, row)
+---@param cursor_anchor? VVScrollbarCursorAnchor
+function M.scroll_to_bar_row(win, row, cursor_anchor)
   if not api.nvim_win_is_valid(win) then return end
 
   local viewport = M.viewport(win)
@@ -149,14 +199,16 @@ function M.scroll_to_bar_row(win, row)
   end
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()
-    set_topline(win, target)
+    set_topline(win, target, cursor_anchor)
   end)
 end
 
 ---@param win integer
 ---@param line integer
 ---@param align 'center'|'top'
-function M.scroll_to_line(win, line, align)
+---@param cursor_anchor? VVScrollbarCursorAnchor
+---@param preferred_cursor_line? integer
+function M.scroll_to_line(win, line, align, cursor_anchor, preferred_cursor_line)
   if not api.nvim_win_is_valid(win) then return end
 
   local viewport = M.viewport(win)
@@ -164,7 +216,7 @@ function M.scroll_to_line(win, line, align)
   if align == 'center' then target = line - math.floor(viewport.visible / 2) end
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()
-    set_topline(win, target)
+    set_topline(win, target, cursor_anchor, preferred_cursor_line)
   end)
 end
 

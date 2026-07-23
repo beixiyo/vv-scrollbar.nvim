@@ -20,6 +20,7 @@
 - 语法着色过载保护：大文件可退回单色地图或经典滚动条，高亮片段过多或处理过久时退回单色地图
 - `make test` 一键运行全部 headless 测试
 - `:VVScrollbarToggleView` / `toggle_view()` 切换 map-view 与经典滚动条，右键默认触发且可替换或关闭
+- `interaction.cursor_on_drag` 控制拖拽时 cursor 跟随视口或尽量保留原代码行
 
 ### Changed
 
@@ -39,7 +40,7 @@
 
 - 基础滚动条 marker 现在遵循左右位置配置并保留精确点击目标；短文件切换形态后不再丢失滚动条
 - 基础滚动条复用细线 cursor 样式，点击轨道时按投影源代码行精确放置光标
-- 点击 map-view 轨道或 marker 后将 cursor 精确落到对应源代码行，拖拽与滚轮仍只滚动视口
+- 点击 map-view 轨道或 marker 后将 cursor 精确落到对应源代码行；拖拽默认保持 cursor 的屏幕相对行，滚轮仍只滚动视口
 - map-view 上的滚轮事件改为滚动对应源窗口，不再滚走绘制内容
 - 点击已有 thumb 时不再重复换算滚动位置，地图只在实际拖拽后冻结，避免按下与松开时抖动
 - 拦截滚动条上的快速多击并为 nofile 窗口增加 Visual 守卫，避免误入选择模式
