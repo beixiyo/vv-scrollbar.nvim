@@ -99,7 +99,7 @@ return {
     map_view = { fg = '#565f89' },
     map_cursor = { fg = '#7aa2f7' },
     thumb = { bg = '#3b4252' },
-    hover = { bg = '#4b5568' },
+    active = { bg = '#5b6478' },
     cursor = { fg = '#7aa2f7' },
     search = { fg = '#ff9e64' },
     mark = { fg = '#bb9af7' },

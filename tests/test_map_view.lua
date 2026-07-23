@@ -129,6 +129,9 @@ api.nvim_buf_delete(blank_buf, { force = true })
 local runtime_config = scrollbar.get_config()
 runtime_config.markers.git = true
 runtime_config.markers.cursor = true
+runtime_config.map_view.marker_layout = 'right'
+runtime_config.map_view.cursor.style = 'line'
+runtime_config.map_view.cursor.symbol = '▕'
 scrollbar.setup(runtime_config)
 local geometry = require('vv-scrollbar.core.geometry')
 
@@ -170,14 +173,14 @@ assert(
 state.dragging = {
   parent = parent,
   offset = 0,
-  moved = true,
+  moved = false,
   map_top = bar.map_layout.top_row,
 }
 view.refresh()
 bar = state.bars[parent]
 assert(
-  empty_git_lane_uses('VVScrollbarHover'),
-  'empty Git lane cut a hole in the hover background'
+  empty_git_lane_uses('VVScrollbarActive'),
+  'empty Git lane cut a hole in the active background before dragging'
 )
 state.dragging = nil
 view.refresh()
@@ -246,7 +249,8 @@ local thumb_hl = api.nvim_get_hl_id_by_name('VVScrollbarThumb')
 local found_map = false
 local found_thumb = false
 local found_right_git = false
-local found_cursor_dots = false
+local found_cursor_line = false
+local found_cursor_span = false
 for _, extmark in ipairs(extmarks) do
   found_map = found_map
     or extmark[4].hl_group == map_hl
@@ -254,12 +258,13 @@ for _, extmark in ipairs(extmarks) do
   found_thumb = found_thumb
     or extmark[4].hl_group == thumb_hl
     or extmark[4].hl_group == 'VVScrollbarThumb'
-  found_cursor_dots = found_cursor_dots
+  found_cursor_span = found_cursor_span
     or extmark[4].hl_group == api.nvim_get_hl_id_by_name('VVScrollbarMapCursor')
     or extmark[4].hl_group == 'VVScrollbarMapCursor'
   local virt_text = extmark[4].virt_text
   if virt_text then
     for _, chunk in ipairs(virt_text) do
+      found_cursor_line = found_cursor_line or chunk[2] == 'VVScrollbarMapCursor'
       if chunk[2] == 'VVGitDeleted' then
         found_right_git = extmark[4].virt_text_win_col == bar.track_width - 2
       end
@@ -269,7 +274,8 @@ end
 assert(found_map, 'map view foreground highlight was not applied')
 assert(found_thumb, 'thumb background was not layered over the map')
 assert(found_right_git, 'Git marker was not floated on the right edge')
-assert(found_cursor_dots, 'map cursor did not recolor the existing Braille dots')
+assert(found_cursor_line, 'map cursor did not render its configured slim line')
+assert(not found_cursor_span, 'slim cursor line still recolored the map dots')
 
 api.nvim_set_hl(0, 'VVScrollbarTestSeparator', { fg = '#654321' })
 local latest_winhighlight = 'Normal:Normal,WinSeparator:VVScrollbarTestSeparator'
