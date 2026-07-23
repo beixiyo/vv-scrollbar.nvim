@@ -82,12 +82,14 @@ require('vv-scrollbar').setup({
 
   map_view = {
     enabled = true,
-    mode = 'fit',
+    mode = 'viewport',
     width = 'auto',
     min_width = 8,
     max_width = 16,
     width_ratio = 0.14,
     x_multiplier = 4,
+    y_multiplier = 1,
+    min_thumb = 2,
     max_lines_per_dot = 8,
     tab_width = 'buffer',
     include_whitespace = false,
@@ -103,6 +105,13 @@ require('vv-scrollbar').setup({
       side = 'right',
       width = 1,
       symbol = '▎',
+    },
+    interaction = {
+      edge_scroll = true,
+      edge_margin = 2,
+      edge_speed = 2,
+      edge_interval = 50,
+      snap_to_edges = true,
     },
   },
 
@@ -162,19 +171,22 @@ The effective width shrinks automatically when a window is narrower than the con
 
 ## Map view configuration
 
-`map_view` is enabled by default. Stage 1 renders a monochrome Braille overview of the complete
-buffer in `fit` mode. The existing thumb remains proportional to the source viewport, and its
-background is layered over the preview without hiding the Braille cells.
+`map_view` is enabled by default. `viewport` mode renders the complete buffer at a fixed Braille
+scale, then follows the source window with a scrollable map slice. The thumb uses absolute map
+coordinates, and its background is layered over the preview without hiding the Braille cells.
+Use `fit` to compress the complete buffer into the current window height.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `map_view.enabled` | `boolean` | `true` | Show the code map; false restores the classic scrollbar |
-| `map_view.mode` | `'fit'` | `'fit'` | Fit the complete buffer into the scrollbar height |
+| `map_view.mode` | `'viewport'\|'fit'` | `'viewport'` | Scroll a fixed-scale map or fit the complete buffer into the window |
 | `map_view.width` | `'auto'\|integer` | `'auto'` | Automatic or fixed map width |
 | `map_view.min_width` | `integer` | `8` | Lower bound for automatic width |
 | `map_view.max_width` | `integer` | `16` | Upper bound for automatic width |
 | `map_view.width_ratio` | `number` | `0.14` | Share of the parent layout used by automatic width |
 | `map_view.x_multiplier` | `integer` | `4` | Source screen columns represented by one horizontal dot |
+| `map_view.y_multiplier` | `integer` | `1` | Source lines represented by one vertical Braille dot |
+| `map_view.min_thumb` | `integer` | `2` | Minimum thumb height in viewport mode |
 | `map_view.max_lines_per_dot` | `integer` | `8` | Maximum sampled source lines per vertical dot; zero disables the limit |
 | `map_view.tab_width` | `'buffer'\|integer` | `'buffer'` | Tab display width used during projection |
 | `map_view.include_whitespace` | `boolean` | `false` | Render whitespace as map points |
@@ -188,6 +200,11 @@ background is layered over the preview without hiding the Braille cells.
 | `map_view.cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
 | `map_view.cursor.width` | `integer` | `1` | Width of the slim current-line marker |
 | `map_view.cursor.symbol` | `string` | `'▎'` | Character used by the slim current-line marker |
+| `map_view.interaction.edge_scroll` | `boolean` | `true` | Pan the map while dragging near its top or bottom edge |
+| `map_view.interaction.edge_margin` | `integer` | `2` | Map rows that activate edge panning |
+| `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
+| `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
+| `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
 
 Map text is cached by buffer content, projection size, and relevant options. Scrolling, cursor
 movement, and thumb dragging reuse the cached text instead of rescanning the source buffer.
@@ -289,8 +306,9 @@ the cell entirely requires a floating window, which would cover the parent windo
 | Click the track | Center the thumb on the click and jump immediately |
 | Press the thumb | Keep the current position without changing to the hover color |
 | Drag the thumb | Preserve the grab offset and update the viewport continuously |
+| Hold near the map edge | Keep panning the frozen map viewport at the configured speed |
 | Drag beyond the track | Snap to the beginning or end of the file |
-| Release | End dragging and restore the normal thumb highlight |
+| Release or press Esc | End dragging, resume source/map synchronization, and restore the thumb |
 
 Jumping and dragging run through `vv-utils.scroll.with_auto_suppressed()`, so automatic jump animation cannot bounce from the target back to the old position before animating again.
 

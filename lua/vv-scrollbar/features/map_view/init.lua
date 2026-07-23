@@ -1,6 +1,7 @@
 local api = vim.api
 
 local config = require('vv-scrollbar.config')
+local layout = require('vv-scrollbar.features.map_view.layout')
 
 local M = {}
 
@@ -43,6 +44,27 @@ function M.lines(buf, height, width, refresh)
     config.current().map_view,
     refresh
   )
+end
+
+---@param viewport table
+---@param top_override? integer
+---@return VVScrollbarMapLayout
+function M.resolve_layout(viewport, top_override)
+  return layout.resolve(viewport, config.current().map_view, top_override)
+end
+
+---@param map_layout VVScrollbarMapLayout
+---@param line integer
+---@return integer
+function M.line_to_row(map_layout, line)
+  return layout.line_to_row(map_layout, line)
+end
+
+---@param map_layout VVScrollbarMapLayout
+---@param row integer
+---@return integer
+function M.row_to_line(map_layout, row)
+  return layout.row_to_line(map_layout, row)
 end
 
 ---@param buf integer

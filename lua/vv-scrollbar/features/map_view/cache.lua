@@ -14,9 +14,11 @@ local pending_by_buf = {}
 local function cache_key(buf, height, width, opts)
   local tab_width = opts.tab_width == 'buffer' and vim.bo[buf].tabstop or opts.tab_width
   return table.concat({
+    opts.mode,
     height,
     width,
     opts.x_multiplier,
+    opts.y_multiplier,
     opts.max_lines_per_dot,
     tab_width,
     opts.include_whitespace and 1 or 0,
