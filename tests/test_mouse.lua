@@ -32,11 +32,13 @@ local state = {
 package.loaded['vv-scrollbar.config'] = {
   current = function()
     return {
+      interaction = {
+        right_click = right_click_action,
+      },
       map_view = {
         marker_click = 'center',
         interaction = {
           edge_interval = 50,
-          right_click = right_click_action,
         },
       },
     }

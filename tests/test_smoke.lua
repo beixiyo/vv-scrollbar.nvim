@@ -49,12 +49,12 @@ assert(
 assert(api.nvim_win_get_config(win).relative == '', 'scrollbar is still a floating window')
 assert(vim.fn.exists(':VVScrollbarToggleView') == 2, 'view toggle command was not registered')
 
-assert(scrollbar.toggle_view() == 'map_view', 'Lua API did not enable map view')
+assert(scrollbar.toggle_view(), 'Lua API did not enable map view')
 win = scrollbar_window()
 assert(scrollbar.get_config().map_view.enabled, 'Lua API did not update map-view config')
 assert(api.nvim_win_get_width(win) >= 8, 'map view did not resize the scrollbar window')
 
-assert(scrollbar.toggle_view() == 'scrollbar', 'Lua API did not restore the classic scrollbar')
+assert(not scrollbar.toggle_view(), 'Lua API did not restore the classic scrollbar')
 win = scrollbar_window()
 assert(not scrollbar.get_config().map_view.enabled, 'Lua API did not disable map view')
 assert(api.nvim_win_get_width(win) == 2, 'classic scrollbar width was not restored')
@@ -122,7 +122,40 @@ for _, extmark in ipairs(cursor_extmarks) do
   end
 end
 assert(found_slim_cursor, 'classic scrollbar did not render a slim cursor line')
-assert(not found_full_cursor, 'classic scrollbar still rendered the legacy full-width cursor')
+assert(not found_full_cursor, 'classic scrollbar still rendered a full-width cursor')
+
+api.nvim_buf_set_mark(0, 'a', 200, 0, {})
+scrollbar.setup({
+  width = 2,
+  map_view = {
+    enabled = false,
+    marker_position = 'right',
+  },
+  markers = {
+    diagnostics = false,
+    git = false,
+    search = false,
+    marks = true,
+    quickfix = false,
+    cursor = false,
+  },
+})
+view.refresh()
+local classic_bar = state.bars[parent]
+local mark_row = require('vv-scrollbar.core.geometry').line_to_row(200, 400, classic_bar.height)
+local mark_hits = classic_bar.marker_hits[mark_row]
+assert(
+  mark_hits
+    and #mark_hits == 1
+    and mark_hits[1].start_col == 1
+    and mark_hits[1].source_line == 200,
+  'classic marker did not retain its right-aligned exact hit target'
+)
+local bar_left = vim.fn.win_screenpos(classic_bar.win)[2]
+assert(
+  view.marker_at(classic_bar, mark_row, bar_left + 1).source_line == 200,
+  'classic marker hit test did not resolve its exact source line'
+)
 
 vim.w[parent].vv_scrollbar_disabled = true
 view.refresh()

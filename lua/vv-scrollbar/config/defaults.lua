@@ -10,6 +10,16 @@ return {
   min_thumb = 2,
   throttle_ms = 30,
   search_line_limit = 20000,
+  show_on_short_buffers = true,
+  cursor = {
+    style = 'line',
+    side = 'right',
+    width = 1,
+    symbol = '▕',
+  },
+  interaction = {
+    right_click = 'toggle_view',
+  },
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
     'dropbar_menu', 'dropbar_menu_fzf', 'DressingInput', 'noice', 'prompt', 'TelescopePrompt',
@@ -33,25 +43,17 @@ return {
     debounce_ms = 150,
     max_lines = 50000,
     large_file_behavior = 'scrollbar',
-    show_on_short_buffers = true,
     preserve_map_under_thumb = true,
-    marker_layout = 'overlay',
+    marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
     marker_click = 'center',
-    cursor = {
-      style = 'dots',
-      side = 'right',
-      width = 1,
-      symbol = '▎',
-    },
     interaction = {
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
-      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',

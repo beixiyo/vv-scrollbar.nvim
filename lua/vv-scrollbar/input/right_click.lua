@@ -45,7 +45,7 @@ end
 ---@param position table
 ---@param toggle_view? fun()
 local function run_action(bar, row, position, toggle_view)
-  local action = config.current().map_view.interaction.right_click
+  local action = config.current().interaction.right_click
   if action == false then return end
 
   if action == 'toggle_view' then

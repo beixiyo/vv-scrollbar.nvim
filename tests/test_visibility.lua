@@ -60,5 +60,20 @@ for _, ft in ipairs({ 'vv-task-panel', 'vv-task-panel-tasks' }) do
   assert(bar and api.nvim_win_is_valid(bar.win), 'scrollbar did not return after leaving ' .. ft)
 end
 
+vim.w[win].vv_scrollbar_always_show = nil
+api.nvim_set_option_value('wrap', false, { win = win, scope = 'local' })
+api.nvim_buf_set_lines(0, 0, -1, false, { 'one', 'two' })
+view.refresh()
+bar = state.bars[win]
+assert(bar and bar.map_layout, 'short buffer did not retain its map view')
+
+assert(not scrollbar.toggle_view(), 'short buffer did not switch to the classic view')
+bar = state.bars[win]
+assert(bar and not bar.map_layout, 'short buffer classic view removed its own toggle target')
+
+assert(scrollbar.toggle_view(), 'short buffer did not switch back to map view')
+bar = state.bars[win]
+assert(bar and bar.map_layout, 'short buffer did not restore map view')
+
 scrollbar.disable()
 print('PASS: stable visibility and private panel filetype exclusions')
