@@ -135,6 +135,21 @@ function M.scroll_to_bar_row(win, row)
 end
 
 ---@param win integer
+---@param line integer
+---@param align 'center'|'top'
+function M.scroll_to_line(win, line, align)
+  if not api.nvim_win_is_valid(win) then return end
+
+  local viewport = M.viewport(win)
+  local target = line
+  if align == 'center' then target = line - math.floor(viewport.visible / 2) end
+
+  require('vv-utils.scroll').with_auto_suppressed(win, function()
+    set_topline(win, target)
+  end)
+end
+
+---@param win integer
 ---@return integer
 local function parent_screen_top(win)
   local position = fn.win_screenpos(win)

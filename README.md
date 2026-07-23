@@ -27,13 +27,14 @@ Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfile
 
 ## Features
 
+- A default-enabled Braille code map with adaptive width and a cached, debounced renderer
 - A full-height background track and a thumb sized from the visible-content ratio
 - Click the track to jump, or drag the thumb while preserving the original grab offset
 - A normal click does not show the drag color; hover styling starts only after movement
 - Integration with `vv-utils.scroll` prevents automatic smooth scrolling from pulling interactions back to an old view
 - A real split reserves width, so the scrollbar never covers text at the end of a parent-window line
 - Configurable width with track and thumb filling the available cells; the default is two cells
-- Neovim keeps one separator cell between the parent window and scrollbar split
+- Neovim's separator cell blends into the map background and restores its previous highlight on close
 - Cursor markers fill the scrollbar width, Git uses two tracks, and other markers remain one character wide
 - Multiple windows are supported, with an option to display only the current window
 - Built-in diagnostics, Git diff, search, Vim marks, quickfix/loclist, and cursor markers
@@ -79,6 +80,32 @@ require('vv-scrollbar').setup({
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
 
+  map_view = {
+    enabled = true,
+    mode = 'fit',
+    width = 'auto',
+    min_width = 8,
+    max_width = 16,
+    width_ratio = 0.14,
+    x_multiplier = 4,
+    max_lines_per_dot = 8,
+    tab_width = 'buffer',
+    include_whitespace = false,
+    debounce_ms = 150,
+    max_lines = 50000,
+    large_file_behavior = 'scrollbar',
+    show_on_short_buffers = true,
+    preserve_map_under_thumb = true,
+    marker_position = 'right',
+    marker_click = 'center',
+    cursor = {
+      style = 'dots',
+      side = 'right',
+      width = 1,
+      symbol = '▎',
+    },
+  },
+
   markers = {
     diagnostics = true,
     git = true,
@@ -100,7 +127,11 @@ require('vv-scrollbar').setup({
   },
 
   highlights = {
-    track = { bg = '#20242b' }, thumb = { bg = '#3b4252' },
+    track = { bg = '#20242b' },
+    separator = { fg = '#20242b', bg = '#20242b' },
+    map_view = { fg = '#565f89' },
+    map_cursor = { fg = '#7aa2f7' },
+    thumb = { bg = '#3b4252' },
     hover = { bg = '#4b5568' }, cursor = { fg = '#7aa2f7' },
     search = { fg = '#ff9e64' }, mark = { fg = '#bb9af7' },
     quickfix = { fg = '#e0af68' }, diag_error = { fg = '#f7768e' },
@@ -128,6 +159,42 @@ Every `setup()` call merges its arguments into the defaults from scratch. It doe
 | `window_filter` | `fun(win, buf): boolean` | `nil` | Return false to suppress a window |
 
 The effective width shrinks automatically when a window is narrower than the configured value.
+
+## Map view configuration
+
+`map_view` is enabled by default. Stage 1 renders a monochrome Braille overview of the complete
+buffer in `fit` mode. The existing thumb remains proportional to the source viewport, and its
+background is layered over the preview without hiding the Braille cells.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `map_view.enabled` | `boolean` | `true` | Show the code map; false restores the classic scrollbar |
+| `map_view.mode` | `'fit'` | `'fit'` | Fit the complete buffer into the scrollbar height |
+| `map_view.width` | `'auto'\|integer` | `'auto'` | Automatic or fixed map width |
+| `map_view.min_width` | `integer` | `8` | Lower bound for automatic width |
+| `map_view.max_width` | `integer` | `16` | Upper bound for automatic width |
+| `map_view.width_ratio` | `number` | `0.14` | Share of the parent layout used by automatic width |
+| `map_view.x_multiplier` | `integer` | `4` | Source screen columns represented by one horizontal dot |
+| `map_view.max_lines_per_dot` | `integer` | `8` | Maximum sampled source lines per vertical dot; zero disables the limit |
+| `map_view.tab_width` | `'buffer'\|integer` | `'buffer'` | Tab display width used during projection |
+| `map_view.include_whitespace` | `boolean` | `false` | Render whitespace as map points |
+| `map_view.debounce_ms` | `integer` | `150` | Delay before rebuilding a changed buffer |
+| `map_view.max_lines` | `integer` | `50000` | Fall back to the classic scrollbar above this line count |
+| `map_view.show_on_short_buffers` | `boolean` | `true` | Keep the map visible when the file does not need scrolling |
+| `map_view.preserve_map_under_thumb` | `boolean` | `true` | Preserve preview characters under the thumb background |
+| `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
+| `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker |
+| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | Recolor map dots, draw a line, use the legacy full marker, or hide it |
+| `map_view.cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
+| `map_view.cursor.width` | `integer` | `1` | Width of the slim current-line marker |
+| `map_view.cursor.symbol` | `string` | `'▎'` | Character used by the slim current-line marker |
+
+Map text is cached by buffer content, projection size, and relevant options. Scrolling, cursor
+movement, and thumb dragging reuse the cached text instead of rescanning the source buffer.
+Markers use fixed-window-column virtual text, so right-edge Git tracks do not shift or indent the
+code preview. The default current-line style only recolors existing Braille dots and therefore does
+not compete with Git markers on the same projected row. Clicking a visible marker uses its exact
+source line instead of the proportional scrollbar coordinate.
 
 ### Per-window control
 
@@ -179,6 +246,9 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | Setting | Highlight group | Purpose |
 |---|---|---|
 | `highlights.track` | `VVScrollbarTrack` | Background track |
+| `highlights.separator` | `VVScrollbarSeparator` | Separator between the file and scrollbar windows |
+| `highlights.map_view` | `VVScrollbarMapView` | Monochrome code-map foreground |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` | Current-line Braille dots or slim line |
 | `highlights.thumb` | `VVScrollbarThumb` | Visible range |
 | `highlights.hover` | `VVScrollbarHover` | Thumb during an actual drag |
 | `highlights.cursor` | `VVScrollbarCursor` | Cursor position |
@@ -191,6 +261,26 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint diagnostics |
 
 Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from `vv-utils.git.register_hl()`. All highlights are registered again after `ColorScheme`.
+
+Every `highlights` entry accepts a standard `vim.api.nvim_set_hl()` table. A plugin spec can
+read the active theme palette and pass those colors directly:
+
+```lua
+local p = require('tools.palette').get()
+
+require('vv-scrollbar').setup({
+  highlights = {
+    track = { bg = p.bg_highlight },
+    separator = { fg = p.bg, bg = p.bg },
+    map_view = { fg = p.comment },
+    map_cursor = { fg = p.blue },
+  },
+})
+```
+
+A real split always reserves one `WinSeparator` cell. It cannot be zero-width. Using the editor
+background for `separator` keeps that cell from looking like left padding inside the map. Removing
+the cell entirely requires a floating window, which would cover the parent window's rightmost text
 
 ## Mouse interaction
 
@@ -232,11 +322,11 @@ local current_config = scrollbar.get_config()
 
 ```text
 lua/vv-scrollbar/
-├── core/        Geometry, runtime state, and floating-window rendering
-├── features/    Git data and marker collection
+├── core/        Geometry, runtime state, and refresh orchestration
+├── features/    Git, markers, map renderer, and private cache
 ├── input/       Mouse press, drag, and release state machine
 ├── lifecycle/   Autocommand lifecycle
-├── ui/          Highlight registration
+├── ui/          Split lifecycle, extmark rendering, and highlights
 ├── config.lua   Defaults and merging
 └── init.lua     Public lifecycle API
 ```
@@ -244,5 +334,8 @@ lua/vv-scrollbar/
 ## Testing
 
 ```bash
-nvim --headless -u NONE -l tests/test_smoke.lua
+make test
 ```
+
+Set `NVIM` to test with a specific Neovim executable, for example
+`NVIM=nvim-nightly make test`.

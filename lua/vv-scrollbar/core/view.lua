@@ -4,11 +4,12 @@ local fn = vim.fn
 local config = require('vv-scrollbar.config')
 local geometry = require('vv-scrollbar.core.geometry')
 local state = require('vv-scrollbar.core.state')
-local markers = require('vv-scrollbar.features.markers')
+local map_view = require('vv-scrollbar.features.map_view')
+local render_ui = require('vv-scrollbar.ui.render')
+local window = require('vv-scrollbar.ui.window')
 
 local M = {}
 
-local ns = api.nvim_create_namespace('vv-scrollbar')
 local retry_pending = false
 
 local function retry_refresh()
@@ -46,6 +47,7 @@ local function should_show(win)
   if vim.wo[win].winfixbuf then return false end
   if geometry.win_height(win) <= 0 or api.nvim_win_get_width(win) <= 0 then return false end
 
+  if map_view.is_active(buf) and cfg.map_view.show_on_short_buffers then return true end
   if vim.w[win].vv_scrollbar_always_show then return true end
 
   local line_count = api.nvim_buf_line_count(buf)
@@ -55,101 +57,23 @@ local function should_show(win)
 end
 
 ---@param parent integer
----@return VVScrollbarBar
-local function create_bar(parent)
-  local buf = api.nvim_create_buf(false, true)
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].buflisted = false
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = 'vv-scrollbar'
-  vim.bo[buf].undolevels = -1
-
-  local bar = {
-    win = -1,
-    buf = buf,
-    parent = parent,
-    thumb_row = 0,
-    thumb_height = 1,
-    height = 1,
-    width = 0,
-    track_width = 0,
-  }
-
-  state.bars[parent] = bar
-  return bar
-end
-
----@param parent integer
 function M.close(parent)
   local bar = state.bars[parent]
   if not bar then return end
 
-  if bar.win and api.nvim_win_is_valid(bar.win) then
-    pcall(api.nvim_win_close, bar.win, true)
-  end
-  if bar.buf and api.nvim_buf_is_valid(bar.buf) then
-    pcall(api.nvim_buf_delete, bar.buf, { force = true })
-  end
+  window.close(bar)
   state.bars[parent] = nil
-end
-
----@param parent integer
----@param bar VVScrollbarBar
-local function sync_window(parent, bar)
-  local cfg = config.current()
-  local available_width = math.max(api.nvim_win_get_width(parent) - 1, 1)
-  local track_width = math.min(cfg.width, available_width)
-  local width = math.min(track_width + cfg.right_offset, available_width)
-
-  if not (bar.win and api.nvim_win_is_valid(bar.win)) then
-    bar.win = api.nvim_open_win(bar.buf, false, {
-      win = parent,
-      split = 'right',
-      style = 'minimal',
-      noautocmd = true,
-      width = width,
-    })
-    require('vv-utils.ui_window').hide_chrome(bar.win)
-  else
-    api.nvim_win_set_width(bar.win, width)
-  end
-
-  vim.wo[bar.win].winfixbuf = true
-  vim.wo[bar.win].winfixwidth = true
-  vim.wo[bar.win].wrap = false
-  vim.wo[bar.win].statusline = ' '
-  bar.track_width = math.min(track_width, api.nvim_win_get_width(bar.win))
-
-  api.nvim_set_option_value(
-    'winhighlight',
-    'Normal:VVScrollbarTrack,NormalFloat:VVScrollbarTrack,EndOfBuffer:VVScrollbarTrack',
-    { win = bar.win, scope = 'local' }
-  )
-end
-
----@param bar VVScrollbarBar
----@param height integer
----@param width integer
-local function ensure_lines(bar, height, width)
-  if api.nvim_buf_line_count(bar.buf) == height and bar.width == width then return end
-
-  local lines = {}
-  local fill = string.rep(' ', width)
-  for index = 1, height do lines[index] = fill end
-
-  vim.bo[bar.buf].modifiable = true
-  api.nvim_buf_set_lines(bar.buf, 0, -1, false, lines)
-  vim.bo[bar.buf].modifiable = false
-  bar.width = width
 end
 
 ---@param parent integer
 local function render(parent)
   local viewport = geometry.viewport(parent)
-  local bar = state.bars[parent] or create_bar(parent)
-  local cfg = config.current()
+  local bar = state.bars[parent]
+  if not bar then
+    bar = window.create(parent)
+    state.bars[parent] = bar
+  end
+  local has_map_view = map_view.is_active(viewport.buf)
 
   bar.parent = parent
   bar.height = viewport.height
@@ -162,43 +86,19 @@ local function render(parent)
   -- 故把所有 extmark 行整体下移 winbar 高度，顶部空出的行留作空白 track
   local winbar_offset = geometry.win_has_winbar(parent) and 1 or 0
 
-  sync_window(parent, bar)
-  local width = api.nvim_win_get_width(bar.win)
-  ensure_lines(bar, viewport.height + winbar_offset, width)
-  api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
-
-  local row_markers = markers.collect(parent, viewport)
+  window.sync(parent, bar, has_map_view)
   local dragging = state.dragging
     and state.dragging.parent == parent
     and state.dragging.moved
-  local thumb_hl = dragging and 'VVScrollbarHover' or 'VVScrollbarThumb'
-  local track_width = bar.track_width
-  local thumb_text = string.rep(markers.cell(cfg.symbols.thumb), track_width)
-  local track_text = string.rep(' ', track_width)
-
-  for row = 0, viewport.height - 1 do
-    local buf_row = row + winbar_offset
-    local in_thumb = row >= viewport.thumb_row and row < viewport.thumb_row + viewport.thumb_height
-    api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-      virt_text = {
-        { in_thumb and thumb_text or track_text, in_thumb and thumb_hl or 'VVScrollbarTrack' },
-      },
-      virt_text_pos = 'overlay',
-      priority = 1,
-    })
-
-    local marker = row_markers[row]
-    if marker then
-      local marker_text = marker.text
-      if marker.fill_width then marker_text = string.rep(marker.text, track_width) end
-      api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-        virt_text = marker.chunks or { { marker_text, marker.hl } },
-        virt_text_pos = 'overlay',
-        hl_mode = 'combine',
-        priority = marker.priority,
-      })
-    end
-  end
+  render_ui.render(
+    parent,
+    bar,
+    viewport,
+    has_map_view,
+    winbar_offset,
+    dragging or false,
+    M.refresh
+  )
 end
 
 ---@return integer[]
@@ -257,6 +157,22 @@ function M.hit_test(screenrow, screencol)
         return bar
       end
     end
+  end
+  return nil
+end
+
+---@param bar VVScrollbarBar
+---@param row integer
+---@param screencol integer
+---@return VVScrollbarMarkerHit?
+function M.marker_at(bar, row, screencol)
+  local hits = bar.marker_hits and bar.marker_hits[row]
+  if not hits or not api.nvim_win_is_valid(bar.win) then return nil end
+
+  local left = fn.win_screenpos(bar.win)[2]
+  local col = screencol - left
+  for _, hit in ipairs(hits) do
+    if col >= hit.start_col and col < hit.end_col then return hit end
   end
   return nil
 end

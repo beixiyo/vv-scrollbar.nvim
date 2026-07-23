@@ -6,6 +6,7 @@ local config = require('vv-scrollbar.config')
 local state = require('vv-scrollbar.core.state')
 local view = require('vv-scrollbar.core.view')
 local git = require('vv-scrollbar.features.git')
+local map_view = require('vv-scrollbar.features.map_view')
 local mouse = require('vv-scrollbar.input.mouse')
 local highlights = require('vv-scrollbar.ui.highlights')
 local events = require('vv-scrollbar.lifecycle.events')
@@ -62,6 +63,7 @@ function M.disable()
   mouse.detach()
   events.detach()
   view.close_all()
+  map_view.clear_all()
   close_refresh_throttle()
 end
 
@@ -76,6 +78,7 @@ end
 ---@param opts? VVScrollbarConfig
 function M.setup(opts)
   config.apply(opts)
+  map_view.clear_all()
 
   close_refresh_throttle()
   if config.current().enabled or state.enabled then ensure_refresh_throttle() end

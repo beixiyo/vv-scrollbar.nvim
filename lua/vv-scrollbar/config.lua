@@ -4,6 +4,9 @@ local SEV = vim.diagnostic.severity
 
 ---@class VVScrollbarHighlightConfig
 ---@field track vim.api.keyset.highlight 轨道背景 @default { bg = '#20242b' }
+---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = '#20242b', bg = '#20242b' }
+---@field map_view vim.api.keyset.highlight 代码地图 @default { fg = '#565f89' }
+---@field map_cursor vim.api.keyset.highlight 地图当前行细标记 @default { fg = '#7aa2f7' }
 ---@field thumb vim.api.keyset.highlight 当前视口 thumb @default { bg = '#3b4252' }
 ---@field hover vim.api.keyset.highlight 拖拽中的 thumb @default { bg = '#4b5568' }
 ---@field cursor vim.api.keyset.highlight 光标位置 @default { fg = '#7aa2f7' }
@@ -32,6 +35,32 @@ local SEV = vim.diagnostic.severity
 ---@field quickfix boolean 是否显示 quickfix / loclist @default true
 ---@field cursor boolean 是否显示光标位置 @default true
 
+---@class VVScrollbarMapViewCursorConfig
+---@field style 'dots'|'line'|'full'|'hidden' 当前行样式 @default 'dots'
+---@field side 'left'|'right' 细线所在侧 @default 'right'
+---@field width integer 细线宽度 @default 1
+---@field symbol string 细线字符 @default '▎'
+
+---@class VVScrollbarMapViewConfig
+---@field enabled boolean 是否显示代码地图 @default true
+---@field mode 'fit' 当前地图布局模式 @default 'fit'
+---@field width 'auto'|integer 地图模式宽度 @default 'auto'
+---@field min_width integer 自动宽度下限 @default 8
+---@field max_width integer 自动宽度上限 @default 16
+---@field width_ratio number 自动宽度占父布局的比例 @default 0.14
+---@field x_multiplier integer 每个横向采样点覆盖的源代码屏幕列数 @default 4
+---@field max_lines_per_dot integer 每个纵向地图点最多采样的源代码行数，0 表示不限制 @default 8
+---@field tab_width 'buffer'|integer tab 显示宽度 @default 'buffer'
+---@field include_whitespace boolean 是否把空白字符绘制为代码点 @default false
+---@field debounce_ms integer 文本变化后重建地图的延迟 @default 150
+---@field max_lines integer 允许生成地图的最大文件行数 @default 50000
+---@field large_file_behavior 'scrollbar' 超过行数限制时的降级方式 @default 'scrollbar'
+---@field show_on_short_buffers boolean 文件无需滚动时是否仍显示代码地图 @default true
+---@field preserve_map_under_thumb boolean thumb 是否仅叠加背景并保留地图字符 @default true
+---@field marker_position 'left'|'right' marker 浮动侧 @default 'right'
+---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
+---@field cursor VVScrollbarMapViewCursorConfig 当前行样式
+
 ---@class VVScrollbarConfig
 ---@field enabled boolean 是否启用 @default true
 ---@field current_only boolean 是否只显示当前窗口 @default false
@@ -44,6 +73,7 @@ local SEV = vim.diagnostic.severity
 ---@field excluded_buftypes string[] 排除的 buftype @default { 'nofile', 'terminal', 'prompt', 'quickfix' }
 ---@field window_filter? fun(win:integer, buf:integer):boolean 窗口过滤器，返回 false 时隐藏滚动条 @default nil
 ---@field markers VVScrollbarMarkerConfig 标记开关
+---@field map_view VVScrollbarMapViewConfig 代码地图配置
 ---@field symbols VVScrollbarSymbolsConfig 标记字符
 ---@field highlights VVScrollbarHighlightConfig 高亮定义
 
@@ -62,6 +92,31 @@ local defaults = {
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
   window_filter = nil,
+  map_view = {
+    enabled = true,
+    mode = 'fit',
+    width = 'auto',
+    min_width = 8,
+    max_width = 16,
+    width_ratio = 0.14,
+    x_multiplier = 4,
+    max_lines_per_dot = 8,
+    tab_width = 'buffer',
+    include_whitespace = false,
+    debounce_ms = 150,
+    max_lines = 50000,
+    large_file_behavior = 'scrollbar',
+    show_on_short_buffers = true,
+    preserve_map_under_thumb = true,
+    marker_position = 'right',
+    marker_click = 'center',
+    cursor = {
+      style = 'dots',
+      side = 'right',
+      width = 1,
+      symbol = '▎',
+    },
+  },
   markers = {
     diagnostics = true,
     git = true,
@@ -90,6 +145,9 @@ local defaults = {
   },
   highlights = {
     track = { bg = '#20242b' },
+    separator = { fg = '#20242b', bg = '#20242b' },
+    map_view = { fg = '#565f89' },
+    map_cursor = { fg = '#7aa2f7' },
     thumb = { bg = '#3b4252' },
     hover = { bg = '#4b5568' },
     cursor = { fg = '#7aa2f7' },
@@ -115,12 +173,94 @@ local function positive_integer(value, fallback)
   return math.max(math.floor(number), 1)
 end
 
+---@param value any
+---@param fallback number
+---@return number
+local function positive_number(value, fallback)
+  local number = tonumber(value)
+  if not number or number <= 0 then return fallback end
+  return number
+end
+
 ---@param opts? VVScrollbarConfig
 ---@return VVScrollbarConfig
 function M.apply(opts)
   current = vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})
+
   current.width = positive_integer(current.width, defaults.width)
   current.min_thumb = positive_integer(current.min_thumb, defaults.min_thumb)
+
+  current.map_view.min_width = positive_integer(
+    current.map_view.min_width,
+    defaults.map_view.min_width
+  )
+
+  current.map_view.max_width = math.max(
+    positive_integer(current.map_view.max_width, defaults.map_view.max_width),
+    current.map_view.min_width
+  )
+
+  if current.map_view.width ~= 'auto' then
+    current.map_view.width = positive_integer(current.map_view.width, defaults.map_view.max_width)
+  end
+
+  current.map_view.width_ratio = positive_number(
+    current.map_view.width_ratio,
+    defaults.map_view.width_ratio
+  )
+
+  current.map_view.x_multiplier = positive_integer(
+    current.map_view.x_multiplier,
+    defaults.map_view.x_multiplier
+  )
+
+  current.map_view.max_lines_per_dot = math.max(
+    math.floor(
+      tonumber(current.map_view.max_lines_per_dot) or defaults.map_view.max_lines_per_dot
+    ),
+    0
+  )
+
+  if current.map_view.tab_width ~= 'buffer' then
+    current.map_view.tab_width = positive_integer(
+      current.map_view.tab_width,
+      vim.o.tabstop
+    )
+  end
+
+  current.map_view.debounce_ms = math.max(
+    math.floor(tonumber(current.map_view.debounce_ms) or defaults.map_view.debounce_ms),
+    0
+  )
+
+  current.map_view.max_lines = positive_integer(
+    current.map_view.max_lines,
+    defaults.map_view.max_lines
+  )
+
+  current.map_view.mode = 'fit'
+  current.map_view.large_file_behavior = 'scrollbar'
+  if current.map_view.marker_position ~= 'left' then
+    current.map_view.marker_position = 'right'
+  end
+  if not vim.tbl_contains({ 'center', 'top', 'scrollbar' }, current.map_view.marker_click) then
+    current.map_view.marker_click = defaults.map_view.marker_click
+  end
+  if not vim.tbl_contains({ 'dots', 'line', 'full', 'hidden' }, current.map_view.cursor.style) then
+    current.map_view.cursor.style = defaults.map_view.cursor.style
+  end
+  if current.map_view.cursor.side ~= 'left' then
+    current.map_view.cursor.side = 'right'
+  end
+  current.map_view.cursor.width = positive_integer(
+    current.map_view.cursor.width,
+    defaults.map_view.cursor.width
+  )
+  if type(current.map_view.cursor.symbol) ~= 'string'
+      or current.map_view.cursor.symbol == ''
+  then
+    current.map_view.cursor.symbol = defaults.map_view.cursor.symbol
+  end
   current.right_offset = math.max(
     math.floor(tonumber(current.right_offset) or defaults.right_offset),
     0

@@ -22,6 +22,16 @@ local git_hl = {
   D = 'VVGitDeleted',
 }
 
+local PRIORITY = {
+  search = 45,
+  mark = 50,
+  quickfix = 55,
+  git = 65,
+  git_delete = 70,
+  diagnostic = 80,
+  cursor = 90,
+}
+
 ---@param text string?
 ---@return string
 function M.cell(text)
@@ -35,16 +45,19 @@ end
 ---@param text string?
 ---@param hl string
 ---@param priority integer
----@param fill_width? boolean
-local function add_marker(markers, row, text, hl, priority, fill_width)
+---@param opts? { fill_width?: boolean, source_line?: integer, kind?: string }
+local function add_marker(markers, row, text, hl, priority, opts)
   if row == nil or not text or text == '' then return end
   local current = markers[row]
   if current and current.priority > priority then return end
+  opts = opts or {}
   markers[row] = {
     text = M.cell(text),
     hl = hl,
     priority = priority,
-    fill_width = fill_width or false,
+    fill_width = opts.fill_width or false,
+    source_line = opts.source_line,
+    kind = opts.kind,
   }
 end
 
@@ -72,14 +85,16 @@ local function add_diagnostics(markers, viewport)
       geometry.line_to_row(line, viewport.line_count, viewport.height),
       cfg.symbols.diagnostics[severity],
       symbol and symbol.hl or diag_hl[severity],
-      80 - severity
+      PRIORITY.diagnostic - severity,
+      { source_line = line, kind = 'diagnostic' }
     )
   end
 end
 
 ---@param markers table
 ---@param viewport table
-local function add_git(markers, viewport)
+---@param track_width integer
+local function add_git(markers, viewport, track_width)
   local cfg = config.current()
   if not cfg.markers.git then return end
 
@@ -90,32 +105,48 @@ local function add_git(markers, viewport)
       local row = geometry.line_to_row(line, viewport.line_count, viewport.height)
       rows[row] = rows[row] or {}
       local current = rows[row][channel]
-      local priority = kind == 'D' and 70 or 65
+      local priority = kind == 'D' and PRIORITY.git_delete or PRIORITY.git
       if not current or priority > current.priority then
-        rows[row][channel] = { kind = kind, priority = priority }
+        rows[row][channel] = { kind = kind, priority = priority, source_line = line }
       end
     end
   end
 
   for row, channels in pairs(rows) do
     local chunks = {}
-    local priority = 65
-    local channel_names = cfg.width >= 2 and { 'staged', 'unstaged' } or { 'merged' }
+    local hits = {}
+    local chunk_width = 0
+    local priority = PRIORITY.git
+    local channel_names = track_width >= 2 and { 'staged', 'unstaged' } or { 'merged' }
     for _, channel in ipairs(channel_names) do
       local marker = channel == 'merged'
         and (channels.unstaged or channels.staged)
         or channels[channel]
       if marker then
-        chunks[#chunks + 1] = { M.cell(cfg.symbols.git[marker.kind]), git_hl[marker.kind] }
+        local text = M.cell(cfg.symbols.git[marker.kind])
+        local width = fn.strdisplaywidth(text)
+        chunks[#chunks + 1] = { text, git_hl[marker.kind] }
+        hits[#hits + 1] = {
+          start_col = chunk_width,
+          end_col = chunk_width + width,
+          source_line = marker.source_line,
+        }
+        chunk_width = chunk_width + width
         priority = math.max(priority, marker.priority)
       else
         chunks[#chunks + 1] = { ' ', 'VVScrollbarTrack' }
+        chunk_width = chunk_width + 1
       end
     end
 
     local current = markers[row]
     if not current or current.priority <= priority then
-      markers[row] = { chunks = chunks, priority = priority }
+      markers[row] = {
+        chunks = chunks,
+        priority = priority,
+        kind = 'git',
+        hits = hits,
+      }
     end
   end
 end
@@ -141,7 +172,8 @@ local function add_search(markers, viewport)
         geometry.line_to_row(match.lnum, viewport.line_count, viewport.height),
         cfg.symbols.search,
         'VVScrollbarSearch',
-        45
+        PRIORITY.search,
+        { source_line = match.lnum, kind = 'search' }
       )
     end
   end
@@ -163,7 +195,8 @@ local function add_marks(markers, viewport)
             geometry.line_to_row(line, viewport.line_count, viewport.height),
             cfg.symbols.mark,
             'VVScrollbarMark',
-            50
+            PRIORITY.mark,
+            { source_line = line, kind = 'mark' }
           )
         end
       end
@@ -186,7 +219,8 @@ local function add_quickfix(win, markers, viewport)
           geometry.line_to_row(item.lnum, viewport.line_count, viewport.height),
           cfg.symbols.quickfix,
           'VVScrollbarQuickfix',
-          55
+          PRIORITY.quickfix,
+          { source_line = item.lnum, kind = 'quickfix' }
         )
       end
     end
@@ -209,22 +243,24 @@ local function add_cursor(win, markers, viewport)
     geometry.line_to_row(cursor[1], viewport.line_count, viewport.height),
     cfg.symbols.cursor,
     'VVScrollbarCursor',
-    90,
-    true
+    PRIORITY.cursor,
+    { fill_width = true, source_line = cursor[1], kind = 'cursor' }
   )
 end
 
 ---@param win integer
 ---@param viewport table
+---@param opts? { cursor?: boolean, track_width?: integer }
 ---@return table
-function M.collect(win, viewport)
+function M.collect(win, viewport, opts)
+  opts = opts or {}
   local markers = {}
   add_diagnostics(markers, viewport)
-  add_git(markers, viewport)
+  add_git(markers, viewport, opts.track_width or config.current().width)
   add_search(markers, viewport)
   add_marks(markers, viewport)
   add_quickfix(win, markers, viewport)
-  add_cursor(win, markers, viewport)
+  if opts.cursor ~= false then add_cursor(win, markers, viewport) end
   return markers
 end
 
