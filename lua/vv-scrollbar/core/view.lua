@@ -69,6 +69,10 @@ end
 local function render(parent)
   local viewport = geometry.viewport(parent)
   local bar = state.bars[parent]
+  if bar and not window.is_attached(parent, bar) then
+    window.close(bar)
+    bar = nil
+  end
   if not bar then
     bar = window.create(parent)
     state.bars[parent] = bar
