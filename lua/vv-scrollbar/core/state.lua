@@ -30,7 +30,9 @@
 ---@field content_id? string
 ---@field row_markers? table<integer, VVScrollbarMarker>
 ---@field marker_hits? table<integer, VVScrollbarMarkerHit[]>
+---@field map_mode? 'viewport'|'fit'
 ---@field map_layout? VVScrollbarMapLayout
+---@field map_columns? VVScrollbarMapColumns
 ---@field parent_separator_hl? { present: boolean, target?: string }
 
 ---@class VVScrollbarDragState
@@ -56,6 +58,14 @@
 ---@field thumb_row integer
 ---@field thumb_height integer
 ---@field rows_per_cell number
+
+---@class VVScrollbarMapColumns
+---@field mode 'overlay'|'left'|'right'
+---@field track_width integer
+---@field map_start_col integer
+---@field map_width integer
+---@field marker_start_col integer
+---@field marker_width integer
 
 local M = {
   enabled = false,

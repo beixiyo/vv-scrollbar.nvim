@@ -47,7 +47,7 @@ local function should_show(win)
   if vim.wo[win].winfixbuf then return false end
   if geometry.win_height(win) <= 0 or api.nvim_win_get_width(win) <= 0 then return false end
 
-  if map_view.is_active(buf) and cfg.map_view.show_on_short_buffers then return true end
+  if map_view.resolve_mode(win, buf) and cfg.map_view.show_on_short_buffers then return true end
   if vim.w[win].vv_scrollbar_always_show then return true end
 
   local line_count = api.nvim_buf_line_count(buf)
@@ -73,7 +73,8 @@ local function render(parent)
     bar = window.create(parent)
     state.bars[parent] = bar
   end
-  local has_map_view = map_view.is_active(viewport.buf)
+  local map_mode = map_view.resolve_mode(parent, viewport.buf)
+  local has_map_view = map_mode ~= nil
 
   bar.parent = parent
   bar.height = viewport.height
@@ -93,7 +94,7 @@ local function render(parent)
     parent,
     bar,
     viewport,
-    has_map_view,
+    map_mode,
     winbar_offset,
     dragging,
     M.refresh

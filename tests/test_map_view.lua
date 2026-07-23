@@ -19,6 +19,7 @@ local original_buf = api.nvim_get_current_buf()
 local source_buf = api.nvim_create_buf(false, false)
 api.nvim_buf_set_lines(source_buf, 0, -1, false, source_lines)
 api.nvim_win_set_buf(parent, source_buf)
+vim.wo[parent].wrap = false
 api.nvim_set_option_value(
   'winhighlight',
   'Normal:Normal,CursorLine:CursorLine',

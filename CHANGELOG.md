@@ -9,12 +9,15 @@
 - thumb 背景与代码地图叠层渲染，保留原有点击和拖拽语义
 - viewport 拖拽冻结、持续边缘平移、越界首尾吸附与 Esc 释放
 - marker 精确源代码行点击，以及右侧固定窗口列浮动布局
+- marker overlay、左侧 lane、右侧 lane 三种布局
+- folds、wrap、diff 的窗口级 `viewport` / `fit` / `scrollbar` 降级策略
 - `make test` 一键运行全部 headless 测试
 
 ### Changed
 
 - map view 默认改为固定比例的可滚动 `viewport`，并保留 `fit` 兼容模式
 - source viewport、地图切片和绝对 thumb 坐标保持同步，短文件不再纵向拉伸
+- 同一 buffer 的多个窗口分别维护 map viewport、thumb 与窗口生命周期
 - map view 当前行默认只改变已有 Braille dots 的颜色，不再占用额外列或覆盖 Git marker
 - map view 当前行改用更明亮的默认蓝色，并允许独立配置分栏融合色
 - 父窗口与 map view 之间的 split 分隔列默认融入地图背景，关闭时恢复原高亮

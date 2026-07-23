@@ -1,17 +1,58 @@
 local api = vim.api
 
 local config = require('vv-scrollbar.config')
+local columns = require('vv-scrollbar.features.map_view.columns')
 local layout = require('vv-scrollbar.features.map_view.layout')
 
 local M = {}
 
----@param buf integer
----@return boolean
-function M.is_active(buf)
+---@param mode 'viewport'|'fit'
+---@return VVScrollbarMapViewConfig
+local function options_for(mode)
   local opts = config.current().map_view
-  return opts.enabled
-    and api.nvim_buf_is_valid(buf)
-    and api.nvim_buf_line_count(buf) <= opts.max_lines
+  if opts.mode == mode then return opts end
+  return vim.tbl_extend('force', opts, { mode = mode })
+end
+
+---@param win integer
+---@return boolean
+local function has_visible_closed_fold(win)
+  if not vim.wo[win].foldenable then return false end
+  return api.nvim_win_call(win, function()
+    local line = vim.fn.line('w0')
+    local last = vim.fn.line('w$')
+    while line <= last do
+      if vim.fn.foldclosed(line) ~= -1 then return true end
+      line = line + 1
+    end
+    return false
+  end)
+end
+
+---@param win integer
+---@param buf integer
+---@return 'viewport'|'fit'?
+function M.resolve_mode(win, buf)
+  local opts = config.current().map_view
+  if not opts.enabled
+      or not api.nvim_buf_is_valid(buf)
+      or api.nvim_buf_line_count(buf) > opts.max_lines
+  then
+    return nil
+  end
+  if opts.mode == 'fit' then return 'fit' end
+
+  local degradation = opts.degradation
+  local fallback
+  if vim.wo[win].diff and degradation.diff ~= 'viewport' then
+    fallback = degradation.diff
+  elseif has_visible_closed_fold(win) and degradation.folds ~= 'viewport' then
+    fallback = degradation.folds
+  elseif vim.wo[win].wrap and degradation.wrap ~= 'viewport' then
+    fallback = degradation.wrap
+  end
+  if fallback == 'scrollbar' then return nil end
+  return fallback or 'viewport'
 end
 
 ---@param parent integer
@@ -34,23 +75,42 @@ end
 ---@param height integer
 ---@param width integer
 ---@param refresh fun()
+---@param mode 'viewport'|'fit'
 ---@return string[]
 ---@return string
-function M.lines(buf, height, width, refresh)
+function M.lines(buf, height, width, refresh, mode)
   return require('vv-scrollbar.features.map_view.cache').get(
     buf,
     height,
     width,
-    config.current().map_view,
+    options_for(mode),
     refresh
   )
 end
 
 ---@param viewport table
 ---@param top_override? integer
+---@param mode 'viewport'|'fit'
 ---@return VVScrollbarMapLayout
-function M.resolve_layout(viewport, top_override)
-  return layout.resolve(viewport, config.current().map_view, top_override)
+function M.resolve_layout(viewport, top_override, mode)
+  return layout.resolve(viewport, options_for(mode), top_override)
+end
+
+---@param track_width integer
+---@return VVScrollbarMapColumns
+function M.resolve_columns(track_width)
+  return columns.resolve(track_width, config.current().map_view)
+end
+
+---@param map_columns VVScrollbarMapColumns
+---@param marker_width integer
+---@return integer
+function M.marker_col(map_columns, marker_width)
+  return columns.marker_col(
+    map_columns,
+    marker_width,
+    config.current().map_view.marker_position
+  )
 end
 
 ---@param map_layout VVScrollbarMapLayout

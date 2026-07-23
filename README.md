@@ -98,6 +98,8 @@ require('vv-scrollbar').setup({
     large_file_behavior = 'scrollbar',
     show_on_short_buffers = true,
     preserve_map_under_thumb = true,
+    marker_layout = 'overlay',
+    marker_lane_width = 2,
     marker_position = 'right',
     marker_click = 'center',
     cursor = {
@@ -112,6 +114,11 @@ require('vv-scrollbar').setup({
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
+    },
+    degradation = {
+      folds = 'fit',
+      wrap = 'viewport',
+      diff = 'fit',
     },
   },
 
@@ -194,6 +201,8 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.max_lines` | `integer` | `50000` | Fall back to the classic scrollbar above this line count |
 | `map_view.show_on_short_buffers` | `boolean` | `true` | Keep the map visible when the file does not need scrolling |
 | `map_view.preserve_map_under_thumb` | `boolean` | `true` | Preserve preview characters under the thumb background |
+| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'overlay'` | Float markers over the map or reserve a left/right lane |
+| `map_view.marker_lane_width` | `integer` | `2` | Width reserved by left/right marker lanes |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker |
 | `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | Recolor map dots, draw a line, use the legacy full marker, or hide it |
@@ -205,11 +214,15 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
 | `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
+| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while a closed fold is visible |
+| `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
+| `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior for diff windows |
 
 Map text is cached by buffer content, projection size, and relevant options. Scrolling, cursor
 movement, and thumb dragging reuse the cached text instead of rescanning the source buffer.
-Markers use fixed-window-column virtual text, so right-edge Git tracks do not shift or indent the
-code preview. The default current-line style only recolors existing Braille dots and therefore does
+Overlay markers use fixed-window-column virtual text, so right-edge Git tracks do not shift or
+indent the code preview. Left and right lane modes reserve configurable columns instead. The
+default current-line style only recolors existing Braille dots and therefore does
 not compete with Git markers on the same projected row. Clicking a visible marker uses its exact
 source line instead of the proportional scrollbar coordinate.
 
