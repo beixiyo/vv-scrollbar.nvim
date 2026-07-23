@@ -13,6 +13,8 @@ local ns = vim.api.nvim_create_namespace('vv-scrollbar.mouse')
 local LEFT_MOUSE = vim.keycode('<LeftMouse>')
 local LEFT_DRAG = vim.keycode('<LeftDrag>')
 local LEFT_RELEASE = vim.keycode('<LeftRelease>')
+local SCROLL_WHEEL_UP = vim.keycode('<ScrollWheelUp>')
+local SCROLL_WHEEL_DOWN = vim.keycode('<ScrollWheelDown>')
 local ESC = vim.keycode('<Esc>')
 local LEFT_PRESSES = {
   [LEFT_MOUSE] = true,
@@ -31,6 +33,10 @@ local LEFT_RELEASES = {
   [vim.keycode('<2-LeftRelease>')] = true,
   [vim.keycode('<3-LeftRelease>')] = true,
   [vim.keycode('<4-LeftRelease>')] = true,
+}
+local WHEEL_DIRECTIONS = {
+  [SCROLL_WHEEL_UP] = 'up',
+  [SCROLL_WHEEL_DOWN] = 'down',
 }
 
 ---@type fun()?
@@ -138,10 +144,30 @@ local function finish_drag()
   redraw()
 end
 
+---@param keys table<string, any>
 ---@param key string
+---@param typed string
+---@return any
+local function key_value(keys, key, typed)
+  return keys[key] or keys[typed]
+end
+
+---@param key string
+---@param typed string
 ---@return string?
-local function on_key(key)
-  if LEFT_PRESSES[key] then
+local function on_key(key, typed)
+  local wheel_direction = key_value(WHEEL_DIRECTIONS, key, typed)
+  if wheel_direction then
+    local position = fn.getmousepos()
+    local bar = view.hit_test(position.screenrow, position.screencol)
+    if not bar then return nil end
+
+    -- bar 是真实 split；不重定向时，全局滚轮映射会把它自己的绘制 buffer 滚走
+    require('vv-utils.scroll').mouse(wheel_direction, bar.parent)
+    return ''
+  end
+
+  if key_value(LEFT_PRESSES, key, typed) then
     local position = fn.getmousepos()
     local bar = view.hit_test(position.screenrow, position.screencol)
     if not bar then return nil end
@@ -163,12 +189,12 @@ local function on_key(key)
     return ''
   end
 
-  if LEFT_DRAGS[key] and state.dragging then
+  if key_value(LEFT_DRAGS, key, typed) and state.dragging then
     continue_drag(fn.getmousepos())
     return ''
   end
 
-  if LEFT_RELEASES[key] then
+  if key_value(LEFT_RELEASES, key, typed) then
     if state.dragging then
       finish_drag()
       return ''
@@ -180,7 +206,7 @@ local function on_key(key)
     return nil
   end
 
-  if key == ESC and state.dragging then
+  if (key == ESC or typed == ESC) and state.dragging then
     finish_drag()
     return ''
   end

@@ -27,23 +27,11 @@ Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfile
 
 ## Features
 
-- A default-enabled Braille code map with adaptive width and a cached, debounced renderer
-- A full-height background track and a thumb sized from the visible-content ratio
-- Click the track to jump, or drag the thumb while preserving the original grab offset
-- Pressing the thumb immediately shows its active color; dragging keeps the same feedback
-- Integration with `vv-utils.scroll` prevents automatic smooth scrolling from pulling interactions back to an old view
-- A real split reserves width, so the scrollbar never covers text at the end of a parent-window line
-- Configurable width with track and thumb filling the available cells; the default is two cells
-- Neovim's separator cell blends into the map background and restores its previous highlight on close
-- Cursor markers fill the scrollbar width, Git uses two tracks, and other markers remain one character wide
-- Multiple windows are supported, with an option to display only the current window
-- Built-in diagnostics, Git diff, search, Vim marks, quickfix/loclist, and cursor markers
-- Automatic updates for scrolling, window changes, resizing, text edits, diagnostics, and Git state
-- Pure Lua implementation sharing UI and async infrastructure through `vv-utils.nvim`
+Brings a VS Code-like minimap scrolling experience to Neovim:
 
-## Dual Git tracks
-
-The two cells in a normal file window carry independent Git states. The left cell represents staged changes from `HEAD` to the index, while the right cell represents unstaged changes from the index to the worktree. A line modified again after staging can color both tracks instead of losing one state to priority. Staged coordinates are mapped from the index onto the current worktree buffer. A staged scratch buffer created by `vv-git` uses only the left track.
+- Click the map or a marker to jump
+- Drag the viewport to scroll through code
+- Use the mouse wheel over the map to scroll its source window
 
 ## Installation
 
@@ -57,7 +45,7 @@ The two cells in a normal file window carry independent Git states. The left cel
 }
 ```
 
-Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts left-button press/drag/release events, including rapid multi-clicks, and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
+Neovim 0.11 or newer is required. The scrollbar is a `style = 'minimal'` split window; mouse interaction is handled entirely by `vim.on_key()`, which intercepts left-button press/drag/release and vertical wheel events, including rapid multi-clicks, and maps the `getmousepos()` screen coordinates onto the bar via a hit-test.
 
 ## Complete configuration
 

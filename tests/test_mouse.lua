@@ -8,6 +8,7 @@ local hit_bar = true
 local marker_hit = false
 local refresh_count = 0
 local scroll_calls = {}
+local wheel_calls = {}
 local viewport_updates = 0
 local bar = {
   parent = 12,
@@ -48,6 +49,12 @@ package.loaded['vv-scrollbar.core.geometry'] = {
 package.loaded['vv-scrollbar.core.state'] = state
 package.loaded['vv-scrollbar.features.map_view'] = {
   row_to_line = function(_, row) return row + 1 end,
+}
+package.loaded['vv-utils.scroll'] = {
+  mouse = function(direction, win)
+    wheel_calls[#wheel_calls + 1] = { direction = direction, win = win }
+    return true
+  end,
 }
 package.loaded['vv-scrollbar.input.viewport_drag'] = {
   update = function(layout, mouse_row, offset)
@@ -122,11 +129,44 @@ assert(on_key(vim.keycode('<2-LeftMouse>')) == '', 'marker double-click press es
 assert(state.dragging == nil, 'marker click unexpectedly started dragging')
 assert(on_key(vim.keycode('<2-LeftRelease>')) == '', 'marker double-click release escaped')
 
+marker_hit = false
+mouse_position.screenrow = 5
+local mapped_key = vim.keycode('<F24>')
+assert(
+  on_key(mapped_key, vim.keycode('<ScrollWheelDown>')) == '',
+  'mapped wheel event over the bar was not consumed'
+)
+assert(
+  #wheel_calls == 1
+    and wheel_calls[1].direction == 'down'
+    and wheel_calls[1].win == bar.parent,
+  'wheel event was not redirected to the source window'
+)
+
 hit_bar = false
 assert(on_key(vim.keycode('<2-LeftMouse>')) == nil, 'double-click outside the bar was swallowed')
 assert(on_key(vim.keycode('<2-LeftRelease>')) == nil, 'release outside the bar was swallowed')
+assert(
+  on_key(mapped_key, vim.keycode('<ScrollWheelUp>')) == nil,
+  'wheel event outside the bar was swallowed'
+)
+assert(#wheel_calls == 1, 'wheel event outside the bar reached the source redirect')
+
+hit_bar = true
+local mapped_wheel_calls = 0
+vim.keymap.set('n', '<ScrollWheelDown>', function()
+  mapped_wheel_calls = mapped_wheel_calls + 1
+end)
+
+mouse.detach()
+mouse.attach(function() refresh_count = refresh_count + 1 end)
+vim.api.nvim_feedkeys(vim.keycode('<ScrollWheelDown>'), 'mtx', false)
+
+assert(mapped_wheel_calls == 0, 'wheel mapping ran before vv-scrollbar could redirect it')
+assert(#wheel_calls == 2, 'real mapped wheel input did not reach the source redirect')
 
 vim.fn.getmousepos = original_getmousepos
+vim.keymap.del('n', '<ScrollWheelDown>')
 mouse.detach()
 
-print('PASS: click stability, deferred map freeze, and multi-click isolation')
+print('PASS: click stability, wheel redirect, deferred map freeze, and multi-click isolation')

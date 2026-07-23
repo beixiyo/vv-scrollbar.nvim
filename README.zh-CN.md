@@ -26,26 +26,11 @@
 
 ## 特性
 
-- 默认开启的 Braille 代码地图，支持自适应宽度、缓存与延迟重建
-- 完整窗口高度的背景轨道，以及按可见内容比例计算的 thumb
-- 点击轨道直接跳转；拖动 thumb 时保留鼠标抓取位置
-- 按下 thumb 立即显示 active 色，拖拽时保持相同反馈
-- 与 `vv-utils.scroll` 协作，滚动条交互不会被自动平滑滚动拉回旧位置
-- 使用真实分栏预留宽度，不会覆盖父窗口的行末文本
-- 宽度可配置，轨道与 thumb 会占满实际宽度，默认 `2` 格
-- Neovim 保留的 `1` 格窗口分隔列默认与地图背景融合，并在关闭插件后恢复原高亮
-- 当前光标标记占满滚动条宽度，Git 使用双轨，其余 marker 保持单字符显示
-- 支持多窗口，也可只显示当前窗口
-- 内置 diagnostics、Git diff、搜索、Vim marks、quickfix / loclist、光标位置标记
-- 自动响应滚动、窗口切换、尺寸变化、文本修改、诊断变化和 Git 状态变化
-- 纯 Lua 实现，UI 与异步基础能力统一复用 `vv-utils.nvim`
+在 Neovim 中提供类似 VSCode Minimap 的代码滚动地图体验：
 
-## Git 双轨规则
-
-普通文件窗口的两格轨道分别承载两套 Git 状态：左格表示 `HEAD → Index` 的
-**staged** 改动，右格表示 `Index → Worktree` 的 **unstaged** 改动。同一行暂存后
-再次修改时两格可以同时染色，不通过优先级互相覆盖。staged marker 会先从 Index 行号
-映射到当前 Worktree buffer；`vv-git` 的 staged scratch buffer 仍只使用左格
+- 点击地图或标记快速跳转
+- 拖拽可视区域滚动代码
+- 在地图区域使用鼠标滚轮滚动对应源窗口
 
 ## 安装
 
@@ -60,7 +45,7 @@
 ```
 
 需要 Neovim `0.11+`。滚动条是一个 `style = 'minimal'` 的分屏窗口；鼠标交互完全由
-`vim.on_key()` 拦截左键按下、拖拽、松开事件（包括快速多击），再用 `getmousepos()`
+`vim.on_key()` 拦截左键按下、拖拽、松开事件（包括快速多击）与垂直滚轮事件，再用 `getmousepos()`
 的屏幕坐标命中滚动条实现
 
 ## 完整配置
