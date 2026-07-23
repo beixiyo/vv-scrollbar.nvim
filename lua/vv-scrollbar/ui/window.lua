@@ -92,6 +92,8 @@ function M.create(parent)
   vim.bo[buf].filetype = 'vv-scrollbar'
   vim.bo[buf].undolevels = -1
 
+  require('vv-utils.mouse').block_visual_drag(buf)
+
   return {
     win = -1,
     buf = buf,

@@ -51,6 +51,13 @@ view.refresh()
 
 local bar = state.bars[parent]
 assert(bar and api.nvim_win_is_valid(bar.win), 'default map view did not create a scrollbar')
+local visual_guards = api.nvim_get_autocmds({ event = 'ModeChanged', buffer = bar.buf })
+assert(
+  vim.iter(visual_guards):any(function(autocmd)
+    return autocmd.desc == 'vv-utils: 面板禁止鼠标拖拽 / 多击进入 visual'
+  end),
+  'scrollbar buffer did not install the nofile visual-mode guard'
+)
 assert(scrollbar.get_config().map_view.enabled, 'map view is not enabled by default')
 assert(scrollbar.get_config().map_view.mode == 'viewport', 'viewport mode is not the default')
 assert(bar.track_width >= 8 and bar.track_width <= 16, 'auto map width escaped configured bounds')

@@ -14,6 +14,24 @@ local LEFT_MOUSE = vim.keycode('<LeftMouse>')
 local LEFT_DRAG = vim.keycode('<LeftDrag>')
 local LEFT_RELEASE = vim.keycode('<LeftRelease>')
 local ESC = vim.keycode('<Esc>')
+local LEFT_PRESSES = {
+  [LEFT_MOUSE] = true,
+  [vim.keycode('<2-LeftMouse>')] = true,
+  [vim.keycode('<3-LeftMouse>')] = true,
+  [vim.keycode('<4-LeftMouse>')] = true,
+}
+local LEFT_DRAGS = {
+  [LEFT_DRAG] = true,
+  [vim.keycode('<2-LeftDrag>')] = true,
+  [vim.keycode('<3-LeftDrag>')] = true,
+  [vim.keycode('<4-LeftDrag>')] = true,
+}
+local LEFT_RELEASES = {
+  [LEFT_RELEASE] = true,
+  [vim.keycode('<2-LeftRelease>')] = true,
+  [vim.keycode('<3-LeftRelease>')] = true,
+  [vim.keycode('<4-LeftRelease>')] = true,
+}
 
 ---@type fun()?
 local refresh
@@ -81,12 +99,12 @@ local function start_drag(bar, mouse_row)
     parent = bar.parent,
     offset = offset,
     moved = false,
-    map_top = bar.map_layout
-        and bar.map_layout.mode == 'viewport'
-        and bar.map_layout.top_row
-      or nil,
+    map_top = nil,
   }
-  scroll_to_row(bar, mouse_row - offset)
+
+  -- 按住已有 thumb 只切换 active 样式，不重复做一次比例换算；后者受取整、fold
+  -- 等因素影响，可能让源窗口和地图在按下 / 松开时各跳一次
+  if not in_thumb then scroll_to_row(bar, mouse_row - offset) end
   redraw()
 end
 
@@ -100,6 +118,8 @@ local function continue_drag(position)
 
   drag.moved = true
   if bar.map_layout and bar.map_layout.mode == 'viewport' then
+    -- 只有真正开始拖拽才冻结地图窗口；普通点击始终沿用当前同步后的投影
+    if drag.map_top == nil then drag.map_top = bar.map_layout.top_row end
     drag.mouse_row = geometry.screenrow_to_bar_row_raw(drag.parent, position.screenrow)
     if drag.mouse_row == nil then return end
     if apply_viewport_drag(bar, drag) then schedule_edge_scroll(drag) end
@@ -121,7 +141,7 @@ end
 ---@param key string
 ---@return string?
 local function on_key(key)
-  if key == LEFT_MOUSE then
+  if LEFT_PRESSES[key] then
     local position = fn.getmousepos()
     local bar = view.hit_test(position.screenrow, position.screencol)
     if not bar then return nil end
@@ -143,19 +163,24 @@ local function on_key(key)
     return ''
   end
 
-  if not state.dragging then return nil end
-
-  if key == LEFT_DRAG then
+  if LEFT_DRAGS[key] and state.dragging then
     continue_drag(fn.getmousepos())
     return ''
   end
 
-  if key == LEFT_RELEASE then
-    finish_drag()
-    return ''
+  if LEFT_RELEASES[key] then
+    if state.dragging then
+      finish_drag()
+      return ''
+    end
+
+    -- marker 点击不会建立拖拽状态，但 release 仍需消费，避免它重新落回 nofile 窗口
+    local position = fn.getmousepos()
+    if view.hit_test(position.screenrow, position.screencol) then return '' end
+    return nil
   end
 
-  if key == ESC then
+  if key == ESC and state.dragging then
     finish_drag()
     return ''
   end
