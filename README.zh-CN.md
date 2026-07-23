@@ -124,6 +124,18 @@ require('vv-scrollbar').setup({
       wrap = 'viewport',
       diff = 'fit',
     },
+    syntax = {
+      enabled = true,
+      max_lines = 2000,
+      max_bytes = 524288,
+      max_captures = 30000,
+      max_time_ms = 100,
+      fallback = 'mono',
+      capture_map = {
+        -- keyword = 'Keyword',
+        -- comment = false,
+      },
+    },
   },
 
   markers = {
@@ -232,13 +244,18 @@ require('vv-scrollbar').setup({
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 出现可见关闭折叠时的行为 |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | diff 窗口的行为 |
+| `map_view.syntax.enabled` | `boolean` | `true` | 使用 Tree-sitter capture 为地图点着色 |
+| `map_view.syntax.max_lines` | `integer` | `2000` | 语法着色最大文件行数；`0` 表示不限制 |
+| `map_view.syntax.max_bytes` | `integer` | `524288` | 语法着色最大文件字节数；`0` 表示不限制 |
+| `map_view.syntax.max_captures` | `integer` | `30000` | 一次地图重建最多读取的 Tree-sitter 高亮片段数；超出后整张地图使用基础单色；`0` 表示不限制 |
+| `map_view.syntax.max_time_ms` | `integer` | `100` | 读取高亮片段并生成颜色区间的软时间上限，不含语法树解析和 Braille 绘制；超时后整张地图使用基础单色；`0` 表示不限制 |
+| `map_view.syntax.fallback` | `'mono'\|'scrollbar'` | `'mono'` | 文件超过 `max_lines` 或 `max_bytes` 时，保留单色地图或关闭地图并显示经典滚动条 |
+| `map_view.syntax.capture_map` | `table<string,string\|false>` | `{}` | 按完整 capture 或根类别覆盖高亮组；`false` 使用单色 |
 
-地图按 buffer 内容、投影尺寸和相关配置缓存。滚动、光标移动与 thumb 拖拽只复用
-缓存结果，不会重新扫描源代码
-overlay marker 使用固定窗口列的虚拟文本浮在地图边缘，不会挤压代码轮廓；left / right
-模式则按配置宽度保留独立 lane
-默认当前行样式只改变已有 Braille dots 的颜色，不会与同一投影行的 Git marker 竞争
-点击可见 marker 时使用其精确源代码行，不再通过滚动条比例估算
+地图内容按 buffer 与投影配置缓存，滚动和拖拽不会重复扫描源代码。语法着色默认跟随
+当前 Tree-sitter 主题并支持 injected language；可通过 `capture_map` 覆盖颜色，或设为
+`false` 使用基础地图色。缺少 parser / highlight query，或高亮片段过多、处理过久时，也会
+自动使用基础地图色
 
 ### 窗口级控制
 

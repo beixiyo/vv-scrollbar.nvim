@@ -43,13 +43,19 @@ local function refresh_visible_git()
   git.refresh_visible(schedule_refresh)
 end
 
+local function refresh_colors()
+  map_view.clear_all()
+  highlights.setup()
+  refresh()
+end
+
 function M.enable()
   if state.enabled then return end
 
   ensure_refresh_throttle()
   state.enabled = true
   highlights.setup()
-  events.attach(schedule_refresh, refresh_visible_git, refresh)
+  events.attach(schedule_refresh, refresh_visible_git, refresh, refresh_colors)
   mouse.attach(refresh)
   refresh_visible_git()
   schedule_refresh()

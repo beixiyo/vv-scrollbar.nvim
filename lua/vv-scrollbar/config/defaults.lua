@@ -57,6 +57,15 @@ return {
       wrap = 'viewport',
       diff = 'fit',
     },
+    syntax = {
+      enabled = true,
+      max_lines = 2000,
+      max_bytes = 524288,
+      max_captures = 30000,
+      max_time_ms = 100,
+      fallback = 'mono',
+      capture_map = {},
+    },
   },
   markers = {
     diagnostics = true,

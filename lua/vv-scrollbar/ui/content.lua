@@ -23,12 +23,14 @@ end
 ---@param opts { buf: integer, height: integer, track_width: integer, width: integer, winbar_offset: integer, map_layout?: VVScrollbarMapLayout, map_columns?: VVScrollbarMapColumns, refresh: fun() }
 ---@return string[]
 ---@return string
+---@return table<integer,VVScrollbarMapHighlight[]>
 function M.build(opts)
   local lines = {}
+  local highlights = {}
   local map_layout = opts.map_layout
   local map_columns = opts.map_columns
   if map_layout and map_columns then
-    local map_lines, cache_id = map_view.lines(
+    local map_lines, cache_id, map_highlights = map_view.lines(
       opts.buf,
       map_layout.content_height,
       map_columns.map_width,
@@ -44,10 +46,21 @@ function M.build(opts)
     if opts.winbar_offset > 0 then lines[1] = string.rep(' ', opts.width) end
 
     for index = 1, opts.height do
-      local line = map_lines[map_layout.top_row + index]
+      local map_row = map_layout.top_row + index
+      local line = map_lines[map_row]
         or string.rep(' ', map_columns.map_width)
-      lines[index + opts.winbar_offset] =
+      local destination_row = index + opts.winbar_offset
+      lines[destination_row] =
         left_fill .. line .. track_right_fill .. window_right_fill
+
+      for _, span in ipairs(map_highlights and map_highlights[map_row] or {}) do
+        highlights[destination_row] = highlights[destination_row] or {}
+        highlights[destination_row][#highlights[destination_row] + 1] = {
+          start_col = map_columns.map_start_col + span.start_col,
+          end_col = map_columns.map_start_col + span.end_col,
+          hl_group = span.hl_group,
+        }
+      end
     end
     return lines, table.concat({
       'map',
@@ -58,7 +71,7 @@ function M.build(opts)
       map_layout.top_row,
       map_columns.mode,
       map_columns.map_width,
-    }, ':')
+    }, ':'), highlights
   end
 
   local fill = string.rep(' ', opts.width)
@@ -68,7 +81,7 @@ function M.build(opts)
     opts.height,
     opts.width,
     opts.winbar_offset,
-  }, ':')
+  }, ':'), highlights
 end
 
 return M

@@ -3,6 +3,7 @@ local api = vim.api
 local config = require('vv-scrollbar.config')
 local columns = require('vv-scrollbar.features.map_view.columns')
 local layout = require('vv-scrollbar.features.map_view.layout')
+local syntax = require('vv-scrollbar.features.map_view.syntax')
 
 local M = {}
 
@@ -40,6 +41,7 @@ function M.resolve_mode(win, buf)
   then
     return nil
   end
+  if syntax.behavior(buf, opts.syntax) == 'scrollbar' then return nil end
   if opts.mode == 'fit' then return 'fit' end
 
   local degradation = opts.degradation
@@ -78,6 +80,7 @@ end
 ---@param mode 'viewport'|'fit'
 ---@return string[]
 ---@return string
+---@return table<integer,VVScrollbarMapHighlight[]>
 function M.lines(buf, height, width, refresh, mode)
   return require('vv-scrollbar.features.map_view.cache').get(
     buf,
@@ -134,6 +137,7 @@ end
 
 function M.clear_all()
   require('vv-scrollbar.features.map_view.cache').clear_all()
+  syntax.clear_palette()
 end
 
 return M

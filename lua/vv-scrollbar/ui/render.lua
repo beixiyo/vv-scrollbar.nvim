@@ -13,8 +13,9 @@ local M = {}
 local ns = api.nvim_create_namespace('vv-scrollbar')
 local LAYER_PRIORITY = {
   map = 1,
-  thumb = 2,
-  cursor = 3,
+  syntax = 2,
+  thumb = 3,
+  cursor = 4,
 }
 
 ---@param chunks string[][]
@@ -88,7 +89,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
       and map_view.resolve_layout(viewport, dragging and dragging.map_top, map_mode)
     or nil
   local map_columns = has_map_view and map_view.resolve_columns(track_width) or nil
-  local content_lines, content_id = content.build({
+  local content_lines, content_id, map_highlights = content.build({
     buf = viewport.buf,
     height = viewport.height,
     track_width = track_width,
@@ -144,6 +145,18 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
           hl_group = 'VVScrollbarMapView',
           priority = LAYER_PRIORITY.map,
         })
+      end
+
+      for _, span in ipairs(map_highlights and map_highlights[buf_row + 1] or {}) do
+        local start_col = vim.str_byteindex(line, span.start_col)
+        local end_col = vim.str_byteindex(line, span.end_col)
+        if end_col > start_col then
+          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, start_col, {
+            end_col = end_col,
+            hl_group = span.hl_group,
+            priority = LAYER_PRIORITY.syntax,
+          })
+        end
       end
 
       if in_thumb then
