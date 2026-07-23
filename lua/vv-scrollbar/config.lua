@@ -1,20 +1,20 @@
 local M = {}
 
 ---@class VVScrollbarHighlightConfig
----@field track vim.api.keyset.highlight 轨道背景 @default { bg = '#20242b' }
----@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = '#20242b', bg = '#20242b' }
----@field map_view vim.api.keyset.highlight 代码地图 @default { fg = '#565f89' }
----@field map_cursor vim.api.keyset.highlight 当前行 Braille dots 或细线 @default { fg = '#7aa2f7' }
----@field thumb vim.api.keyset.highlight 当前视口 thumb @default { bg = '#3b4252' }
----@field active vim.api.keyset.highlight 按下或拖拽中的 thumb @default { bg = '#5b6478' }
----@field cursor vim.api.keyset.highlight full 样式的当前行标记 @default { fg = '#7aa2f7' }
----@field search vim.api.keyset.highlight 搜索命中 @default { fg = '#ff9e64' }
----@field mark vim.api.keyset.highlight mark 位置 @default { fg = '#bb9af7' }
----@field quickfix vim.api.keyset.highlight quickfix / loclist 位置 @default { fg = '#e0af68' }
----@field diag_error vim.api.keyset.highlight Error 诊断 @default { fg = '#f7768e' }
----@field diag_warn vim.api.keyset.highlight Warn 诊断 @default { fg = '#e0af68' }
----@field diag_info vim.api.keyset.highlight Info 诊断 @default { fg = '#7dcfff' }
----@field diag_hint vim.api.keyset.highlight Hint 诊断 @default { fg = '#1abc9c' }
+---@field track vim.api.keyset.highlight 轨道背景 @default { bg = 'bg' }
+---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = 'bg', bg = 'bg' }
+---@field map_view vim.api.keyset.highlight 代码地图 @default { link = 'Comment' }
+---@field map_cursor vim.api.keyset.highlight 当前行 Braille dots 或细线 @default { link = 'CursorLineNr' }
+---@field thumb vim.api.keyset.highlight 当前视口 thumb @default { link = 'CursorLine' }
+---@field active vim.api.keyset.highlight 按下或拖拽中的 thumb @default { link = 'Visual' }
+---@field cursor vim.api.keyset.highlight full 样式的当前行标记 @default { link = 'CursorLineNr' }
+---@field search vim.api.keyset.highlight 搜索命中 @default { link = 'Search' }
+---@field mark vim.api.keyset.highlight mark 位置 @default { link = 'Special' }
+---@field quickfix vim.api.keyset.highlight quickfix / loclist 位置 @default { link = 'QuickFixLine' }
+---@field diag_error vim.api.keyset.highlight Error 诊断 @default { link = 'DiagnosticError' }
+---@field diag_warn vim.api.keyset.highlight Warn 诊断 @default { link = 'DiagnosticWarn' }
+---@field diag_info vim.api.keyset.highlight Info 诊断 @default { link = 'DiagnosticInfo' }
+---@field diag_hint vim.api.keyset.highlight Hint 诊断 @default { link = 'DiagnosticHint' }
 
 ---@class VVScrollbarSymbolsConfig
 ---@field thumb string thumb 填充字符 @default ' '
@@ -155,6 +155,18 @@ end
 ---@return VVScrollbarConfig
 function M.apply(opts)
   current = vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})
+
+  -- nvim_set_hl() 存在 link 时会忽略 fg/bg，用户传具体样式就移除继承的语义链接
+  if type(opts) == 'table' and type(opts.highlights) == 'table' then
+    for name, override in pairs(opts.highlights) do
+      if type(override) == 'table'
+          and override.link == nil
+          and type(current.highlights[name]) == 'table'
+      then
+        current.highlights[name].link = nil
+      end
+    end
+  end
 
   current.width = positive_integer(current.width, defaults.width)
   current.min_thumb = positive_integer(current.min_thumb, defaults.min_thumb)

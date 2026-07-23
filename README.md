@@ -8,7 +8,7 @@ English | <a href="./README.zh-CN.md">中文</a>
 
 Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfiles</a>.
 
-<em>A custom Neovim scrollbar with a full track, click-to-jump, native dragging, and code-state markers</em>
+<em>A VS Code-like minimap built as a complete, interactive Neovim scrollbar</em>
 
 <br />
 
@@ -27,11 +27,30 @@ Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfile
 
 ## Features
 
-Brings a VS Code-like minimap scrolling experience to Neovim:
+Designed to provide Neovim with the closest possible experience to VS Code's fully interactive
+minimap:
 
 - Click the map or a marker to jump
 - Drag the viewport to scroll through code
 - Use the mouse wheel over the map to scroll its source window
+
+## Inspiration and differences
+
+The code-map direction was inspired by
+[Isrothy/neominimap.nvim](https://github.com/Isrothy/neominimap.nvim), an extensible minimap that
+demonstrates how well Braille characters can represent source structure inside Neovim.
+
+The two plugins focus on different experiences:
+
+| | vv-scrollbar.nvim | neominimap.nvim |
+|---|---|---|
+| Primary goal | A minimap that behaves as a complete scrollbar | An extensible code-structure minimap |
+| Mouse interaction | Direct track and marker clicks, press-and-drag viewport, source-window wheel scrolling, and configurable right-click action | Optional click-to-focus and cursor synchronization |
+| Viewport | A visible thumb overlays the map and can be dragged like VS Code's minimap slider | The source cursor is projected onto the minimap |
+| Design | One attached split per source window, with instant switching between map view and a classic scrollbar | Float and split layouts, custom handlers, focus controls, and statusline components |
+
+`vv-scrollbar.nvim` is therefore scrollbar-first: the map is not only a preview, but also the
+primary surface for navigating and scrolling the source window.
 
 ## Installation
 
@@ -147,16 +166,20 @@ require('vv-scrollbar').setup({
   },
 
   highlights = {
-    track = { bg = '#20242b' },
-    separator = { fg = '#20242b', bg = '#20242b' },
-    map_view = { fg = '#565f89' },
-    map_cursor = { fg = '#7aa2f7' },
-    thumb = { bg = '#3b4252' },
-    active = { bg = '#5b6478' }, cursor = { fg = '#7aa2f7' },
-    search = { fg = '#ff9e64' }, mark = { fg = '#bb9af7' },
-    quickfix = { fg = '#e0af68' }, diag_error = { fg = '#f7768e' },
-    diag_warn = { fg = '#e0af68' }, diag_info = { fg = '#7dcfff' },
-    diag_hint = { fg = '#1abc9c' },
+    track = { bg = 'bg' },
+    separator = { fg = 'bg', bg = 'bg' },
+    map_view = { link = 'Comment' },
+    map_cursor = { link = 'CursorLineNr' },
+    thumb = { link = 'CursorLine' },
+    active = { link = 'Visual' },
+    cursor = { link = 'CursorLineNr' },
+    search = { link = 'Search' },
+    mark = { link = 'Special' },
+    quickfix = { link = 'QuickFixLine' },
+    diag_error = { link = 'DiagnosticError' },
+    diag_warn = { link = 'DiagnosticWarn' },
+    diag_info = { link = 'DiagnosticInfo' },
+    diag_hint = { link = 'DiagnosticHint' },
   },
 })
 ```
@@ -300,10 +323,13 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.diag_info` | `VVScrollbarDiagnosticInfo` | Info diagnostics |
 | `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint diagnostics |
 
-Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from `vv-utils.git.register_hl()`. All highlights are registered again after `ColorScheme`.
+Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from `vv-utils.git.register_hl()`.
+The defaults link to Neovim semantic highlight groups and are registered again after `ColorScheme`,
+so they follow the active theme automatically.
 
 Every `highlights` entry accepts a standard `vim.api.nvim_set_hl()` table. A plugin spec can
-read the active theme palette and pass those colors directly:
+read the active theme palette and pass those colors directly. Supplying a concrete style without
+`link` removes the inherited semantic link:
 
 ```lua
 local p = require('tools.palette').get()

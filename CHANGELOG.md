@@ -6,6 +6,7 @@
 
 - `highlights.hover` 重命名为 `highlights.active`；按下 thumb 时立即生效，并在拖拽期间保持
 - `map_view.cursor`、`map_view.show_on_short_buffers`、`map_view.marker_click` 与 `map_view.interaction.right_click` 移到顶层 `cursor`、`show_on_short_buffers`、`interaction.marker_click` 与 `interaction.right_click`
+- 默认高亮从固定配色改为 Neovim 语义高亮组，配色将跟随当前主题
 
 ### Added
 
