@@ -5,7 +5,7 @@
 ### Breaking Changes
 
 - `highlights.hover` 重命名为 `highlights.active`；按下 thumb 时立即生效，并在拖拽期间保持
-- `map_view.cursor`、`map_view.show_on_short_buffers` 与 `map_view.interaction.right_click` 移到顶层 `cursor`、`show_on_short_buffers` 与 `interaction.right_click`
+- `map_view.cursor`、`map_view.show_on_short_buffers`、`map_view.marker_click` 与 `map_view.interaction.right_click` 移到顶层 `cursor`、`show_on_short_buffers`、`interaction.marker_click` 与 `interaction.right_click`
 
 ### Added
 
@@ -38,6 +38,9 @@
 
 ### Fixed
 
+- map-view marker 与代码地图共用当前切片投影，窗口高度变化时同步重算，并隐藏切片外标记
+- 同一投影行内固定保留最靠前的精确源代码行，避免 marker 点击目标随表遍历顺序变化
+- 诊断 marker 使用 `highlights.diag_*` 对应高亮组，用户颜色配置不再被共享诊断样式覆盖
 - 基础滚动条 marker 现在遵循左右位置配置并保留精确点击目标；短文件切换形态后不再丢失滚动条
 - 基础滚动条复用细线 cursor 样式，点击轨道时按投影源代码行精确放置光标
 - 点击 map-view 轨道或 marker 后将 cursor 精确落到对应源代码行；拖拽默认保持 cursor 的屏幕相对行，滚轮仍只滚动视口

@@ -4,7 +4,7 @@ local api = vim.api
 local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
-local geometry = require('vv-scrollbar.core.geometry')
+local projection = require('vv-scrollbar.core.projection')
 local map_view = require('vv-scrollbar.features.map_view')
 local markers = require('vv-scrollbar.features.markers')
 local content = require('vv-scrollbar.ui.content')
@@ -30,15 +30,12 @@ local function chunks_width(chunks)
 end
 
 ---@param marker VVScrollbarMarker
----@param track_width integer
 ---@param cfg VVScrollbarConfig
 ---@param background_hl? string
 ---@return string[][]
 ---@return 'left'|'right'
-local function marker_chunks(marker, track_width, cfg, background_hl)
-  local marker_text = marker.text
-  if marker.fill_width then marker_text = string.rep(marker.text, track_width) end
-  local chunks = marker.chunks or { { marker_text, marker.hl } }
+local function marker_chunks(marker, cfg, background_hl)
+  local chunks = marker.chunks or { { marker.text, marker.hl } }
   if background_hl then
     local composed = {}
     for index, chunk in ipairs(chunks) do
@@ -163,19 +160,19 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   content.ensure(bar, content_lines, width, content_id)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
+  local function line_to_row(line)
+    if map_layout then return map_view.line_to_row(map_layout, line) end
+    return projection.line_to_row(line, viewport.line_count, viewport.height)
+  end
+
   local row_markers = markers.collect(parent, viewport, {
     track_width = map_columns and map_columns.marker_width or track_width,
+    line_to_row = line_to_row,
   })
   local cursor_row
   if cfg.markers.cursor and parent == api.nvim_get_current_win() then
     local cursor = api.nvim_win_get_cursor(parent)
-    cursor_row = map_layout
-        and map_view.line_to_row(map_layout, cursor[1])
-      or geometry.line_to_row(
-        cursor[1],
-        viewport.line_count,
-        viewport.height
-      )
+    cursor_row = line_to_row(cursor[1])
   end
 
   bar.row_markers = row_markers
@@ -259,10 +256,8 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
 
     local marker = row_markers[row]
     if marker then
-      local marker_track_width = map_columns and map_columns.marker_width or track_width
       local chunks, side = marker_chunks(
         marker,
-        marker_track_width,
         cfg,
         in_thumb and thumb_hl or nil
       )

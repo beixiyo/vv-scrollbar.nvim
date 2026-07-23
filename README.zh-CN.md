@@ -70,6 +70,7 @@ require('vv-scrollbar').setup({
   interaction = {
     right_click = 'toggle_view',
     cursor_on_drag = 'follow',
+    marker_click = 'center',
   },
 
   excluded_filetypes = {
@@ -100,7 +101,6 @@ require('vv-scrollbar').setup({
     marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
-    marker_click = 'center',
     interaction = {
       edge_scroll = true,
       edge_margin = 2,
@@ -194,6 +194,7 @@ require('vv-scrollbar').setup({
 | `cursor.symbol` | `string` | `'▕'` | 当前行细线字符 |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
 | `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | 拖拽时让 cursor 保持在源窗口相同屏幕行，或尽量保留原代码行 |
+| `interaction.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 两种视图中点击 marker 后按精确源代码行定位 |
 | `excluded_filetypes` | `string[]` | 见完整配置 | 不显示滚动条的 filetype |
 | `excluded_buftypes` | `string[]` | 见完整配置 | 不显示滚动条的 buftype |
 | `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
@@ -226,7 +227,6 @@ require('vv-scrollbar').setup({
 | `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | marker 浮在地图上，或保留左/右独立 lane |
 | `map_view.marker_lane_width` | `integer` | `2` | 左/右 marker lane 占用的列数 |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
-| `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 点击 marker 后按精确源代码行定位 |
 | `map_view.interaction.edge_scroll` | `boolean` | `true` | 拖拽接近地图上下边缘时自动平移 |
 | `map_view.interaction.edge_margin` | `integer` | `2` | 触发边缘平移的地图行数 |
 | `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |

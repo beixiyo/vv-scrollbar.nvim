@@ -38,9 +38,9 @@ package.loaded['vv-scrollbar.config'] = {
       interaction = {
         right_click = right_click_action,
         cursor_on_drag = cursor_on_drag,
+        marker_click = 'center',
       },
       map_view = {
-        marker_click = 'center',
         interaction = {
           edge_interval = 50,
         },

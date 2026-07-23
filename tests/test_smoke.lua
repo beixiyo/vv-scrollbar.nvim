@@ -142,7 +142,8 @@ scrollbar.setup({
 })
 view.refresh()
 local classic_bar = state.bars[parent]
-local mark_row = require('vv-scrollbar.core.geometry').line_to_row(200, 400, classic_bar.height)
+local mark_row =
+  require('vv-scrollbar.core.projection').line_to_row(200, 400, classic_bar.height)
 local mark_hits = classic_bar.marker_hits[mark_row]
 assert(
   mark_hits

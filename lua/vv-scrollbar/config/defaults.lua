@@ -20,6 +20,7 @@ return {
   interaction = {
     right_click = 'toggle_view',
     cursor_on_drag = 'follow',
+    marker_click = 'center',
   },
   excluded_filetypes = {
     'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
@@ -48,7 +49,6 @@ return {
     marker_layout = 'right',
     marker_lane_width = 2,
     marker_position = 'right',
-    marker_click = 'center',
     interaction = {
       edge_scroll = true,
       edge_margin = 2,

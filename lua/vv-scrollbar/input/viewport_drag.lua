@@ -1,16 +1,8 @@
 -- Viewport 地图拖拽坐标：边缘平移、thumb 绝对位置与首尾吸附
 
-local M = {}
+local projection = require('vv-scrollbar.core.projection')
 
----@param value number
----@param min number
----@param max number
----@return number
-local function clamp(value, min, max)
-  if value < min then return min end
-  if value > max then return max end
-  return value
-end
+local M = {}
 
 ---@param row integer
 ---@param height integer
@@ -52,14 +44,14 @@ function M.update(layout, mouse_row, offset, opts)
     }
   end
 
-  local row = clamp(mouse_row, 0, layout.window_height - 1)
+  local row = projection.clamp(mouse_row, 0, layout.window_height - 1)
   local delta = edge_delta(row, layout.window_height, opts)
-  local top_row = clamp(layout.top_row + delta, 0, max_top)
+  local top_row = projection.clamp(layout.top_row + delta, 0, max_top)
   local max_thumb_row = math.max(layout.window_height - layout.thumb_height, 0)
-  local thumb_row = clamp(row - offset, 0, max_thumb_row)
+  local thumb_row = projection.clamp(row - offset, 0, max_thumb_row)
   local max_absolute_thumb = math.max(layout.content_height - layout.thumb_height, 0)
-  local absolute_thumb = clamp(top_row + thumb_row, 0, max_absolute_thumb)
-  local source_line = clamp(
+  local absolute_thumb = projection.clamp(top_row + thumb_row, 0, max_absolute_thumb)
+  local source_line = projection.clamp(
     absolute_thumb * layout.rows_per_cell + 1,
     1,
     layout.line_count

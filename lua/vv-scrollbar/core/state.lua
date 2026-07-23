@@ -13,9 +13,7 @@
 ---@field hl? string
 ---@field chunks? string[][]
 ---@field priority integer
----@field fill_width? boolean
 ---@field source_line? integer
----@field kind? string
 ---@field hits? VVScrollbarRelativeMarkerHit[]
 
 ---@class VVScrollbarBar

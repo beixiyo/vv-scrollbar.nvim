@@ -141,6 +141,8 @@ runtime_config.cursor.style = 'line'
 runtime_config.cursor.symbol = '▕'
 scrollbar.setup(runtime_config)
 local geometry = require('vv-scrollbar.core.geometry')
+local projection = require('vv-scrollbar.core.projection')
+local map_view = require('vv-scrollbar.features.map_view')
 
 state.git_marks[source_buf] = {
   staged = { [1] = 'A' },
@@ -192,12 +194,39 @@ assert(
 state.dragging = nil
 view.refresh()
 
+api.nvim_win_call(parent, function() vim.cmd('normal! 201Gzt') end)
+state.git_marks[source_buf] = {
+  staged = { [201] = 'A' },
+  unstaged = { [400] = 'D' },
+}
+view.refresh()
+bar = state.bars[parent]
+local visible_git_row = map_view.line_to_row(bar.map_layout, 201)
+assert(
+  visible_git_row ~= projection.line_to_row(201, #source_lines, bar.height),
+  'long-file marker projection fixture does not distinguish map and classic coordinates'
+)
+assert(
+  bar.row_markers[visible_git_row]
+    and bar.row_markers[visible_git_row].hits[1].source_line == 201,
+  'long-file Git marker did not align with its visible map row'
+)
+for _, marker in pairs(bar.row_markers) do
+  for _, hit in ipairs(marker.hits or {}) do
+    assert(hit.source_line ~= 400, 'off-slice Git marker remained visible in map view')
+  end
+end
+
+api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
+view.refresh()
+bar = state.bars[parent]
+
 local staged_line
 local unstaged_line
-for line = 2, #source_lines do
-  local previous_row = geometry.line_to_row(line - 1, #source_lines, bar.height)
-  local current_row = geometry.line_to_row(line, #source_lines, bar.height)
-  if previous_row == current_row and line > 2 then
+for line = 6, #source_lines do
+  local previous_row = map_view.line_to_row(bar.map_layout, line - 1)
+  local current_row = map_view.line_to_row(bar.map_layout, line)
+  if previous_row == current_row then
     staged_line = line - 1
     unstaged_line = line
     break
@@ -213,9 +242,9 @@ api.nvim_win_set_cursor(parent, { 1, 0 })
 view.refresh()
 bar = state.bars[parent]
 
-local git_row = geometry.line_to_row(unstaged_line, #source_lines, bar.height)
+local git_row = map_view.line_to_row(bar.map_layout, unstaged_line)
 local git_marker = bar.row_markers[git_row]
-assert(git_marker and git_marker.kind == 'git', 'Git marker lost its interaction kind')
+assert(git_marker and #git_marker.hits == 2, 'Git marker lost its independent hit targets')
 
 local git_hits = bar.marker_hits[git_row]
 assert(git_hits and #git_hits == 2, 'Git tracks lost their independent hit targets')
@@ -234,9 +263,9 @@ assert(
   'Git marker hit area still covers the left-side code map'
 )
 
-local cursor_row = geometry.line_to_row(1, #source_lines, bar.height)
+local cursor_row = map_view.line_to_row(bar.map_layout, 1)
 assert(
-  bar.row_markers[cursor_row] and bar.row_markers[cursor_row].kind == 'git',
+  bar.row_markers[cursor_row] and bar.row_markers[cursor_row].hits,
   'map cursor still displaced a Git marker on the same projected row'
 )
 
