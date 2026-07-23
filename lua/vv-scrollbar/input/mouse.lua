@@ -100,17 +100,26 @@ local function start_drag(bar, mouse_row)
   local offset = in_thumb
     and mouse_row - bar.thumb_row
     or math.floor(bar.thumb_height / 2)
+  local click_line = not in_thumb
+      and bar.map_layout
+      and map_view.row_to_line(bar.map_layout, mouse_row)
+    or nil
 
   state.dragging = {
     parent = bar.parent,
     offset = offset,
     moved = false,
+    click_line = click_line,
     map_top = nil,
   }
 
   -- 按住已有 thumb 只切换 active 样式，不重复做一次比例换算；后者受取整、fold
   -- 等因素影响，可能让源窗口和地图在按下 / 松开时各跳一次
-  if not in_thumb then scroll_to_row(bar, mouse_row - offset) end
+  if click_line then
+    geometry.scroll_to_line(bar.parent, click_line, 'center')
+  elseif not in_thumb then
+    scroll_to_row(bar, mouse_row - offset)
+  end
   redraw()
 end
 
@@ -139,8 +148,13 @@ local function continue_drag(position)
 end
 
 local function finish_drag()
-  if not state.dragging then return end
+  local drag = state.dragging
+  if not drag then return end
+
   state.dragging = nil
+  if not drag.moved and drag.click_line then
+    geometry.set_cursor_line(drag.parent, drag.click_line)
+  end
   redraw()
 end
 
@@ -181,6 +195,7 @@ local function on_key(key, typed)
     local marker_click = config.current().map_view.marker_click
     if marker and marker_click ~= 'scrollbar' then
       geometry.scroll_to_line(bar.parent, marker.source_line, marker_click)
+      geometry.set_cursor_line(bar.parent, marker.source_line)
       redraw()
       return ''
     end

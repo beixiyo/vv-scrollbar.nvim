@@ -248,6 +248,11 @@ assert(
   centered_top <= unstaged_line and centered_bottom >= unstaged_line,
   'exact marker navigation did not reveal its source line'
 )
+geometry.set_cursor_line(parent, unstaged_line)
+assert(
+  api.nvim_win_get_cursor(parent)[1] == unstaged_line,
+  'exact marker navigation did not place the source cursor'
+)
 
 local namespace = api.nvim_get_namespaces()['vv-scrollbar']
 local extmarks = api.nvim_buf_get_extmarks(bar.buf, namespace, 0, -1, { details = true })
