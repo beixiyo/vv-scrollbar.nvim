@@ -150,6 +150,19 @@ function M.scroll_to_line(win, line, align)
 end
 
 ---@param win integer
+---@param line integer
+function M.set_cursor_line(win, line)
+  if not api.nvim_win_is_valid(win) then return end
+
+  local line_count = api.nvim_buf_line_count(api.nvim_win_get_buf(win))
+  local target = M.clamp(line, 1, line_count)
+
+  require('vv-utils.scroll').with_auto_suppressed(win, function()
+    pcall(api.nvim_win_set_cursor, win, { target, 0 })
+  end)
+end
+
+---@param win integer
 ---@return integer
 local function parent_screen_top(win)
   local position = fn.win_screenpos(win)

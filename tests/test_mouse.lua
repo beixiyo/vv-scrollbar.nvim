@@ -8,6 +8,7 @@ local hit_bar = true
 local marker_hit = false
 local refresh_count = 0
 local scroll_calls = {}
+local cursor_calls = {}
 local wheel_calls = {}
 local viewport_updates = 0
 local bar = {
@@ -44,6 +45,9 @@ package.loaded['vv-scrollbar.core.geometry'] = {
   end,
   scroll_to_line = function(_, line, align)
     scroll_calls[#scroll_calls + 1] = { kind = 'line', line = line, align = align }
+  end,
+  set_cursor_line = function(win, line)
+    cursor_calls[#cursor_calls + 1] = { win = win, line = line }
   end,
 }
 package.loaded['vv-scrollbar.core.state'] = state
@@ -102,6 +106,7 @@ assert(refresh_count == 1, 'thumb press did not redraw its active state')
 
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'thumb release was not consumed')
 assert(state.dragging == nil, 'thumb release did not clear active state')
+assert(#cursor_calls == 0, 'plain thumb click unexpectedly moved the cursor')
 
 for clicks = 2, 4 do
   local press = vim.keycode(('<%d-LeftMouse>'):format(clicks))
@@ -117,16 +122,32 @@ mouse_position.screenrow = 12
 assert(on_key(vim.keycode('<LeftMouse>')) == '', 'track press was not consumed')
 assert(#scroll_calls == 1, 'track press did not perform exactly one jump')
 assert(state.dragging.map_top == nil, 'track press froze the map before dragging')
+assert(state.dragging.click_line == 13, 'track press lost its exact source line')
+assert(on_key(vim.keycode('<LeftRelease>')) == '', 'track click release was not consumed')
+assert(
+  #cursor_calls == 1
+    and cursor_calls[1].win == bar.parent
+    and cursor_calls[1].line == 13,
+  'track click did not place the cursor on its exact source line'
+)
 
+assert(on_key(vim.keycode('<LeftMouse>')) == '', 'track drag press was not consumed')
 mouse_position.screenrow = 14
 assert(on_key(vim.keycode('<LeftDrag>')) == '', 'track drag was not consumed')
 assert(viewport_updates == 1, 'track drag did not update the viewport')
 assert(state.dragging.map_top == 21, 'track drag did not retain its updated frozen map top')
 assert(on_key(vim.keycode('<LeftRelease>')) == '', 'track release was not consumed')
+assert(#cursor_calls == 1, 'track drag incorrectly used click cursor placement')
 
 marker_hit = true
 assert(on_key(vim.keycode('<2-LeftMouse>')) == '', 'marker double-click press escaped')
 assert(state.dragging == nil, 'marker click unexpectedly started dragging')
+assert(
+  #cursor_calls == 2
+    and cursor_calls[2].win == bar.parent
+    and cursor_calls[2].line == 80,
+  'marker click did not place the cursor on its exact source line'
+)
 assert(on_key(vim.keycode('<2-LeftRelease>')) == '', 'marker double-click release escaped')
 
 marker_hit = false
@@ -169,4 +190,4 @@ vim.fn.getmousepos = original_getmousepos
 vim.keymap.del('n', '<ScrollWheelDown>')
 mouse.detach()
 
-print('PASS: click stability, wheel redirect, deferred map freeze, and multi-click isolation')
+print('PASS: exact click cursor, wheel redirect, deferred map freeze, and multi-click isolation')
