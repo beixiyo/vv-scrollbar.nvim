@@ -29,7 +29,6 @@ local PRIORITY = {
   git = 65,
   git_delete = 70,
   diagnostic = 80,
-  cursor = 90,
 }
 
 ---@param text string?
@@ -231,26 +230,8 @@ local function add_quickfix(win, markers, viewport)
 end
 
 ---@param win integer
----@param markers table
 ---@param viewport table
-local function add_cursor(win, markers, viewport)
-  local cfg = config.current()
-  if not cfg.markers.cursor or win ~= api.nvim_get_current_win() then return end
-
-  local cursor = api.nvim_win_get_cursor(win)
-  add_marker(
-    markers,
-    geometry.line_to_row(cursor[1], viewport.line_count, viewport.height),
-    cfg.symbols.cursor,
-    'VVScrollbarCursor',
-    PRIORITY.cursor,
-    { fill_width = true, source_line = cursor[1], kind = 'cursor' }
-  )
-end
-
----@param win integer
----@param viewport table
----@param opts? { cursor?: boolean, track_width?: integer }
+---@param opts? { track_width?: integer }
 ---@return table
 function M.collect(win, viewport, opts)
   opts = opts or {}
@@ -260,7 +241,6 @@ function M.collect(win, viewport, opts)
   add_search(markers, viewport)
   add_marks(markers, viewport)
   add_quickfix(win, markers, viewport)
-  if opts.cursor ~= false then add_cursor(win, markers, viewport) end
   return markers
 end
 

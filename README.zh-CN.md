@@ -45,8 +45,8 @@
 ```
 
 需要 Neovim `0.11+`。滚动条是一个 `style = 'minimal'` 的分屏窗口；鼠标交互完全由
-`vim.on_key()` 拦截左键按下、拖拽、松开事件（包括快速多击）与垂直滚轮事件，再用 `getmousepos()`
-的屏幕坐标命中滚动条实现
+`vim.on_key()` 拦截左右键、拖拽、松开事件（包括快速多击）与垂直滚轮事件，再用
+`getmousepos()` 的屏幕坐标命中滚动条实现
 
 ## 完整配置
 
@@ -103,6 +103,7 @@ require('vv-scrollbar').setup({
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
+      right_click = 'toggle_view',
     },
     degradation = {
       folds = 'fit',
@@ -217,7 +218,7 @@ require('vv-scrollbar').setup({
 | `map_view.marker_lane_width` | `integer` | `2` | 左/右 marker lane 占用的列数 |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 点击 marker 后按精确源代码行定位 |
-| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | 改变地图点颜色、绘制细线、使用旧整行样式或隐藏 |
+| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | 当前行样式；基础滚动条中 `dots` 使用细线，`full` 保留旧整行样式 |
 | `map_view.cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
 | `map_view.cursor.width` | `integer` | `1` | 当前行细线宽度 |
 | `map_view.cursor.symbol` | `string` | `'▎'` | 当前行细线字符 |
@@ -226,6 +227,7 @@ require('vv-scrollbar').setup({
 | `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
 | `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
+| `map_view.interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 出现可见关闭折叠时的行为 |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | diff 窗口的行为 |
@@ -281,7 +283,7 @@ quickfix / loclist > mark > 搜索
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
 | `symbols.thumb` | `' '` | thumb 填充字符，会重复填满滚动条宽度 |
-| `symbols.cursor` | `'█'` | 当前光标标记，会重复填满滚动条宽度 |
+| `symbols.cursor` | `'█'` | `cursor.style = 'full'` 使用的填充字符 |
 | `symbols.search` | `'•'` | 搜索命中标记 |
 | `symbols.mark` | `'◆'` | Vim mark 标记 |
 | `symbols.quickfix` | `'■'` | quickfix / loclist 标记 |
@@ -297,10 +299,10 @@ quickfix / loclist > mark > 搜索
 | `highlights.track` | `VVScrollbarTrack` | 背景轨道 |
 | `highlights.separator` | `VVScrollbarSeparator` | 与文件窗口之间的分隔列 |
 | `highlights.map_view` | `VVScrollbarMapView` | 单色代码地图前景 |
-| `highlights.map_cursor` | `VVScrollbarMapCursor` | 当前行 Braille dots 或细线 |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` | 两种视图的当前行 Braille dots 或细线 |
 | `highlights.thumb` | `VVScrollbarThumb` | 当前可见范围 |
 | `highlights.active` | `VVScrollbarActive` | 按下或拖拽中的 thumb |
-| `highlights.cursor` | `VVScrollbarCursor` | 当前光标位置 |
+| `highlights.cursor` | `VVScrollbarCursor` | `full` 样式的当前行标记 |
 | `highlights.search` | `VVScrollbarSearch` | 搜索命中 |
 | `highlights.mark` | `VVScrollbarMark` | Vim mark |
 | `highlights.quickfix` | `VVScrollbarQuickfix` | quickfix / loclist |
@@ -336,15 +338,32 @@ require('vv-scrollbar').setup({
 
 | 操作 | 行为 |
 |------|------|
-| 点击轨道 | 以点击点为中心放置 thumb，并立即跳转对应视口 |
+| 点击轨道 | 以点击点为中心放置 thumb，跳转并把 cursor 放到对应投影源代码行 |
 | 按下 thumb | 保持原位置并立即切换为 active 色 |
 | 拖动 thumb | 保留按下时的抓取偏移，并实时更新视口 |
 | 停在地图上下边缘 | 按配置速度持续平移冻结的地图 viewport |
 | 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |
+| 右键单击滚动条 | 在 map-view 与基础滚动条之间切换 |
 | 松开鼠标或按 Esc | 结束拖拽、恢复 source/map 同步和普通 thumb 高亮 |
 
 滚动条跳转和拖拽使用 `vv-utils.scroll.with_auto_suppressed()`，因此即使启用了
 `vv-utils.scroll` 的自动跳转动画，也不会出现先跳到目标、回到旧位置、再动画到目标的回弹
+
+`right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区。
+也可以提供函数替换默认动作：
+
+```lua
+map_view = {
+  interaction = {
+    right_click = function(context)
+      vim.notify(('clicked %s'):format(context.view))
+    end,
+  },
+}
+```
+
+`context` 包含源窗口 `win`、滚动条窗口 `scrollbar_win`、零基轨道行 `row`、
+屏幕坐标以及点击时的 `view`
 
 ## 命令
 
@@ -353,6 +372,7 @@ require('vv-scrollbar').setup({
 | `:VVScrollbarEnable` | 启用滚动条 |
 | `:VVScrollbarDisable` | 禁用滚动条并关闭所有滚动条浮窗 |
 | `:VVScrollbarToggle` | 切换启用状态 |
+| `:VVScrollbarToggleView` | 在 map-view 与基础滚动条之间切换 |
 | `:VVScrollbarRefresh` | 重新获取可见文件的 Git marker 并立即刷新 |
 
 ## Lua API
@@ -364,6 +384,7 @@ scrollbar.setup({ width = 2 })
 scrollbar.enable()
 scrollbar.disable()
 scrollbar.toggle()
+scrollbar.toggle_view()
 
 local current_config = scrollbar.get_config()
 ```

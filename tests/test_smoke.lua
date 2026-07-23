@@ -47,6 +47,22 @@ assert(
   'scrollbar did not reserve its width and split separator from the parent window'
 )
 assert(api.nvim_win_get_config(win).relative == '', 'scrollbar is still a floating window')
+assert(vim.fn.exists(':VVScrollbarToggleView') == 2, 'view toggle command was not registered')
+
+assert(scrollbar.toggle_view() == 'map_view', 'Lua API did not enable map view')
+win = scrollbar_window()
+assert(scrollbar.get_config().map_view.enabled, 'Lua API did not update map-view config')
+assert(api.nvim_win_get_width(win) >= 8, 'map view did not resize the scrollbar window')
+
+assert(scrollbar.toggle_view() == 'scrollbar', 'Lua API did not restore the classic scrollbar')
+win = scrollbar_window()
+assert(not scrollbar.get_config().map_view.enabled, 'Lua API did not disable map view')
+assert(api.nvim_win_get_width(win) == 2, 'classic scrollbar width was not restored')
+
+vim.cmd('VVScrollbarToggleView')
+assert(scrollbar.get_config().map_view.enabled, 'view toggle command did not enable map view')
+vim.cmd('VVScrollbarToggleView')
+assert(not scrollbar.get_config().map_view.enabled, 'view toggle command did not restore the scrollbar')
 
 local top_thumb_row = state.bars[parent].thumb_row
 api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
@@ -92,15 +108,21 @@ view.refresh()
 win, buf = scrollbar_window()
 
 local cursor_extmarks = api.nvim_buf_get_extmarks(buf, namespace, 0, -1, { details = true })
-local found_two_cell_cursor = false
+local found_slim_cursor = false
+local found_full_cursor = false
 for _, extmark in ipairs(cursor_extmarks) do
   local virt_text = extmark[4].virt_text
-  if virt_text and virt_text[1] and virt_text[1][2] == 'VVScrollbarCursor' then
-    found_two_cell_cursor = vim.fn.strdisplaywidth(virt_text[1][1]) == 2
-    if found_two_cell_cursor then break end
+  if virt_text and virt_text[1] then
+    if virt_text[1][2] == 'VVScrollbarMapCursor' then
+      found_slim_cursor = vim.fn.strdisplaywidth(virt_text[1][1]) == 1
+        and extmark[4].virt_text_win_col == 1
+    elseif virt_text[1][2] == 'VVScrollbarCursor' then
+      found_full_cursor = true
+    end
   end
 end
-assert(found_two_cell_cursor, 'cursor marker does not cover 2 cells')
+assert(found_slim_cursor, 'classic scrollbar did not render a slim cursor line')
+assert(not found_full_cursor, 'classic scrollbar still rendered the legacy full-width cursor')
 
 vim.w[parent].vv_scrollbar_disabled = true
 view.refresh()
