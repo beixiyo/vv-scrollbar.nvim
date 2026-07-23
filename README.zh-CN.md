@@ -26,13 +26,14 @@
 
 ## 特性
 
+- 默认开启的 Braille 代码地图，支持自适应宽度、缓存与延迟重建
 - 完整窗口高度的背景轨道，以及按可见内容比例计算的 thumb
 - 点击轨道直接跳转；拖动 thumb 时保留鼠标抓取位置
 - 普通点击不触发拖拽色，实际移动后才显示 hover 状态
 - 与 `vv-utils.scroll` 协作，滚动条交互不会被自动平滑滚动拉回旧位置
 - 使用真实分栏预留宽度，不会覆盖父窗口的行末文本
 - 宽度可配置，轨道与 thumb 会占满实际宽度，默认 `2` 格
-- Neovim 会在父窗口与滚动条分栏之间保留 `1` 格窗口分隔列
+- Neovim 保留的 `1` 格窗口分隔列默认与地图背景融合，并在关闭插件后恢复原高亮
 - 当前光标标记占满滚动条宽度，Git 使用双轨，其余 marker 保持单字符显示
 - 支持多窗口，也可只显示当前窗口
 - 内置 diagnostics、Git diff、搜索、Vim marks、quickfix / loclist、光标位置标记
@@ -83,6 +84,32 @@ require('vv-scrollbar').setup({
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
 
+  map_view = {
+    enabled = true,
+    mode = 'fit',
+    width = 'auto',
+    min_width = 8,
+    max_width = 16,
+    width_ratio = 0.14,
+    x_multiplier = 4,
+    max_lines_per_dot = 8,
+    tab_width = 'buffer',
+    include_whitespace = false,
+    debounce_ms = 150,
+    max_lines = 50000,
+    large_file_behavior = 'scrollbar',
+    show_on_short_buffers = true,
+    preserve_map_under_thumb = true,
+    marker_position = 'right',
+    marker_click = 'center',
+    cursor = {
+      style = 'dots',
+      side = 'right',
+      width = 1,
+      symbol = '▎',
+    },
+  },
+
   markers = {
     diagnostics = true,
     git = true,
@@ -113,6 +140,9 @@ require('vv-scrollbar').setup({
 
   highlights = {
     track = { bg = '#20242b' },
+    separator = { fg = '#20242b', bg = '#20242b' },
+    map_view = { fg = '#565f89' },
+    map_cursor = { fg = '#7aa2f7' },
     thumb = { bg = '#3b4252' },
     hover = { bg = '#4b5568' },
     cursor = { fg = '#7aa2f7' },
@@ -145,6 +175,40 @@ require('vv-scrollbar').setup({
 | `window_filter` | `fun(win, buf): boolean` | `nil` | 返回 `false` 时不为该窗口显示滚动条 |
 
 当窗口比配置宽度更窄时，实际宽度会自动收缩，避免浮窗越过父窗口
+
+## Map View 配置
+
+`map_view` 默认开启。阶段 1 使用 `fit` 模式，把完整 buffer 投影成单色 Braille
+代码地图；原有 thumb 仍按源窗口可见比例计算，并通过背景色叠在地图上，不遮住字符
+
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `map_view.enabled` | `boolean` | `true` | 显示代码地图；设为 `false` 恢复经典滚动条 |
+| `map_view.mode` | `'fit'` | `'fit'` | 将完整 buffer 压入滚动条高度 |
+| `map_view.width` | `'auto'\|integer` | `'auto'` | 自动或固定地图宽度 |
+| `map_view.min_width` | `integer` | `8` | 自动宽度下限 |
+| `map_view.max_width` | `integer` | `16` | 自动宽度上限 |
+| `map_view.width_ratio` | `number` | `0.14` | 自动宽度占父布局的比例 |
+| `map_view.x_multiplier` | `integer` | `4` | 一个横向点代表的源代码屏幕列数 |
+| `map_view.max_lines_per_dot` | `integer` | `8` | 每个纵向点最多采样的源代码行数；`0` 表示不限制 |
+| `map_view.tab_width` | `'buffer'\|integer` | `'buffer'` | 投影时使用的 tab 显示宽度 |
+| `map_view.include_whitespace` | `boolean` | `false` | 把空白字符也绘制为地图点 |
+| `map_view.debounce_ms` | `integer` | `150` | buffer 变化后重建地图的延迟 |
+| `map_view.max_lines` | `integer` | `50000` | 超过该行数时回退经典滚动条 |
+| `map_view.show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示地图 |
+| `map_view.preserve_map_under_thumb` | `boolean` | `true` | thumb 背景下继续显示地图字符 |
+| `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
+| `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 点击 marker 后按精确源代码行定位 |
+| `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | 改变地图点颜色、绘制细线、使用旧整行样式或隐藏 |
+| `map_view.cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
+| `map_view.cursor.width` | `integer` | `1` | 当前行细线宽度 |
+| `map_view.cursor.symbol` | `string` | `'▎'` | 当前行细线字符 |
+
+地图按 buffer 内容、投影尺寸和相关配置缓存。滚动、光标移动与 thumb 拖拽只复用
+缓存结果，不会重新扫描源代码
+marker 使用固定窗口列的虚拟文本浮在地图边缘，右侧 Git 双轨不会挤压或缩进代码轮廓
+默认当前行样式只改变已有 Braille dots 的颜色，不会与同一投影行的 Git marker 竞争
+点击可见 marker 时使用其精确源代码行，不再通过滚动条比例估算
 
 ### 窗口级控制
 
@@ -199,6 +263,9 @@ quickfix / loclist > mark > 搜索
 | 配置项 | 注册的高亮组 | 用途 |
 |--------|--------------|------|
 | `highlights.track` | `VVScrollbarTrack` | 背景轨道 |
+| `highlights.separator` | `VVScrollbarSeparator` | 与文件窗口之间的分隔列 |
+| `highlights.map_view` | `VVScrollbarMapView` | 单色代码地图前景 |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` | 当前行 Braille dots 或细线 |
 | `highlights.thumb` | `VVScrollbarThumb` | 当前可见范围 |
 | `highlights.hover` | `VVScrollbarHover` | 实际拖拽中的 thumb |
 | `highlights.cursor` | `VVScrollbarCursor` | 当前光标位置 |
@@ -212,6 +279,26 @@ quickfix / loclist > mark > 搜索
 
 Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`、
 `VVGitModified`、`VVGitDeleted`。所有高亮会在 `ColorScheme` 后重新注册
+
+`highlights` 中的每一项都接受标准 `vim.api.nvim_set_hl()` 配置。若使用主题色板，
+可以在插件管理配置中读取当前主题后传入，例如：
+
+```lua
+local p = require('tools.palette').get()
+
+require('vv-scrollbar').setup({
+  highlights = {
+    track = { bg = p.bg_highlight },
+    separator = { fg = p.bg, bg = p.bg },
+    map_view = { fg = p.comment },
+    map_cursor = { fg = p.blue },
+  },
+})
+```
+
+真实 split 固定保留一格 `WinSeparator`，无法缩成零宽。让 `separator` 使用编辑器
+背景色，可以避免它在视觉上成为 map view 的左侧 padding；改成浮窗才能完全移除该格，
+但浮窗会覆盖文件窗口最右侧内容
 
 ## 鼠标交互
 
@@ -254,11 +341,11 @@ local current_config = scrollbar.get_config()
 
 ```text
 lua/vv-scrollbar/
-├── core/        几何计算、运行状态与浮窗渲染
-├── features/    Git 数据和 marker 收集
+├── core/        几何计算、运行状态与窗口刷新编排
+├── features/    Git、marker、map renderer 与私有缓存
 ├── input/       鼠标 press / drag / release 状态机
 ├── lifecycle/   autocmd 生命周期
-├── ui/          高亮注册
+├── ui/          split 生命周期、extmark 渲染与高亮注册
 ├── config.lua   默认配置与合并
 └── init.lua     对外生命周期 API
 ```
@@ -266,5 +353,7 @@ lua/vv-scrollbar/
 ## 测试
 
 ```bash
-nvim --headless -u NONE -l tests/test_smoke.lua
+make test
 ```
+
+可以通过 `NVIM` 指定 Neovim 可执行文件，例如 `NVIM=nvim-nightly make test`

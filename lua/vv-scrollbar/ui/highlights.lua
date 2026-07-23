@@ -8,6 +8,9 @@ function M.setup()
   require('vv-utils.git').register_hl()
   require('vv-utils.hl').register('vv-scrollbar.hl', {
     VVScrollbarTrack = highlights.track,
+    VVScrollbarSeparator = highlights.separator,
+    VVScrollbarMapView = highlights.map_view,
+    VVScrollbarMapCursor = highlights.map_cursor,
     VVScrollbarThumb = highlights.thumb,
     VVScrollbarHover = highlights.hover,
     VVScrollbarCursor = highlights.cursor,

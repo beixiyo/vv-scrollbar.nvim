@@ -89,6 +89,7 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout)
     group = state.augroup,
     callback = function(args)
       git.clear(args.buf)
+      require('vv-scrollbar.features.map_view').clear(args.buf)
     end,
   })
 end

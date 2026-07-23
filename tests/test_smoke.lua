@@ -34,6 +34,7 @@ local scrollbar = require('vv-scrollbar')
 local parent = api.nvim_get_current_win()
 local width_before_scrollbar = api.nvim_win_get_width(parent)
 scrollbar.setup({
+  map_view = { enabled = false },
   markers = marker_config,
 })
 view.refresh()
@@ -67,12 +68,17 @@ for _, extmark in ipairs(extmarks) do
 end
 assert(found_two_cell_thumb, 'thumb highlight does not cover 2 cells')
 
-scrollbar.setup({ width = 3, markers = { git = false } })
+scrollbar.setup({
+  width = 3,
+  map_view = { enabled = false },
+  markers = { git = false },
+})
 win = scrollbar_window()
 assert(api.nvim_win_get_width(win) == 3, 'runtime width did not update to 3')
 
 scrollbar.setup({
   width = 2,
+  map_view = { enabled = false },
   markers = {
     diagnostics = false,
     git = false,
@@ -102,6 +108,7 @@ assert(state.bars[parent] == nil, 'window-local disable did not hide the scrollb
 
 vim.w[parent].vv_scrollbar_disabled = nil
 scrollbar.setup({
+  map_view = { enabled = false },
   markers = marker_config,
   window_filter = function(win)
     return win ~= parent
@@ -109,7 +116,10 @@ scrollbar.setup({
 })
 assert(state.bars[parent] == nil, 'window_filter did not hide the scrollbar')
 
-scrollbar.setup({ markers = marker_config })
+scrollbar.setup({
+  map_view = { enabled = false },
+  markers = marker_config,
+})
 view.refresh()
 assert(state.bars[parent], 'scrollbar did not return after clearing window filters')
 
@@ -163,6 +173,7 @@ vim.fn.writefile(staged_lines, git_path)
 vim.fn.system({ 'git', '-C', tmp_dir, 'add', 'sample.txt' })
 
 scrollbar.setup({
+  map_view = { enabled = false },
   markers = {
     diagnostics = false,
     git = true,

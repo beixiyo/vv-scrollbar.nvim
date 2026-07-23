@@ -1,5 +1,6 @@
 local fn = vim.fn
 
+local config = require('vv-scrollbar.config')
 local geometry = require('vv-scrollbar.core.geometry')
 local state = require('vv-scrollbar.core.state')
 local view = require('vv-scrollbar.core.view')
@@ -65,6 +66,15 @@ local function on_key(key)
     -- 保证首次点击落点与渲染后的 thumb 行对齐；直接减 bar 窗顶行在父窗有 winbar 时会偏 1 行
     local row = geometry.screenrow_to_bar_row(bar.parent, position.screenrow)
     if row == nil then return nil end
+
+    local marker = view.marker_at(bar, row, position.screencol)
+    local marker_click = config.current().map_view.marker_click
+    if marker and marker_click ~= 'scrollbar' then
+      geometry.scroll_to_line(bar.parent, marker.source_line, marker_click)
+      redraw()
+      return ''
+    end
+
     start_drag(bar, row)
     return ''
   end
