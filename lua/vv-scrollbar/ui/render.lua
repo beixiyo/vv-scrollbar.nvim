@@ -6,6 +6,7 @@ local fn = vim.fn
 local config = require('vv-scrollbar.config')
 local map_view = require('vv-scrollbar.features.map_view')
 local markers = require('vv-scrollbar.features.markers')
+local content = require('vv-scrollbar.ui.content')
 
 local M = {}
 
@@ -15,20 +16,6 @@ local LAYER_PRIORITY = {
   thumb = 2,
   cursor = 3,
 }
-
----@param bar VVScrollbarBar
----@param lines string[]
----@param width integer
----@param content_id string
-local function ensure_lines(bar, lines, width, content_id)
-  if bar.content_id == content_id and bar.width == width then return end
-
-  vim.bo[bar.buf].modifiable = true
-  api.nvim_buf_set_lines(bar.buf, 0, -1, false, lines)
-  vim.bo[bar.buf].modifiable = false
-  bar.width = width
-  bar.content_id = content_id
-end
 
 ---@param chunks string[][]
 ---@return integer
@@ -85,82 +72,47 @@ local function set_marker_hits(bar, row, marker, win_col, marker_width)
   if #hits > 0 then bar.marker_hits[row] = hits end
 end
 
----@param buf integer
----@param height integer
----@param track_width integer
----@param width integer
----@param winbar_offset integer
----@param map_layout? VVScrollbarMapLayout
----@param refresh fun()
----@return string[]
----@return string
-local function content(buf, height, track_width, width, winbar_offset, map_layout, refresh)
-  local lines = {}
-  if map_layout then
-    local map_lines, cache_id = map_view.lines(
-      buf,
-      map_layout.content_height,
-      track_width,
-      refresh
-    )
-    local right_fill = string.rep(' ', math.max(width - track_width, 0))
-    if winbar_offset > 0 then lines[1] = string.rep(' ', width) end
-
-    for index = 1, height do
-      local line = map_lines[map_layout.top_row + index] or string.rep(' ', track_width)
-      lines[index + winbar_offset] = line .. right_fill
-    end
-    return lines, table.concat({
-      'map',
-      buf,
-      cache_id,
-      width,
-      winbar_offset,
-      map_layout.top_row,
-    }, ':')
-  end
-
-  local fill = string.rep(' ', width)
-  for index = 1, height + winbar_offset do lines[index] = fill end
-  return lines, table.concat({ 'track', height, width, winbar_offset }, ':')
-end
-
 ---@param parent integer
 ---@param bar VVScrollbarBar
 ---@param viewport table
----@param has_map_view boolean
+---@param map_mode? 'viewport'|'fit'
 ---@param winbar_offset integer
 ---@param dragging? VVScrollbarDragState
 ---@param refresh fun()
-function M.render(parent, bar, viewport, has_map_view, winbar_offset, dragging, refresh)
+function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refresh)
   local cfg = config.current()
   local width = api.nvim_win_get_width(bar.win)
   local track_width = bar.track_width
-  local map_layout = has_map_view
-      and map_view.resolve_layout(viewport, dragging and dragging.map_top)
+  local has_map_view = map_mode ~= nil
+  local map_layout = map_mode
+      and map_view.resolve_layout(viewport, dragging and dragging.map_top, map_mode)
     or nil
-  local content_lines, content_id = content(
-    viewport.buf,
-    viewport.height,
-    track_width,
-    width,
-    winbar_offset,
-    map_layout,
-    refresh
-  )
+  local map_columns = has_map_view and map_view.resolve_columns(track_width) or nil
+  local content_lines, content_id = content.build({
+    buf = viewport.buf,
+    height = viewport.height,
+    track_width = track_width,
+    width = width,
+    winbar_offset = winbar_offset,
+    map_layout = map_layout,
+    map_columns = map_columns,
+    refresh = refresh,
+  })
 
   bar.map_layout = map_layout
+  bar.map_mode = map_mode
+  bar.map_columns = map_columns
   if map_layout then
     bar.thumb_row = map_layout.thumb_row
     bar.thumb_height = map_layout.thumb_height
   end
 
-  ensure_lines(bar, content_lines, width, content_id)
+  content.ensure(bar, content_lines, width, content_id)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
   local row_markers = markers.collect(parent, viewport, {
     cursor = not has_map_view,
-    track_width = track_width,
+    track_width = map_columns and map_columns.marker_width or track_width,
   })
   local cursor_row
   if map_layout and cfg.markers.cursor and parent == api.nvim_get_current_win() then
@@ -180,9 +132,14 @@ function M.render(parent, bar, viewport, has_map_view, winbar_offset, dragging, 
     local in_thumb = row >= bar.thumb_row and row < bar.thumb_row + bar.thumb_height
     if has_map_view then
       local line = content_lines[buf_row + 1] or ''
-      local map_end_col = #line - math.max(width - track_width, 0)
-      if map_end_col > 0 then
-        api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+      local map_start_col = vim.str_byteindex(line, map_columns.map_start_col)
+      local map_end_col = vim.str_byteindex(
+        line,
+        map_columns.map_start_col + map_columns.map_width
+      )
+      local track_end_col = vim.str_byteindex(line, map_columns.track_width)
+      if map_end_col > map_start_col then
+        api.nvim_buf_set_extmark(bar.buf, ns, buf_row, map_start_col, {
           end_col = map_end_col,
           hl_group = 'VVScrollbarMapView',
           priority = LAYER_PRIORITY.map,
@@ -190,9 +147,9 @@ function M.render(parent, bar, viewport, has_map_view, winbar_offset, dragging, 
       end
 
       if in_thumb then
-        if cfg.map_view.preserve_map_under_thumb and map_end_col > 0 then
+        if cfg.map_view.preserve_map_under_thumb and track_end_col > 0 then
           api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
-            end_col = map_end_col,
+            end_col = track_end_col,
             hl_group = thumb_hl,
             priority = LAYER_PRIORITY.thumb,
           })
@@ -205,29 +162,33 @@ function M.render(parent, bar, viewport, has_map_view, winbar_offset, dragging, 
         end
       end
 
-      if row == cursor_row and map_end_col > 0 then
+      if row == cursor_row and map_end_col > map_start_col then
         local cursor = cfg.map_view.cursor
         if cursor.style == 'dots' then
-          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+          api.nvim_buf_set_extmark(bar.buf, ns, buf_row, map_start_col, {
             end_col = map_end_col,
             hl_group = 'VVScrollbarMapCursor',
             priority = LAYER_PRIORITY.cursor,
           })
         elseif cursor.style == 'line' then
           local symbol = markers.cell(cursor.symbol)
-          local cursor_width = math.min(cursor.width, track_width)
+          local cursor_width = math.min(cursor.width, map_columns.map_width)
           api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
             virt_text = { { string.rep(symbol, cursor_width), 'VVScrollbarMapCursor' } },
-            virt_text_win_col = cursor.side == 'right' and track_width - cursor_width or 0,
+            virt_text_win_col = map_columns.map_start_col
+              + (cursor.side == 'right' and map_columns.map_width - cursor_width or 0),
             hl_mode = 'combine',
             priority = LAYER_PRIORITY.cursor,
           })
         elseif cursor.style == 'full' then
           api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
             virt_text = {
-              { string.rep(markers.cell(cfg.symbols.cursor), track_width), 'VVScrollbarCursor' },
+              {
+                string.rep(markers.cell(cfg.symbols.cursor), map_columns.map_width),
+                'VVScrollbarCursor',
+              },
             },
-            virt_text_win_col = 0,
+            virt_text_win_col = map_columns.map_start_col,
             hl_mode = 'combine',
             priority = LAYER_PRIORITY.cursor,
           })
@@ -245,14 +206,17 @@ function M.render(parent, bar, viewport, has_map_view, winbar_offset, dragging, 
 
     local marker = row_markers[row]
     if marker then
+      local marker_track_width = map_columns and map_columns.marker_width or track_width
       local chunks, side = marker_chunks(
         marker,
-        track_width,
+        marker_track_width,
         cfg,
         in_thumb and thumb_hl or nil
       )
       local marker_width = chunks_width(chunks)
-      local win_col = side == 'right' and math.max(track_width - marker_width, 0) or 0
+      local win_col = map_columns
+          and map_view.marker_col(map_columns, marker_width)
+        or (side == 'right' and math.max(track_width - marker_width, 0) or 0)
       local extmark = {
         virt_text = chunks,
         hl_mode = 'combine',

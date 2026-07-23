@@ -102,6 +102,8 @@ require('vv-scrollbar').setup({
     large_file_behavior = 'scrollbar',
     show_on_short_buffers = true,
     preserve_map_under_thumb = true,
+    marker_layout = 'overlay',
+    marker_lane_width = 2,
     marker_position = 'right',
     marker_click = 'center',
     cursor = {
@@ -116,6 +118,11 @@ require('vv-scrollbar').setup({
       edge_speed = 2,
       edge_interval = 50,
       snap_to_edges = true,
+    },
+    degradation = {
+      folds = 'fit',
+      wrap = 'viewport',
+      diff = 'fit',
     },
   },
 
@@ -209,6 +216,8 @@ require('vv-scrollbar').setup({
 | `map_view.max_lines` | `integer` | `50000` | 超过该行数时回退经典滚动条 |
 | `map_view.show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示地图 |
 | `map_view.preserve_map_under_thumb` | `boolean` | `true` | thumb 背景下继续显示地图字符 |
+| `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'overlay'` | marker 浮在地图上，或保留左/右独立 lane |
+| `map_view.marker_lane_width` | `integer` | `2` | 左/右 marker lane 占用的列数 |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
 | `map_view.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 点击 marker 后按精确源代码行定位 |
 | `map_view.cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'dots'` | 改变地图点颜色、绘制细线、使用旧整行样式或隐藏 |
@@ -220,10 +229,14 @@ require('vv-scrollbar').setup({
 | `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
 | `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
+| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 出现可见关闭折叠时的行为 |
+| `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
+| `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | diff 窗口的行为 |
 
 地图按 buffer 内容、投影尺寸和相关配置缓存。滚动、光标移动与 thumb 拖拽只复用
 缓存结果，不会重新扫描源代码
-marker 使用固定窗口列的虚拟文本浮在地图边缘，右侧 Git 双轨不会挤压或缩进代码轮廓
+overlay marker 使用固定窗口列的虚拟文本浮在地图边缘，不会挤压代码轮廓；left / right
+模式则按配置宽度保留独立 lane
 默认当前行样式只改变已有 Braille dots 的颜色，不会与同一投影行的 Git marker 竞争
 点击可见 marker 时使用其精确源代码行，不再通过滚动条比例估算
 

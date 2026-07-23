@@ -1,7 +1,5 @@
 local M = {}
 
-local SEV = vim.diagnostic.severity
-
 ---@class VVScrollbarHighlightConfig
 ---@field track vim.api.keyset.highlight 轨道背景 @default { bg = '#20242b' }
 ---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = '#20242b', bg = '#20242b' }
@@ -48,6 +46,11 @@ local SEV = vim.diagnostic.severity
 ---@field edge_interval integer 持续边缘平移的时间间隔，单位 ms @default 50
 ---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
 
+---@class VVScrollbarMapViewDegradationConfig
+---@field folds 'viewport'|'fit'|'scrollbar' 可见关闭折叠时的降级方式 @default 'fit'
+---@field wrap 'viewport'|'fit'|'scrollbar' wrap 窗口的降级方式 @default 'viewport'
+---@field diff 'viewport'|'fit'|'scrollbar' diff 窗口的降级方式 @default 'fit'
+
 ---@class VVScrollbarMapViewConfig
 ---@field enabled boolean 是否显示代码地图 @default true
 ---@field mode 'viewport'|'fit' 地图布局模式 @default 'viewport'
@@ -66,10 +69,13 @@ local SEV = vim.diagnostic.severity
 ---@field large_file_behavior 'scrollbar' 超过行数限制时的降级方式 @default 'scrollbar'
 ---@field show_on_short_buffers boolean 文件无需滚动时是否仍显示代码地图 @default true
 ---@field preserve_map_under_thumb boolean thumb 是否仅叠加背景并保留地图字符 @default true
+---@field marker_layout 'overlay'|'left'|'right' marker 与地图的列布局 @default 'overlay'
+---@field marker_lane_width integer 独立 marker lane 宽度 @default 2
 ---@field marker_position 'left'|'right' marker 浮动侧 @default 'right'
 ---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
 ---@field cursor VVScrollbarMapViewCursorConfig 当前行样式
 ---@field interaction VVScrollbarMapViewInteractionConfig 鼠标交互配置
+---@field degradation VVScrollbarMapViewDegradationConfig 特殊窗口降级策略
 
 ---@class VVScrollbarConfig
 ---@field enabled boolean 是否启用 @default true
@@ -87,98 +93,7 @@ local SEV = vim.diagnostic.severity
 ---@field symbols VVScrollbarSymbolsConfig 标记字符
 ---@field highlights VVScrollbarHighlightConfig 高亮定义
 
-local defaults = {
-  enabled = true,
-  current_only = false,
-  width = 2,
-  right_offset = 0,
-  min_thumb = 2,
-  throttle_ms = 30,
-  search_line_limit = 20000,
-  excluded_filetypes = {
-    'terminal', 'toggleterm', 'blink-cmp-menu', 'cmp_docs', 'cmp_menu',
-    'dropbar_menu', 'dropbar_menu_fzf', 'DressingInput', 'noice', 'prompt', 'TelescopePrompt',
-    'dashboard', 'vv-explorer', 'vv-git', 'vv-task-panel', 'vv-task-panel-tasks',
-  },
-  excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
-  window_filter = nil,
-  map_view = {
-    enabled = true,
-    mode = 'viewport',
-    width = 'auto',
-    min_width = 8,
-    max_width = 16,
-    width_ratio = 0.14,
-    x_multiplier = 4,
-    y_multiplier = 1,
-    min_thumb = 2,
-    max_lines_per_dot = 8,
-    tab_width = 'buffer',
-    include_whitespace = false,
-    debounce_ms = 150,
-    max_lines = 50000,
-    large_file_behavior = 'scrollbar',
-    show_on_short_buffers = true,
-    preserve_map_under_thumb = true,
-    marker_position = 'right',
-    marker_click = 'center',
-    cursor = {
-      style = 'dots',
-      side = 'right',
-      width = 1,
-      symbol = '▎',
-    },
-    interaction = {
-      edge_scroll = true,
-      edge_margin = 2,
-      edge_speed = 2,
-      edge_interval = 50,
-      snap_to_edges = true,
-    },
-  },
-  markers = {
-    diagnostics = true,
-    git = true,
-    search = true,
-    marks = true,
-    quickfix = true,
-    cursor = true,
-  },
-  symbols = {
-    thumb = ' ',
-    cursor = '█',
-    search = '•',
-    mark = '◆',
-    quickfix = '■',
-    diagnostics = {
-      [SEV.ERROR] = '●',
-      [SEV.WARN] = '●',
-      [SEV.INFO] = '●',
-      [SEV.HINT] = '●',
-    },
-    git = {
-      A = '▎',
-      C = '▎',
-      D = '󰆐',
-    },
-  },
-  highlights = {
-    track = { bg = '#20242b' },
-    separator = { fg = '#20242b', bg = '#20242b' },
-    map_view = { fg = '#565f89' },
-    map_cursor = { fg = '#7aa2f7' },
-    thumb = { bg = '#3b4252' },
-    hover = { bg = '#4b5568' },
-    cursor = { fg = '#7aa2f7' },
-    search = { fg = '#ff9e64' },
-    mark = { fg = '#bb9af7' },
-    quickfix = { fg = '#e0af68' },
-    diag_error = { fg = '#f7768e' },
-    diag_warn = { fg = '#e0af68' },
-    diag_info = { fg = '#7dcfff' },
-    diag_hint = { fg = '#1abc9c' },
-  },
-}
+local defaults = require('vv-scrollbar.config.defaults')
 
 ---@type VVScrollbarConfig
 local current = vim.deepcopy(defaults)
@@ -280,6 +195,13 @@ function M.apply(opts)
     current.map_view.mode = defaults.map_view.mode
   end
   current.map_view.large_file_behavior = 'scrollbar'
+  if not vim.tbl_contains({ 'overlay', 'left', 'right' }, current.map_view.marker_layout) then
+    current.map_view.marker_layout = defaults.map_view.marker_layout
+  end
+  current.map_view.marker_lane_width = positive_integer(
+    current.map_view.marker_lane_width,
+    defaults.map_view.marker_lane_width
+  )
   if current.map_view.marker_position ~= 'left' then
     current.map_view.marker_position = 'right'
   end
@@ -320,6 +242,13 @@ function M.apply(opts)
   )
   if type(interaction.snap_to_edges) ~= 'boolean' then
     interaction.snap_to_edges = default_interaction.snap_to_edges
+  end
+  local degradation = current.map_view.degradation
+  local default_degradation = defaults.map_view.degradation
+  for _, key in ipairs({ 'folds', 'wrap', 'diff' }) do
+    if not vim.tbl_contains({ 'viewport', 'fit', 'scrollbar' }, degradation[key]) then
+      degradation[key] = default_degradation[key]
+    end
   end
   current.right_offset = math.max(
     math.floor(tonumber(current.right_offset) or defaults.right_offset),
