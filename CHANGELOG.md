@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 - 2026-07-24
+
+### Fixed
+
+- 关闭折叠滚出可视区后不再从 `fit` 跳回 `viewport`，短文件地图高度不会在铺满与半高之间切换
+- 关闭折叠不再按隐藏的 buffer 行放大 thumb；map-view 滚动位置与轨道点击改用真实 display row
+
 ## 0.2.0 - 2026-07-24
 
 ### Breaking Changes

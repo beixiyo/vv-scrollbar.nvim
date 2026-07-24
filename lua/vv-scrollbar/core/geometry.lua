@@ -39,15 +39,35 @@ function M.is_ordinary_window(win)
 end
 
 ---@param win integer
+---@param display_row integer
+---@return integer
+local function display_row_to_line(win, display_row)
+  local line_count = api.nvim_buf_line_count(api.nvim_win_get_buf(win))
+  local height = api.nvim_win_text_height(win, {
+    max_height = math.max(math.floor(display_row), 0) + 1,
+  })
+  return projection.clamp(height.end_row + 1, 1, line_count)
+end
+
+---@param win integer
 ---@return table
 function M.viewport(win)
   local buf = api.nvim_win_get_buf(win)
   local line_count = api.nvim_buf_line_count(buf)
-  local topline = fn.line('w0', win)
+  local view = api.nvim_win_call(win, fn.winsaveview)
+  local topline = view.topline
   local botline = fn.line('w$', win)
   local visible = math.max(botline - topline + 1, 1)
   local height = M.win_height(win)
-  local thumb_height = math.floor(height * visible / math.max(line_count, 1) + 0.5)
+  local display_height = math.max(api.nvim_win_text_height(win, {}).all, 1)
+  local page_height = math.min(height, display_height)
+  local top_height = api.nvim_win_text_height(win, {
+    end_row = topline - 1,
+    end_vcol = view.skipcol,
+  }).all
+  local display_top = math.max(top_height - view.topfill, 0)
+  local thumb_height =
+    math.floor(height * page_height / display_height + 0.5)
   thumb_height = projection.clamp(
     thumb_height,
     math.min(config.current().min_thumb, height),
@@ -55,15 +75,17 @@ function M.viewport(win)
   )
 
   local max_row = math.max(height - thumb_height, 0)
-  local max_top = math.max(line_count - visible, 1)
+  local max_top = math.max(display_height - page_height, 1)
   local row = 0
   if max_row > 0 then
-    row = math.floor(((topline - 1) / max_top) * max_row + 0.5)
+    row = math.floor((display_top / max_top) * max_row + 0.5)
   end
 
   return {
     buf = buf,
     line_count = line_count,
+    display_height = display_height,
+    display_top = display_top,
     topline = topline,
     botline = botline,
     visible = visible,
@@ -80,7 +102,9 @@ end
 ---@return integer
 function M.bar_row_to_line(win, row)
   local viewport = M.viewport(win)
-  return projection.row_to_line(row, viewport.line_count, viewport.height)
+  local display_row =
+    projection.row_to_line(row, viewport.display_height, viewport.height) - 1
+  return display_row_to_line(win, display_row)
 end
 
 ---@param win integer
@@ -173,7 +197,8 @@ function M.scroll_to_bar_row(win, row, cursor_anchor)
   local target = 1
   if viewport.max_row > 0 then
     local ratio = projection.clamp(row, 0, viewport.max_row) / viewport.max_row
-    target = math.floor(ratio * viewport.max_top + 1.5)
+    local display_row = math.floor(ratio * viewport.max_top + 0.5)
+    target = display_row_to_line(win, display_row)
   end
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()
