@@ -11,7 +11,7 @@ English | <a href="./README.zh-CN.md">中文</a>
   </tr>
 </table>
 
-<video muted autoplay loop controls src="https://github.com/beixiyo/vv-scrollbar.nvim/releases/download/assets-2026-07-24/map_view.mp4" title="Interactive map view demo"></video>
+<video muted autoplay loop controls src="https://github.com/user-attachments/assets/4339b36b-b58c-48c3-aa4d-80db55b56f78" title="Interactive map view demo"></video>
 
 Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfiles</a>.
 
