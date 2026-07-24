@@ -250,7 +250,7 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
 | `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
-| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while a closed fold is visible |
+| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while the window contains a closed fold |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior for diff windows |
 | `map_view.syntax.enabled` | `boolean` | `true` | Color map cells from Tree-sitter captures |

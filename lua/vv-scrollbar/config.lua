@@ -63,7 +63,7 @@ local M = {}
 ---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
 
 ---@class VVScrollbarMapViewDegradationConfig
----@field folds 'viewport'|'fit'|'scrollbar' 可见关闭折叠时的降级方式 @default 'fit'
+---@field folds 'viewport'|'fit'|'scrollbar' 存在关闭折叠时的降级方式 @default 'fit'
 ---@field wrap 'viewport'|'fit'|'scrollbar' wrap 窗口的降级方式 @default 'viewport'
 ---@field diff 'viewport'|'fit'|'scrollbar' diff 窗口的降级方式 @default 'fit'
 

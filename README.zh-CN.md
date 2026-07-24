@@ -257,7 +257,7 @@ require('vv-scrollbar').setup({
 | `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
 | `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
-| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 出现可见关闭折叠时的行为 |
+| `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 窗口存在关闭折叠时的行为 |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
 | `map_view.degradation.diff` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | diff 窗口的行为 |
 | `map_view.syntax.enabled` | `boolean` | `true` | 使用 Tree-sitter capture 为地图点着色 |

@@ -62,6 +62,7 @@ function M.close(parent)
   if not bar then return end
 
   window.close(bar)
+  map_view.clear_window(parent)
   state.bars[parent] = nil
 end
 
@@ -77,7 +78,11 @@ local function render(parent)
     bar = window.create(parent)
     state.bars[parent] = bar
   end
-  local map_mode = map_view.resolve_mode(parent, viewport.buf)
+  local map_mode = map_view.resolve_mode(
+    parent,
+    viewport.buf,
+    viewport.display_height
+  )
   local has_map_view = map_mode ~= nil
 
   bar.parent = parent

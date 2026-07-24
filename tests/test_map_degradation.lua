@@ -54,6 +54,19 @@ assert(
   'default viewport wrap strategy masked the visible-fold fallback'
 )
 
+api.nvim_win_call(win, function() vim.cmd('normal! 50Gzt') end)
+assert(
+  map_view.resolve_mode(win, buf) == 'fit',
+  'scrolling past a closed fold switched the map from fit back to viewport'
+)
+
+api.nvim_win_call(win, function() vim.cmd('normal! zR') end)
+assert(
+  map_view.resolve_mode(win, buf) == 'viewport',
+  'opening every fold did not restore the configured viewport mode'
+)
+
+api.nvim_win_call(win, function() vim.cmd('normal! zM') end)
 config.apply({
   map_view = {
     degradation = { folds = 'viewport' },
@@ -64,4 +77,4 @@ assert(
   'explicit fold viewport strategy was ignored'
 )
 
-print('PASS: ordinary, wrap, diff and visible-fold map degradation strategies')
+print('PASS: ordinary, wrap, diff and stable closed-fold map degradation strategies')

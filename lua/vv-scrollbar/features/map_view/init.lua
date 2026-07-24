@@ -7,6 +7,8 @@ local syntax = require('vv-scrollbar.features.map_view.syntax')
 
 local M = {}
 
+local fold_cache = {}
+
 ---@param mode 'viewport'|'fit'
 ---@return VVScrollbarMapViewConfig
 local function options_for(mode)
@@ -16,24 +18,50 @@ local function options_for(mode)
 end
 
 ---@param win integer
+---@param buf integer
+---@param display_height? integer
 ---@return boolean
-local function has_visible_closed_fold(win)
-  if not vim.wo[win].foldenable then return false end
-  return api.nvim_win_call(win, function()
-    local line = vim.fn.line('w0')
-    local last = vim.fn.line('w$')
-    while line <= last do
+local function has_closed_fold(win, buf, display_height)
+  if not vim.wo[win].foldenable then
+    fold_cache[win] = nil
+    return false
+  end
+
+  display_height = display_height or api.nvim_win_text_height(win, {}).all
+  local changedtick = api.nvim_buf_get_changedtick(buf)
+  local foldmethod = vim.wo[win].foldmethod
+  local cached = fold_cache[win]
+  if cached
+      and cached.buf == buf
+      and cached.changedtick == changedtick
+      and cached.display_height == display_height
+      and cached.foldmethod == foldmethod
+  then
+    return cached.closed
+  end
+
+  local closed = api.nvim_win_call(win, function()
+    for line = 1, api.nvim_buf_line_count(buf) do
       if vim.fn.foldclosed(line) ~= -1 then return true end
-      line = line + 1
     end
     return false
   end)
+
+  fold_cache[win] = {
+    buf = buf,
+    changedtick = changedtick,
+    display_height = display_height,
+    foldmethod = foldmethod,
+    closed = closed,
+  }
+  return closed
 end
 
 ---@param win integer
 ---@param buf integer
+---@param display_height? integer
 ---@return 'viewport'|'fit'?
-function M.resolve_mode(win, buf)
+function M.resolve_mode(win, buf, display_height)
   local opts = config.current().map_view
   if not opts.enabled
       or not api.nvim_buf_is_valid(buf)
@@ -48,7 +76,9 @@ function M.resolve_mode(win, buf)
   local fallback
   if vim.wo[win].diff and degradation.diff ~= 'viewport' then
     fallback = degradation.diff
-  elseif has_visible_closed_fold(win) and degradation.folds ~= 'viewport' then
+  elseif degradation.folds ~= 'viewport'
+      and has_closed_fold(win, buf, display_height)
+  then
     fallback = degradation.folds
   elseif vim.wo[win].wrap and degradation.wrap ~= 'viewport' then
     fallback = degradation.wrap
@@ -133,10 +163,19 @@ end
 ---@param buf integer
 function M.clear(buf)
   require('vv-scrollbar.features.map_view.cache').clear(buf)
+  for win, cached in pairs(fold_cache) do
+    if cached.buf == buf then fold_cache[win] = nil end
+  end
+end
+
+---@param win integer
+function M.clear_window(win)
+  fold_cache[win] = nil
 end
 
 function M.clear_all()
   require('vv-scrollbar.features.map_view.cache').clear_all()
+  fold_cache = {}
   syntax.clear_palette()
 end
 
