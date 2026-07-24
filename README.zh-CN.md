@@ -4,7 +4,16 @@
 
 <a href="./README.md">English</a> | 中文
 
-<img src="./docs/assets/vv-scrollbar.png" alt="vv-scrollbar 演示" width="900" />
+<table>
+  <tr>
+    <td><img src="https://github.com/beixiyo/vv-scrollbar.nvim/releases/download/assets-2026-07-24/scrollbar.png" alt="vv-scrollbar 经典滚动条" width="420" /></td>
+    <td><img src="https://github.com/beixiyo/vv-scrollbar.nvim/releases/download/assets-2026-07-24/map-view.png" alt="vv-scrollbar 地图视图" width="420" /></td>
+  </tr>
+</table>
+
+<p>
+  <video muted autoplay loop controls src="https://github.com/beixiyo/vv-scrollbar.nvim/releases/download/assets-2026-07-24/map_view.mp4" title="交互式地图视图演示"></video>
+</p>
 
 想要我的 Neovim 配置？查看 <a href="https://github.com/beixiyo/dotfiles">dotfiles</a>
 
