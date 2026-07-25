@@ -245,7 +245,7 @@ local staged_buf = api.nvim_create_buf(false, true)
 api.nvim_set_option_value('buftype', 'nowrite', { buf = staged_buf })
 api.nvim_buf_set_lines(staged_buf, 0, -1, false, staged_lines)
 api.nvim_set_option_value('modifiable', false, { buf = staged_buf })
-vim.b[staged_buf].vv_scrollbar_git_source = {
+vim.b[staged_buf].vv_git_diff_source = {
   root = tmp_dir,
   path = 'sample.txt',
   mode = 'staged',
@@ -305,8 +305,50 @@ for _, extmark in ipairs(dual_extmarks) do
 end
 assert(found_dual_git_marker, 'scrollbar did not render staged left and unstaged right')
 
+vim.fn.system({ 'git', '-C', tmp_dir, 'commit', '-qm', 'second' })
+local revision_buf = api.nvim_create_buf(false, true)
+api.nvim_set_option_value('buftype', 'nowrite', { buf = revision_buf })
+api.nvim_buf_set_lines(revision_buf, 0, -1, false, staged_lines)
+vim.b[revision_buf].vv_git_diff_source = {
+  root = tmp_dir,
+  path = 'sample.txt',
+  from_rev = 'HEAD^',
+  to_rev = 'HEAD',
+  side = 'new',
+}
+api.nvim_win_set_buf(parent, revision_buf)
+
+local revision_marker_loaded = vim.wait(3000, function()
+  local sets = state.git_marks[revision_buf]
+  return sets and sets.unstaged and sets.unstaged[200] == 'A'
+end, 10)
+assert(revision_marker_loaded, 'revision scratch buffer did not load generic git markers')
+
+view.refresh()
+local revision_bar = state.bars[parent]
+local revision_extmarks = api.nvim_buf_get_extmarks(
+  revision_bar.buf,
+  namespace,
+  0,
+  -1,
+  { details = true }
+)
+local found_revision_marker = false
+for _, extmark in ipairs(revision_extmarks) do
+  local virt_text = extmark[4].virt_text
+  for _, chunk in ipairs(virt_text or {}) do
+    if chunk[2] == 'VVGitAdded' then
+      found_revision_marker = true
+      break
+    end
+  end
+  if found_revision_marker then break end
+end
+assert(found_revision_marker, 'revision git marker was not rendered on the scrollbar')
+
 api.nvim_win_set_buf(parent, original_buf)
 api.nvim_buf_delete(worktree_buf, { force = true })
+api.nvim_buf_delete(revision_buf, { force = true })
 vim.fn.delete(tmp_dir, 'rf')
 
 scrollbar.disable()
