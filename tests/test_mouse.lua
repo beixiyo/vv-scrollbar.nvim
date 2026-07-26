@@ -124,6 +124,13 @@ vim.on_key = original_on_key
 
 assert(on_key, 'mouse handler was not attached')
 
+local drag_target = vim.api.nvim_get_current_win()
+vim.cmd('vsplit')
+local panel_like_win = vim.api.nvim_get_current_win()
+bar.parent = drag_target
+state.bars = { [drag_target] = bar }
+vim.api.nvim_set_current_win(panel_like_win)
+
 assert(on_key(vim.keycode('<RightMouse>')) == '', 'right click over the bar was not consumed')
 assert(toggle_view_calls == 1, 'right click did not toggle the scrollbar view')
 assert(on_key(vim.keycode('<RightRelease>')) == '', 'right release over the bar was not consumed')
@@ -151,6 +158,10 @@ assert(on_key(vim.keycode('<RightRelease>')) == '', 'custom right release escape
 right_click_action = 'toggle_view'
 
 assert(on_key(vim.keycode('<LeftMouse>')) == '', 'thumb press was not consumed')
+assert(
+  vim.api.nvim_get_current_win() == drag_target,
+  'thumb press did not focus the controlled window before subsequent drag mappings'
+)
 assert(state.dragging, 'thumb press did not enter active state')
 assert(state.dragging.map_top == nil, 'plain thumb press froze the map projection')
 assert(state.dragging.cursor_anchor == cursor_anchor, 'thumb press lost its cursor anchor')
@@ -294,5 +305,6 @@ assert(#wheel_calls == 2, 'real mapped wheel input did not reach the source redi
 vim.fn.getmousepos = original_getmousepos
 vim.keymap.del('n', '<ScrollWheelDown>')
 mouse.detach()
+pcall(vim.api.nvim_win_close, panel_like_win, true)
 
 print('PASS: clicks, right-click actions, wheel redirect, deferred map freeze, and multi-click isolation')

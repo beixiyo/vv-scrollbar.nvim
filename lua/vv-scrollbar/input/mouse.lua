@@ -108,6 +108,15 @@ end
 ---@param bar VVScrollbarBar
 ---@param mouse_row integer
 local function start_drag(bar, mouse_row)
+  -- 鼠标按下发生在 scrollbar 的 nofile split 上，但 Neovim 仍用原焦点窗口解析后续
+  -- <LeftDrag>。若原窗口是 tree panel，它通常会把该键映射为 <Nop> 防止 Visual
+  -- 拖选，导致拖拽在开始后立刻被吞掉。先聚焦 scrollbar 控制的内容窗口，让后续
+  -- drag/release 走目标 buffer 的映射上下文；点击滚动条本来也应把焦点交给其内容
+  if vim.api.nvim_win_is_valid(bar.parent)
+      and vim.api.nvim_get_current_win() ~= bar.parent then
+    vim.api.nvim_set_current_win(bar.parent)
+  end
+
   local in_thumb = mouse_row >= bar.thumb_row and mouse_row < bar.thumb_row + bar.thumb_height
   local offset = in_thumb
     and mouse_row - bar.thumb_row
