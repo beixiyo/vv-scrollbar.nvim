@@ -1,4 +1,3 @@
----@diagnostic disable: missing-fields, duplicate-set-field
 local source = debug.getinfo(1, 'S').source:sub(2)
 local root = vim.fn.fnamemodify(source, ':p:h:h')
 local utils_root = vim.fn.fnamemodify(root, ':h') .. '/vv-utils.nvim'
@@ -37,11 +36,9 @@ local markers = {
   cursor = false,
 }
 local scrollbar = require('vv-scrollbar')
----@diagnostic disable-next-line: missing-fields
 scrollbar.setup({
   throttle_ms = 0,
   markers = markers,
----@diagnostic disable-next-line: missing-fields
   highlights = {
     map_cursor = { fg = '#abcdef' },
     separator = { fg = '#123456', bg = '#123456' },

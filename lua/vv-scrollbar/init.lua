@@ -90,7 +90,7 @@ function M.toggle()
   end
 end
 
----@param opts? VVScrollbarConfig
+---@param opts? VVScrollbarConfigOpts
 function M.setup(opts)
   config.apply(opts)
   map_view.clear_all()

@@ -2,6 +2,7 @@
 
 local SEV = vim.diagnostic.severity
 
+---@type VVScrollbarConfig
 return {
   enabled = true,
   current_only = false,
