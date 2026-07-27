@@ -19,6 +19,13 @@ local LAYER_PRIORITY = {
   cursor = 4,
 }
 
+---@param line string
+---@param col integer
+---@return integer
+local function cell_to_byte(line, col)
+  return vim.str_byteindex(line, 'utf-32', col, false)
+end
+
 ---@param chunks string[][]
 ---@return integer
 local function chunks_width(chunks)
@@ -29,7 +36,7 @@ local function chunks_width(chunks)
   return width
 end
 
----@param marker VVScrollbarMarker
+---@param marker VVScrollbar.Marker
 ---@param cfg VVScrollbarConfig
 ---@param background_hl? string
 ---@return string[][]
@@ -46,9 +53,9 @@ local function marker_chunks(marker, cfg, background_hl)
   return chunks, cfg.map_view.marker_position
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param row integer
----@param marker VVScrollbarMarker
+---@param marker VVScrollbar.Marker
 ---@param win_col integer
 ---@param marker_width integer
 local function set_marker_hits(bar, row, marker, win_col, marker_width)
@@ -71,7 +78,7 @@ local function set_marker_hits(bar, row, marker, win_col, marker_width)
   if #hits > 0 then bar.marker_hits[row] = hits end
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param buf_row integer
 ---@param cfg VVScrollbarConfig
 ---@param start_col integer
@@ -123,11 +130,11 @@ local function render_cursor(
 end
 
 ---@param parent integer
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param viewport table
 ---@param map_mode? 'viewport'|'fit'
 ---@param winbar_offset integer
----@param dragging? VVScrollbarDragState
+---@param dragging? VVScrollbar.DragState
 ---@param refresh fun()
 function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refresh)
   local cfg = config.current()
@@ -158,6 +165,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   end
 
   content.ensure(bar, content_lines, width, content_id)
+  local rendered_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
   local function line_to_row(line)
@@ -186,13 +194,13 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
     local buf_row = row + winbar_offset
     local in_thumb = row >= bar.thumb_row and row < bar.thumb_row + bar.thumb_height
     if has_map_view then
-      local line = content_lines[buf_row + 1] or ''
-      local map_start_col = vim.str_byteindex(line, map_columns.map_start_col)
-      local map_end_col = vim.str_byteindex(
+      local line = rendered_lines[buf_row + 1] or ''
+      local map_start_col = cell_to_byte(line, map_columns.map_start_col)
+      local map_end_col = cell_to_byte(
         line,
         map_columns.map_start_col + map_columns.map_width
       )
-      local track_end_col = vim.str_byteindex(line, map_columns.track_width)
+      local track_end_col = cell_to_byte(line, map_columns.track_width)
       if map_end_col > map_start_col then
         api.nvim_buf_set_extmark(bar.buf, ns, buf_row, map_start_col, {
           end_col = map_end_col,
@@ -202,8 +210,8 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
       end
 
       for _, span in ipairs(map_highlights and map_highlights[buf_row + 1] or {}) do
-        local start_col = vim.str_byteindex(line, span.start_col)
-        local end_col = vim.str_byteindex(line, span.end_col)
+        local start_col = cell_to_byte(line, span.start_col)
+        local end_col = cell_to_byte(line, span.end_col)
         if end_col > start_col then
           api.nvim_buf_set_extmark(bar.buf, ns, buf_row, start_col, {
             end_col = end_col,

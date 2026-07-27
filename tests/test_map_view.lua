@@ -1,3 +1,4 @@
+---@diagnostic disable: missing-fields, duplicate-set-field
 local source = debug.getinfo(1, 'S').source:sub(2)
 local root = vim.fn.fnamemodify(source, ':p:h:h')
 local utils_root = vim.fn.fnamemodify(root, ':h') .. '/vv-utils.nvim'
@@ -36,9 +37,11 @@ local markers = {
   cursor = false,
 }
 local scrollbar = require('vv-scrollbar')
+---@diagnostic disable-next-line: missing-fields
 scrollbar.setup({
   throttle_ms = 0,
   markers = markers,
+---@diagnostic disable-next-line: missing-fields
   highlights = {
     map_cursor = { fg = '#abcdef' },
     separator = { fg = '#123456', bg = '#123456' },
@@ -96,6 +99,35 @@ local map_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
 assert(
   table.concat(map_lines):find('[^ ]'),
   'map view buffer did not contain a visible code preview'
+)
+
+local content = require('vv-scrollbar.ui.content')
+local original_ensure = content.ensure
+local original_notify = vim.notify
+local render_error
+
+vim.bo[bar.buf].modifiable = true
+api.nvim_buf_set_lines(bar.buf, 0, 1, false, { '' })
+vim.bo[bar.buf].modifiable = false
+---@diagnostic disable-next-line: duplicate-set-field
+content.ensure = function() end
+---@diagnostic disable-next-line: duplicate-set-field
+vim.notify = function(message, level, opts)
+  if message:find('vv-scrollbar: render failed:', 1, true) then
+    render_error = message
+  end
+  return original_notify(message, level, opts)
+end
+view.refresh()
+vim.wait(20)
+content.ensure = original_ensure
+vim.notify = original_notify
+assert(not render_error, render_error)
+
+view.refresh()
+assert(
+  api.nvim_buf_get_lines(bar.buf, 0, 1, false)[1] == map_lines[1],
+  'cached map content did not repair a stale scrollbar buffer row'
 )
 
 api.nvim_win_call(parent, function() vim.cmd('normal! 201Gzt') end)

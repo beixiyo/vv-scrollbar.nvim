@@ -88,7 +88,7 @@ function M.resolve_mode(win, buf, display_height)
 end
 
 ---@param parent integer
----@param bar? VVScrollbarBar
+---@param bar? VVScrollbar.Bar
 ---@return integer
 function M.resolve_width(parent, bar)
   local opts = config.current().map_view
@@ -110,7 +110,7 @@ end
 ---@param mode 'viewport'|'fit'
 ---@return string[]
 ---@return string
----@return table<integer,VVScrollbarMapHighlight[]>
+---@return table<integer,VVScrollbar.MapHighlight[]>
 function M.lines(buf, height, width, refresh, mode)
   return require('vv-scrollbar.features.map_view.cache').get(
     buf,
@@ -124,18 +124,18 @@ end
 ---@param viewport table
 ---@param top_override? integer
 ---@param mode 'viewport'|'fit'
----@return VVScrollbarMapLayout
+---@return VVScrollbar.MapLayout
 function M.resolve_layout(viewport, top_override, mode)
   return layout.resolve(viewport, options_for(mode), top_override)
 end
 
 ---@param track_width integer
----@return VVScrollbarMapColumns
+---@return VVScrollbar.MapColumns
 function M.resolve_columns(track_width)
   return columns.resolve(track_width, config.current().map_view)
 end
 
----@param map_columns VVScrollbarMapColumns
+---@param map_columns VVScrollbar.MapColumns
 ---@param marker_width integer
 ---@return integer
 function M.marker_col(map_columns, marker_width)
@@ -146,14 +146,14 @@ function M.marker_col(map_columns, marker_width)
   )
 end
 
----@param map_layout VVScrollbarMapLayout
+---@param map_layout VVScrollbar.MapLayout
 ---@param line integer
 ---@return integer
 function M.line_to_row(map_layout, line)
   return layout.line_to_row(map_layout, line)
 end
 
----@param map_layout VVScrollbarMapLayout
+---@param map_layout VVScrollbar.MapLayout
 ---@param row integer
 ---@return integer
 function M.row_to_line(map_layout, row)

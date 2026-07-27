@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3 - 2026-07-27
+
+### Changed
+
+- 将共享 LuaLS 数据契约按 marker、map、interaction、bar 与 state 拆分到 `types/`，通过 `types/init.lua` 保留统一入口
+
+### Fixed
+
+- map-view extmark 坐标改为基于滚动条 buffer 的实际内容计算，并收敛瞬态短行的越界列，避免 `Invalid 'end_col': out of range`
+
 ## 0.2.2 - 2026-07-26
 
 ### Fixed

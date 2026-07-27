@@ -50,9 +50,9 @@ local function redraw()
   vim.cmd.redraw()
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param row integer
----@param cursor_anchor? VVScrollbarCursorAnchor
+---@param cursor_anchor? VVScrollbar.CursorAnchor
 local function scroll_to_row(bar, row, cursor_anchor)
   local layout = bar.map_layout
   if layout and layout.mode == 'viewport' then
@@ -67,8 +67,8 @@ local function scroll_to_row(bar, row, cursor_anchor)
   geometry.scroll_to_bar_row(bar.parent, row, cursor_anchor)
 end
 
----@param bar VVScrollbarBar
----@param drag VVScrollbarDragState
+---@param bar VVScrollbar.Bar
+---@param drag VVScrollbar.DragState
 ---@return boolean
 local function apply_viewport_drag(bar, drag)
   local layout = bar.map_layout
@@ -89,7 +89,7 @@ local function apply_viewport_drag(bar, drag)
   return result.repeat_edge
 end
 
----@param drag VVScrollbarDragState
+---@param drag VVScrollbar.DragState
 local function schedule_edge_scroll(drag)
   if drag.edge_pending then return end
   drag.edge_pending = true
@@ -105,7 +105,7 @@ local function schedule_edge_scroll(drag)
   end, delay)
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param mouse_row integer
 local function start_drag(bar, mouse_row)
   -- 鼠标按下发生在 scrollbar 的 nofile split 上，但 Neovim 仍用原焦点窗口解析后续

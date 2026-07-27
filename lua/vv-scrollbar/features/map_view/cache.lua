@@ -63,7 +63,7 @@ end
 ---@param height integer
 ---@param width integer
 ---@param opts VVScrollbarMapViewConfig
----@return { tick: integer, lines: string[], highlights: table<integer,VVScrollbarMapHighlight[]> }
+---@return { tick: integer, lines: string[], highlights: table<integer,VVScrollbar.MapHighlight[]> }
 local function render_and_store(buf, key, height, width, opts)
   local lines, highlights = renderer.render(buf, height, width, opts)
   local entry = {
@@ -125,7 +125,7 @@ end
 ---@param refresh fun()
 ---@return string[]
 ---@return string
----@return table<integer,VVScrollbarMapHighlight[]>
+---@return table<integer,VVScrollbar.MapHighlight[]>
 function M.get(buf, height, width, opts, refresh)
   local key = cache_key(buf, height, width, opts)
   local tick = api.nvim_buf_get_changedtick(buf)

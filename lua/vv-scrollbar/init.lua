@@ -1,5 +1,7 @@
 -- vv-scrollbar.nvim - 自绘右侧滚动条
 
+require('vv-scrollbar.types')
+
 local api = vim.api
 
 local config = require('vv-scrollbar.config')

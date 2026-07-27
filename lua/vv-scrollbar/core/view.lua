@@ -151,7 +151,7 @@ end
 
 ---@param screenrow integer
 ---@param screencol integer
----@return VVScrollbarBar?
+---@return VVScrollbar.Bar?
 function M.hit_test(screenrow, screencol)
   for _, bar in pairs(state.bars) do
     if api.nvim_win_is_valid(bar.win) then
@@ -170,10 +170,10 @@ function M.hit_test(screenrow, screencol)
   return nil
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param row integer
 ---@param screencol integer
----@return VVScrollbarMarkerHit?
+---@return VVScrollbar.MarkerHit?
 function M.marker_at(bar, row, screencol)
   local hits = bar.marker_hits and bar.marker_hits[row]
   if not hits or not api.nvim_win_is_valid(bar.win) then return nil end

@@ -109,7 +109,7 @@ end
 
 ---@param win integer
 ---@param target integer
----@param cursor_anchor? VVScrollbarCursorAnchor
+---@param cursor_anchor? VVScrollbar.CursorAnchor
 ---@param preferred_cursor_line? integer
 local function set_topline(win, target, cursor_anchor, preferred_cursor_line)
   if not api.nvim_win_is_valid(win) then return end
@@ -162,7 +162,7 @@ local function set_topline(win, target, cursor_anchor, preferred_cursor_line)
 end
 
 ---@param win integer
----@return VVScrollbarCursorAnchor?
+---@return VVScrollbar.CursorAnchor?
 function M.begin_cursor_follow(win)
   if not api.nvim_win_is_valid(win) then return nil end
 
@@ -181,7 +181,7 @@ function M.begin_cursor_follow(win)
 end
 
 ---@param win integer
----@param cursor_anchor? VVScrollbarCursorAnchor
+---@param cursor_anchor? VVScrollbar.CursorAnchor
 function M.end_cursor_follow(win, cursor_anchor)
   if not cursor_anchor or not api.nvim_win_is_valid(win) then return end
   vim.wo[win].scrolloff = cursor_anchor.scrolloff
@@ -189,7 +189,7 @@ end
 
 ---@param win integer
 ---@param row integer
----@param cursor_anchor? VVScrollbarCursorAnchor
+---@param cursor_anchor? VVScrollbar.CursorAnchor
 function M.scroll_to_bar_row(win, row, cursor_anchor)
   if not api.nvim_win_is_valid(win) then return end
 
@@ -209,7 +209,7 @@ end
 ---@param win integer
 ---@param line integer
 ---@param align 'center'|'top'
----@param cursor_anchor? VVScrollbarCursorAnchor
+---@param cursor_anchor? VVScrollbar.CursorAnchor
 ---@param preferred_cursor_line? integer
 function M.scroll_to_line(win, line, align, cursor_anchor, preferred_cursor_line)
   if not api.nvim_win_is_valid(win) then return end

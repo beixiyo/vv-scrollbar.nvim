@@ -25,11 +25,11 @@ local function edge_delta(row, height, opts)
   return 0
 end
 
----@param layout VVScrollbarMapLayout
+---@param layout VVScrollbar.MapLayout
 ---@param mouse_row integer
 ---@param offset integer
 ---@param opts VVScrollbarMapViewInteractionConfig
----@return VVScrollbarViewportDragResult
+---@return VVScrollbar.ViewportDragResult
 function M.update(layout, mouse_row, offset, opts)
   local max_top = math.max(layout.content_height - layout.window_height, 0)
   if mouse_row < 0 and opts.snap_to_edges then

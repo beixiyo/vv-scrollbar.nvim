@@ -4,7 +4,7 @@ local M = {}
 
 ---@param track_width integer
 ---@param opts VVScrollbarMapViewConfig
----@return VVScrollbarMapColumns
+---@return VVScrollbar.MapColumns
 function M.resolve(track_width, opts)
   local mode = opts.marker_layout
   if mode == 'overlay' or track_width <= 1 then
@@ -31,7 +31,7 @@ function M.resolve(track_width, opts)
   }
 end
 
----@param columns VVScrollbarMapColumns
+---@param columns VVScrollbar.MapColumns
 ---@param marker_width integer
 ---@param overlay_side 'left'|'right'
 ---@return integer

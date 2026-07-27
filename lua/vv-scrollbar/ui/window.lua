@@ -44,7 +44,7 @@ local function replace_winhighlight(value, source, target)
 end
 
 ---@param parent integer
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 local function apply_separator_highlight(parent, bar)
   if not api.nvim_win_is_valid(parent) then return end
 
@@ -61,7 +61,7 @@ local function apply_separator_highlight(parent, bar)
   )
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 local function restore_separator_highlight(bar)
   local saved = bar.parent_separator_hl
   local parent = bar.parent
@@ -81,7 +81,7 @@ local function restore_separator_highlight(bar)
 end
 
 ---@param parent integer
----@return VVScrollbarBar
+---@return VVScrollbar.Bar
 function M.create(parent)
   local buf = api.nvim_create_buf(false, true)
   vim.bo[buf].modifiable = false
@@ -107,7 +107,7 @@ function M.create(parent)
 end
 
 ---@param parent integer
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@return boolean
 function M.is_attached(parent, bar)
   if not api.nvim_win_is_valid(parent)
@@ -126,7 +126,7 @@ function M.is_attached(parent, bar)
     and api.nvim_win_get_height(bar.win) == api.nvim_win_get_height(parent)
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 function M.close(bar)
   if bar.win and api.nvim_win_is_valid(bar.win) then
     pcall(api.nvim_win_close, bar.win, true)
@@ -138,7 +138,7 @@ function M.close(bar)
 end
 
 ---@param parent integer
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param has_map_view boolean
 function M.sync(parent, bar, has_map_view)
   local cfg = config.current()

@@ -40,7 +40,7 @@ local function key_value(keys, key, typed)
   return keys[key] or keys[typed]
 end
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param row integer
 ---@param position table
 ---@param toggle_view? fun()

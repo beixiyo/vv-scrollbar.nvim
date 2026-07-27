@@ -6,24 +6,30 @@ local map_view = require('vv-scrollbar.features.map_view')
 
 local M = {}
 
----@param bar VVScrollbarBar
+---@param bar VVScrollbar.Bar
 ---@param lines string[]
 ---@param width integer
 ---@param content_id string
 function M.ensure(bar, lines, width, content_id)
-  if bar.content_id == content_id and bar.width == width then return end
+  if bar.content_id == content_id
+      and bar.width == width
+      and bar.content_tick == api.nvim_buf_get_changedtick(bar.buf)
+  then
+    return
+  end
 
   vim.bo[bar.buf].modifiable = true
   api.nvim_buf_set_lines(bar.buf, 0, -1, false, lines)
   vim.bo[bar.buf].modifiable = false
   bar.width = width
   bar.content_id = content_id
+  bar.content_tick = api.nvim_buf_get_changedtick(bar.buf)
 end
 
----@param opts { buf: integer, height: integer, track_width: integer, width: integer, winbar_offset: integer, map_layout?: VVScrollbarMapLayout, map_columns?: VVScrollbarMapColumns, refresh: fun() }
+---@param opts { buf: integer, height: integer, track_width: integer, width: integer, winbar_offset: integer, map_layout?: VVScrollbar.MapLayout, map_columns?: VVScrollbar.MapColumns, refresh: fun() }
 ---@return string[]
 ---@return string
----@return table<integer,VVScrollbarMapHighlight[]>
+---@return table<integer,VVScrollbar.MapHighlight[]>
 function M.build(opts)
   local lines = {}
   local highlights = {}

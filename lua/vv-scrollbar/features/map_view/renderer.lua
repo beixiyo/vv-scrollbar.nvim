@@ -108,7 +108,7 @@ end
 ---@param width integer
 ---@param opts VVScrollbarMapViewConfig
 ---@return string[]
----@return table<integer,VVScrollbarMapHighlight[]>
+---@return table<integer,VVScrollbar.MapHighlight[]>
 function M.render(buf, height, width, opts)
   if height <= 0 or width <= 0 or not api.nvim_buf_is_valid(buf) then return {}, {} end
 

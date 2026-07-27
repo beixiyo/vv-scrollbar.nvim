@@ -9,7 +9,7 @@ local DOT_ROWS = 4
 ---@param viewport table
 ---@param opts VVScrollbarMapViewConfig
 ---@param top_override? integer
----@return VVScrollbarMapLayout
+---@return VVScrollbar.MapLayout
 function M.resolve(viewport, opts, top_override)
   local height = viewport.height
   local line_count = viewport.line_count
@@ -58,7 +58,7 @@ function M.resolve(viewport, opts, top_override)
   }
 end
 
----@param layout VVScrollbarMapLayout
+---@param layout VVScrollbar.MapLayout
 ---@param line integer
 ---@return integer
 function M.line_to_row(layout, line)
@@ -68,7 +68,7 @@ function M.line_to_row(layout, line)
   return math.floor((line - 1) / layout.rows_per_cell) - layout.top_row
 end
 
----@param layout VVScrollbarMapLayout
+---@param layout VVScrollbar.MapLayout
 ---@param row integer
 ---@return integer
 function M.row_to_line(layout, row)
