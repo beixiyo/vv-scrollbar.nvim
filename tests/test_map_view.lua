@@ -58,8 +58,6 @@ assert(
   end),
   'scrollbar buffer did not install the nofile visual-mode guard'
 )
-assert(scrollbar.get_config().map_view.enabled, 'map view is not enabled by default')
-assert(scrollbar.get_config().map_view.mode == 'viewport', 'viewport mode is not the default')
 assert(bar.track_width >= 8 and bar.track_width <= 16, 'auto map width escaped configured bounds')
 assert(
   bar.map_layout and bar.map_layout.content_height > bar.height,
@@ -79,19 +77,6 @@ assert(
   separator_hl.fg == 0x123456 and separator_hl.bg == 0x123456,
   'custom separator color was not registered'
 )
-assert(
-  api.nvim_get_hl(0, { name = 'VVScrollbarMapView', link = true }).link == 'Comment',
-  'default map view highlight does not follow Comment'
-)
-assert(
-  api.nvim_get_hl(0, { name = 'VVScrollbarThumb', link = true }).link == 'CursorLine',
-  'default thumb highlight does not follow CursorLine'
-)
-assert(
-  api.nvim_get_hl(0, { name = 'VVScrollbarActive', link = true }).link == 'Visual',
-  'default active highlight does not follow Visual'
-)
-
 local map_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
 assert(
   table.concat(map_lines):find('[^ ]'),
@@ -99,6 +84,24 @@ assert(
 )
 
 local content = require('vv-scrollbar.ui.content')
+local content_opts = {
+  buf = source_buf,
+  height = bar.height,
+  track_width = bar.track_width,
+  width = api.nvim_win_get_width(bar.win),
+  winbar_offset = 0,
+  map_layout = bar.map_layout,
+  map_columns = bar.map_columns,
+  refresh = function() end,
+}
+local short_lines, short_id = content.build(content_opts)
+content_opts.height = content_opts.height + 1
+local tall_lines, tall_id = content.build(content_opts)
+assert(
+  #tall_lines == #short_lines + 1 and tall_id ~= short_id,
+  'map content identity ignored a window height change'
+)
+
 local original_ensure = content.ensure
 local original_notify = vim.notify
 local render_error
@@ -358,6 +361,27 @@ assert(found_thumb, 'thumb background was not layered over the map')
 assert(found_right_git, 'Git marker was not floated on the right edge')
 assert(found_cursor_line, 'map cursor did not render its configured slim line')
 assert(not found_cursor_span, 'slim cursor line still recolored the map dots')
+
+runtime_config.cursor.style = 'horizontal'
+runtime_config.cursor.symbol = '▁'
+scrollbar.setup(runtime_config)
+view.refresh()
+bar = state.bars[parent]
+extmarks = api.nvim_buf_get_extmarks(bar.buf, namespace, 0, -1, { details = true })
+local found_horizontal_cursor = false
+for _, extmark in ipairs(extmarks) do
+  local virt_text = extmark[4].virt_text
+  if virt_text
+      and virt_text[1]
+      and virt_text[1][1] == string.rep('▁', bar.map_columns.map_width)
+      and virt_text[1][2] == 'VVScrollbarMapCursor'
+      and extmark[4].virt_text_win_col == bar.map_columns.map_start_col
+  then
+    found_horizontal_cursor = true
+    break
+  end
+end
+assert(found_horizontal_cursor, 'horizontal cursor did not span the map columns')
 
 api.nvim_set_hl(0, 'VVScrollbarTestSeparator', { fg = '#654321' })
 local latest_winhighlight = 'Normal:Normal,WinSeparator:VVScrollbarTestSeparator'

@@ -2,7 +2,7 @@
 ---@field track vim.api.keyset.highlight 轨道背景 @default { bg = 'bg' }
 ---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = 'bg', bg = 'bg' }
 ---@field map_view vim.api.keyset.highlight 代码地图 @default { link = 'Comment' }
----@field map_cursor vim.api.keyset.highlight 当前行 Braille dots 或细线 @default { link = 'CursorLineNr' }
+---@field map_cursor vim.api.keyset.highlight 当前行 Braille dots、横线或竖线 @default { link = 'LineNr' }
 ---@field thumb vim.api.keyset.highlight 当前视口 thumb @default { link = 'CursorLine' }
 ---@field active vim.api.keyset.highlight 按下或拖拽中的 thumb @default { link = 'Visual' }
 ---@field cursor vim.api.keyset.highlight full 样式的当前行标记 @default { link = 'CursorLineNr' }
@@ -32,10 +32,10 @@
 ---@field cursor boolean 是否显示光标位置 @default true
 
 ---@class VVScrollbarCursorConfig
----@field style 'dots'|'line'|'full'|'hidden' 当前行样式 @default 'line'
+---@field style 'dots'|'line'|'horizontal'|'full'|'hidden' 当前行样式 @default 'horizontal'
 ---@field side 'left'|'right' 细线所在侧 @default 'right'
 ---@field width integer 细线宽度 @default 1
----@field symbol string 细线字符 @default '▕'
+---@field symbol string line / horizontal 样式使用的字符 @default '▁'
 
 ---@class VVScrollbarRightClickContext
 ---@field win integer 源代码窗口
@@ -170,7 +170,7 @@
 ---@field cursor? boolean
 
 ---@class VVScrollbarCursorConfigOpts
----@field style? 'dots'|'line'|'full'|'hidden'
+---@field style? 'dots'|'line'|'horizontal'|'full'|'hidden'
 ---@field side? 'left'|'right'
 ---@field width? integer
 ---@field symbol? string

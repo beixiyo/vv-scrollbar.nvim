@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.4 - 2026-07-28
+
+### Added
+
+- 新增 `cursor.style = 'horizontal'`，使用 `cursor.symbol` 在地图宽度内绘制当前行横线，并保留独立 marker lane
+
+### Changed
+
+- 当前行默认标识改为 `▁` 横线，默认高亮链接到 `LineNr`，在 Git marker 中保持可辨
+
+### Fixed
+
+- map-view 内容缓存纳入窗口高度，避免 tmux pane zoom 等快速尺寸切换后复用旧短 buffer，绘制 marker 时触发 `Invalid 'line': out of range`
+
 ## 0.2.3 - 2026-07-27
 
 ### Changed

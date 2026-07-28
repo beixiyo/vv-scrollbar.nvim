@@ -97,6 +97,19 @@ local function render_cursor(
   local cursor = cfg.cursor
   if cursor.style == 'hidden' or width <= 0 then return end
 
+  if cursor.style == 'horizontal' then
+    local symbol = markers.cell(cursor.symbol)
+    api.nvim_buf_set_extmark(bar.buf, ns, buf_row, 0, {
+      virt_text = {
+        { string.rep(symbol, width), 'VVScrollbarMapCursor' },
+      },
+      virt_text_win_col = start_col,
+      hl_mode = 'combine',
+      priority = LAYER_PRIORITY.cursor,
+    })
+    return
+  end
+
   if cursor.style == 'dots'
       and dots_start_col
       and dots_end_col

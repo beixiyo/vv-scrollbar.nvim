@@ -87,10 +87,10 @@ require('vv-scrollbar').setup({
   show_on_short_buffers = true,
   window_filter = nil,
   cursor = {
-    style = 'line',
+    style = 'horizontal',
     side = 'right',
     width = 1,
-    symbol = '▕',
+    symbol = '▁',
   },
   interaction = {
     right_click = 'toggle_view',
@@ -184,7 +184,7 @@ require('vv-scrollbar').setup({
     track = { bg = 'bg' },
     separator = { fg = 'bg', bg = 'bg' },
     map_view = { link = 'Comment' },
-    map_cursor = { link = 'CursorLineNr' },
+    map_cursor = { link = 'LineNr' },
     thumb = { link = 'CursorLine' },
     active = { link = 'Visual' },
     cursor = { link = 'CursorLineNr' },
@@ -213,10 +213,10 @@ require('vv-scrollbar').setup({
 | `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间；`0` 表示不延迟 |
 | `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
 | `show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示当前滚动条视图 |
-| `cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'line'` | 两种视图的当前行样式；`dots` 在基础滚动条中使用细线 |
+| `cursor.style` | `'dots'\|'line'\|'horizontal'\|'full'\|'hidden'` | `'horizontal'` | 两种视图的当前行样式；`horizontal` 用细字形横跨地图，保留字符格内的地图可见性 |
 | `cursor.side` | `'left'\|'right'` | `'right'` | 当前行细线所在侧 |
 | `cursor.width` | `integer` | `1` | 当前行细线宽度 |
-| `cursor.symbol` | `string` | `'▕'` | 当前行细线字符 |
+| `cursor.symbol` | `string` | `'▁'` | `line` / `horizontal` 当前行标记字符 |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | 滚动条区域右键动作；可切换形态、改为自定义函数或关闭 |
 | `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | 拖拽时让 cursor 保持在源窗口相同屏幕行，或尽量保留原代码行 |
 | `interaction.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | 两种视图中点击 marker 后按精确源代码行定位 |
@@ -328,7 +328,7 @@ quickfix / loclist > mark > 搜索
 | `highlights.track` | `VVScrollbarTrack` | 背景轨道 |
 | `highlights.separator` | `VVScrollbarSeparator` | 与文件窗口之间的分隔列 |
 | `highlights.map_view` | `VVScrollbarMapView` | 单色代码地图前景 |
-| `highlights.map_cursor` | `VVScrollbarMapCursor` | 两种视图的当前行 Braille dots 或细线 |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` → `LineNr` | 两种视图的当前行 Braille dots、横线或竖线 |
 | `highlights.thumb` | `VVScrollbarThumb` | 当前可见范围 |
 | `highlights.active` | `VVScrollbarActive` | 按下或拖拽中的 thumb |
 | `highlights.cursor` | `VVScrollbarCursor` | `full` 样式的当前行标记 |

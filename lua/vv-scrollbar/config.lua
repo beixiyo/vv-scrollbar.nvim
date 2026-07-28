@@ -125,7 +125,7 @@ function M.apply(opts)
     current.map_view.marker_position = 'right'
   end
   if type(current.cursor) ~= 'table' then current.cursor = vim.deepcopy(defaults.cursor) end
-  if not vim.tbl_contains({ 'dots', 'line', 'full', 'hidden' }, current.cursor.style) then
+  if not vim.tbl_contains({ 'dots', 'line', 'horizontal', 'full', 'hidden' }, current.cursor.style) then
     current.cursor.style = defaults.cursor.style
   end
   if current.cursor.side ~= 'left' then

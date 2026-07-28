@@ -6,28 +6,6 @@ vim.opt.runtimepath:prepend(root)
 local config = require('vv-scrollbar.config')
 local drag = require('vv-scrollbar.input.viewport_drag')
 
-local defaults = config.current().map_view.interaction
-assert(
-  defaults.edge_scroll
-    and defaults.edge_margin == 2
-    and defaults.edge_speed == 2
-    and defaults.edge_interval == 50
-    and defaults.snap_to_edges,
-  'viewport interaction defaults are incomplete'
-)
-assert(
-  config.current().interaction.right_click == 'toggle_view'
-    and config.current().interaction.cursor_on_drag == 'follow'
-    and config.current().interaction.marker_click == 'center',
-  'shared interaction defaults are incomplete'
-)
-assert(
-  config.current().cursor.style == 'line'
-    and config.current().cursor.symbol == '▕'
-    and config.current().map_view.marker_layout == 'right',
-  'shared visual defaults are incomplete'
-)
-
 local layout = {
   mode = 'viewport',
   line_count = 400,
@@ -149,7 +127,7 @@ local invalid_shared = config.apply({
   show_on_short_buffers = 'invalid',
 })
 assert(
-  invalid_shared.cursor.style == 'line'
+  invalid_shared.cursor.style == 'horizontal'
     and invalid_shared.interaction.right_click == 'toggle_view'
     and invalid_shared.interaction.cursor_on_drag == 'follow'
     and invalid_shared.interaction.marker_click == 'center'

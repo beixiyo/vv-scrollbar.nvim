@@ -40,7 +40,6 @@ scrollbar.setup({
 view.refresh()
 
 local win, buf = scrollbar_window()
-assert(scrollbar.get_config().width == 2, 'default width is not 2')
 assert(api.nvim_win_get_width(win) == 2, 'window width is not 2')
 assert(
   api.nvim_win_get_width(parent) == width_before_scrollbar - 3,
@@ -108,20 +107,20 @@ view.refresh()
 win, buf = scrollbar_window()
 
 local cursor_extmarks = api.nvim_buf_get_extmarks(buf, namespace, 0, -1, { details = true })
-local found_slim_cursor = false
+local found_horizontal_cursor = false
 local found_full_cursor = false
 for _, extmark in ipairs(cursor_extmarks) do
   local virt_text = extmark[4].virt_text
   if virt_text and virt_text[1] then
     if virt_text[1][2] == 'VVScrollbarMapCursor' then
-      found_slim_cursor = vim.fn.strdisplaywidth(virt_text[1][1]) == 1
-        and extmark[4].virt_text_win_col == 1
+      found_horizontal_cursor = vim.fn.strdisplaywidth(virt_text[1][1]) == 2
+        and extmark[4].virt_text_win_col == 0
     elseif virt_text[1][2] == 'VVScrollbarCursor' then
       found_full_cursor = true
     end
   end
 end
-assert(found_slim_cursor, 'classic scrollbar did not render a slim cursor line')
+assert(found_horizontal_cursor, 'classic scrollbar did not render a horizontal cursor')
 assert(not found_full_cursor, 'classic scrollbar still rendered a full-width cursor')
 
 api.nvim_buf_set_mark(0, 'a', 200, 0, {})

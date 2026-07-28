@@ -87,10 +87,10 @@ require('vv-scrollbar').setup({
   show_on_short_buffers = true,
   window_filter = nil,
   cursor = {
-    style = 'line',
+    style = 'horizontal',
     side = 'right',
     width = 1,
-    symbol = '▕',
+    symbol = '▁',
   },
   interaction = {
     right_click = 'toggle_view',
@@ -176,7 +176,7 @@ require('vv-scrollbar').setup({
     track = { bg = 'bg' },
     separator = { fg = 'bg', bg = 'bg' },
     map_view = { link = 'Comment' },
-    map_cursor = { link = 'CursorLineNr' },
+    map_cursor = { link = 'LineNr' },
     thumb = { link = 'CursorLine' },
     active = { link = 'Visual' },
     cursor = { link = 'CursorLineNr' },
@@ -205,10 +205,10 @@ Every `setup()` call merges its arguments into the defaults from scratch. It doe
 | `throttle_ms` | `integer` | `30` | Refresh throttle outside direct mouse interaction; zero disables delay |
 | `search_line_limit` | `integer` | `20000` | Skip search projection above this line count |
 | `show_on_short_buffers` | `boolean` | `true` | Keep the active scrollbar view visible when the file does not need scrolling |
-| `cursor.style` | `'dots'\|'line'\|'full'\|'hidden'` | `'line'` | Current-line style in either view; `dots` uses a slim line in the classic scrollbar |
+| `cursor.style` | `'dots'\|'line'\|'horizontal'\|'full'\|'hidden'` | `'horizontal'` | Current-line style in either view; `horizontal` spans the map with a slim glyph while leaving map details visible inside each cell |
 | `cursor.side` | `'left'\|'right'` | `'right'` | Side used by the slim current-line marker |
 | `cursor.width` | `integer` | `1` | Width of the slim current-line marker |
-| `cursor.symbol` | `string` | `'▕'` | Character used by the slim current-line marker |
+| `cursor.symbol` | `string` | `'▁'` | Current-line marker character used by `line` and `horizontal` |
 | `interaction.right_click` | `false\|'toggle_view'\|fun(context)` | `'toggle_view'` | Right-click action over the scrollbar: toggle its view, run a callback, or disable the action |
 | `interaction.cursor_on_drag` | `'follow'\|'keep'` | `'follow'` | Keep the cursor on the same source-window screen row while dragging, or preserve its source line when possible |
 | `interaction.marker_click` | `'center'\|'top'\|'scrollbar'` | `'center'` | Exact source-line behavior when clicking a marker in either view |
@@ -318,7 +318,7 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.track` | `VVScrollbarTrack` | Background track |
 | `highlights.separator` | `VVScrollbarSeparator` | Separator between the file and scrollbar windows |
 | `highlights.map_view` | `VVScrollbarMapView` | Monochrome code-map foreground |
-| `highlights.map_cursor` | `VVScrollbarMapCursor` | Current-line Braille dots or slim line in either view |
+| `highlights.map_cursor` | `VVScrollbarMapCursor` → `LineNr` | Current-line Braille dots, horizontal line, or vertical line in either view |
 | `highlights.thumb` | `VVScrollbarThumb` | Visible range |
 | `highlights.active` | `VVScrollbarActive` | Thumb while pressed or dragged |
 | `highlights.cursor` | `VVScrollbarCursor` | Current-line marker used by the `full` style |

@@ -72,6 +72,7 @@ function M.build(opts)
       'map',
       opts.buf,
       cache_id,
+      opts.height,
       opts.width,
       opts.winbar_offset,
       map_layout.top_row,

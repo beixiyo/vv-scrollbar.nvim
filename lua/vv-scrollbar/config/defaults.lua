@@ -13,10 +13,10 @@ return {
   search_line_limit = 20000,
   show_on_short_buffers = true,
   cursor = {
-    style = 'line',
+    style = 'horizontal',
     side = 'right',
     width = 1,
-    symbol = '▕',
+    symbol = '▁',
   },
   interaction = {
     right_click = 'toggle_view',
@@ -102,7 +102,7 @@ return {
     track = { bg = 'bg' },
     separator = { fg = 'bg', bg = 'bg' },
     map_view = { link = 'Comment' },
-    map_cursor = { link = 'CursorLineNr' },
+    map_cursor = { link = 'LineNr' },
     thumb = { link = 'CursorLine' },
     active = { link = 'Visual' },
     cursor = { link = 'CursorLineNr' },
