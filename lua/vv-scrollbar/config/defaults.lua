@@ -99,6 +99,7 @@ return {
     },
   },
   highlights = {
+    git_staged_dim = 0.7,
     track = { bg = 'bg' },
     separator = { fg = 'bg', bg = 'bg' },
     map_view = { link = 'Comment' },

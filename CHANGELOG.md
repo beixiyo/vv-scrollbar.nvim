@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5 - 2026-07-29
+
+### Changed
+
+- staged Git marker 轨道默认向 scrollbar 背景混合 70%，与保持原色的 unstaged 轨道形成清晰层级
+
 ## 0.2.4 - 2026-07-28
 
 ### Added

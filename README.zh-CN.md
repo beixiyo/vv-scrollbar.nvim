@@ -325,6 +325,7 @@ quickfix / loclist > mark > 搜索
 
 | 配置项 | 注册的高亮组 | 用途 |
 |--------|--------------|------|
+| `highlights.git_staged_dim` | 派生的 `VVScrollbarGitStaged*` | staged Git 颜色默认向滚动条背景混合 70%；`0` 保持原色，`1` 完全融入背景 |
 | `highlights.track` | `VVScrollbarTrack` | 背景轨道 |
 | `highlights.separator` | `VVScrollbarSeparator` | 与文件窗口之间的分隔列 |
 | `highlights.map_view` | `VVScrollbarMapView` | 单色代码地图前景 |
@@ -340,8 +341,9 @@ quickfix / loclist > mark > 搜索
 | `highlights.diag_info` | `VVScrollbarDiagnosticInfo` | Info 诊断 |
 | `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint 诊断 |
 
-Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`、
-`VVGitModified`、`VVGitDeleted`。默认配置链接 Neovim 语义高亮组，并在
+unstaged Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`、
+`VVGitModified`、`VVGitDeleted`；staged marker 从同一组颜色按
+`highlights.git_staged_dim` 派生。默认配置链接 Neovim 语义高亮组，并在
 `ColorScheme` 后重新注册，因此会自动跟随当前主题
 
 `highlights` 中的每一项都接受标准 `vim.api.nvim_set_hl()` 配置。传入不含 `link`
@@ -437,10 +439,3 @@ lua/vv-scrollbar/
 └── init.lua     对外生命周期 API
 ```
 
-## 测试
-
-```bash
-make test
-```
-
-可以通过 `NVIM` 指定 Neovim 可执行文件，例如 `NVIM=nvim-nightly make test`

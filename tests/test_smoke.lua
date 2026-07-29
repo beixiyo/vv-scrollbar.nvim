@@ -263,9 +263,10 @@ local staged_bar = state.bars[parent]
 assert(staged_bar and api.nvim_buf_is_valid(staged_bar.buf), 'staged scratch buffer has no scrollbar')
 local staged_extmarks = api.nvim_buf_get_extmarks(staged_bar.buf, namespace, 0, -1, { details = true })
 local found_staged_marker = false
+
 for _, extmark in ipairs(staged_extmarks) do
   local virt_text = extmark[4].virt_text
-  if virt_text and virt_text[1] and virt_text[1][2] == 'VVGitAdded' then
+  if virt_text and virt_text[1] and virt_text[1][2] == 'VVScrollbarGitStagedA' then
     found_staged_marker = true
     break
   end
@@ -295,7 +296,7 @@ local found_dual_git_marker = false
 for _, extmark in ipairs(dual_extmarks) do
   local virt_text = extmark[4].virt_text
   if virt_text and virt_text[1] and virt_text[2]
-    and virt_text[1][2] == 'VVGitAdded'
+    and virt_text[1][2] == 'VVScrollbarGitStagedA'
     and virt_text[2][2] == 'VVGitModified'
   then
     found_dual_git_marker = true

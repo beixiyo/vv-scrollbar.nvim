@@ -315,6 +315,7 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 
 | Setting | Highlight group | Purpose |
 |---|---|---|
+| `highlights.git_staged_dim` | Derived `VVScrollbarGitStaged*` groups | Blend staged Git colors 70% toward the scrollbar background by default; `0` keeps the source colors and `1` fully fades them |
 | `highlights.track` | `VVScrollbarTrack` | Background track |
 | `highlights.separator` | `VVScrollbarSeparator` | Separator between the file and scrollbar windows |
 | `highlights.map_view` | `VVScrollbarMapView` | Monochrome code-map foreground |
@@ -330,7 +331,9 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 | `highlights.diag_info` | `VVScrollbarDiagnosticInfo` | Info diagnostics |
 | `highlights.diag_hint` | `VVScrollbarDiagnosticHint` | Hint diagnostics |
 
-Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from `vv-utils.git.register_hl()`.
+Unstaged Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from
+`vv-utils.git.register_hl()`. Staged markers derive their colors from the same groups using
+`highlights.git_staged_dim`.
 The defaults link to Neovim semantic highlight groups and are registered again after `ColorScheme`,
 so they follow the active theme automatically.
 
@@ -425,11 +428,3 @@ lua/vv-scrollbar/
 └── init.lua     Public lifecycle API
 ```
 
-## Testing
-
-```bash
-make test
-```
-
-Set `NVIM` to test with a specific Neovim executable, for example
-`NVIM=nvim-nightly make test`.

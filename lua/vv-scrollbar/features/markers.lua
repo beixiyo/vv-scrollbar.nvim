@@ -20,6 +20,12 @@ local git_hl = {
   D = 'VVGitDeleted',
 }
 
+local staged_git_hl = {
+  A = 'VVScrollbarGitStagedA',
+  C = 'VVScrollbarGitStagedC',
+  D = 'VVScrollbarGitStagedD',
+}
+
 local PRIORITY = {
   search = 45,
   mark = 50,
@@ -124,19 +130,26 @@ local function add_git(markers, viewport, track_width, line_to_row)
     local chunk_width = 0
     local priority = PRIORITY.git
     local channel_names = track_width >= 2 and { 'staged', 'unstaged' } or { 'merged' }
+
     for _, channel in ipairs(channel_names) do
-      local marker = channel == 'merged'
-        and (channels.unstaged or channels.staged)
-        or channels[channel]
+      local resolved_channel = channel
+      if channel == 'merged' then
+        resolved_channel = channels.unstaged and 'unstaged' or 'staged'
+      end
+      local marker = channels[resolved_channel]
+
       if marker then
         local text = M.cell(cfg.symbols.git[marker.kind])
         local width = fn.strdisplaywidth(text)
-        chunks[#chunks + 1] = { text, git_hl[marker.kind] }
+        local highlights = resolved_channel == 'staged' and staged_git_hl or git_hl
+
+        chunks[#chunks + 1] = { text, highlights[marker.kind] }
         hits[#hits + 1] = {
           start_col = chunk_width,
           end_col = chunk_width + width,
           source_line = marker.source_line,
         }
+
         chunk_width = chunk_width + width
         priority = math.max(priority, marker.priority)
       else

@@ -1,4 +1,5 @@
 ---@class VVScrollbarHighlightConfig
+---@field git_staged_dim number staged Git 轨道向 scrollbar 背景混合的比例 @default 0.7
 ---@field track vim.api.keyset.highlight 轨道背景 @default { bg = 'bg' }
 ---@field separator vim.api.keyset.highlight 与文件窗口之间的分隔列 @default { fg = 'bg', bg = 'bg' }
 ---@field map_view vim.api.keyset.highlight 代码地图 @default { link = 'Comment' }
@@ -137,6 +138,7 @@
 ---@field highlights? VVScrollbarHighlightConfigOpts
 
 ---@class VVScrollbarHighlightConfigOpts
+---@field git_staged_dim? number
 ---@field track? vim.api.keyset.highlight
 ---@field separator? vim.api.keyset.highlight
 ---@field map_view? vim.api.keyset.highlight

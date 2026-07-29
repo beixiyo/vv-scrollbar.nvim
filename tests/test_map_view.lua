@@ -206,7 +206,7 @@ local function empty_git_lane_uses(expected_hl)
   for _, extmark in ipairs(extmarks) do
     local virt_text = extmark[4].virt_text
     if virt_text
-        and virt_text[1] and virt_text[1][2] == 'VVGitAdded'
+        and virt_text[1] and virt_text[1][2] == 'VVScrollbarGitStagedA'
         and virt_text[2] and virt_text[2][1] == ' '
     then
       return virt_text[2][2] == expected_hl

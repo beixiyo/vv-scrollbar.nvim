@@ -41,8 +41,14 @@ local map_marker = markers.collect(0, viewport, {
   track_width = 8,
   line_to_row = classic_line_to_row,
 })[0]
+
 assert(#map_marker.chunks == 2, 'map width did not preserve staged and unstaged Git tracks')
 assert(#map_marker.hits == 2, 'dual Git tracks did not expose independent hit targets')
+assert(
+  map_marker.chunks[1][2] == 'VVScrollbarGitStagedA'
+    and map_marker.chunks[2][2] == 'VVGitModified',
+  'staged and unstaged Git tracks did not use distinct highlight groups'
+)
 assert(
   map_marker.hits[1].source_line == 1
     and map_marker.hits[1].start_col == 0

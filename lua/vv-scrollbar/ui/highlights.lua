@@ -4,9 +4,10 @@ local M = {}
 
 function M.setup()
   local highlights = config.current().highlights
+  local hl = require('vv-utils.hl')
 
   require('vv-utils.git').register_hl()
-  require('vv-utils.hl').register('vv-scrollbar.hl', {
+  hl.register('vv-scrollbar.hl', {
     VVScrollbarTrack = highlights.track,
     VVScrollbarSeparator = highlights.separator,
     VVScrollbarMapView = highlights.map_view,
@@ -22,6 +23,15 @@ function M.setup()
     VVScrollbarDiagnosticInfo = highlights.diag_info,
     VVScrollbarDiagnosticHint = highlights.diag_hint,
   }, { default = false })
+
+  hl.register_dimmed('vv-scrollbar.git-staged.hl', {
+    VVScrollbarGitStagedA = 'VVGitAdded',
+    VVScrollbarGitStagedC = 'VVGitModified',
+    VVScrollbarGitStagedD = 'VVGitDeleted',
+  }, {
+    amount = highlights.git_staged_dim,
+    background = 'VVScrollbarTrack',
+  })
 end
 
 return M

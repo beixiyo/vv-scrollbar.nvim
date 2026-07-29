@@ -32,6 +32,15 @@ local function non_negative_integer(value, fallback)
   return math.max(math.floor(number), 0)
 end
 
+---@param value any
+---@param fallback number
+---@return number
+local function ratio(value, fallback)
+  local number = tonumber(value)
+  if not number or number < 0 or number > 1 then return fallback end
+  return number
+end
+
 ---@param opts? VVScrollbarConfigOpts
 ---@return VVScrollbarConfig
 function M.apply(opts)
@@ -51,6 +60,10 @@ function M.apply(opts)
 
   current.width = positive_integer(current.width, defaults.width)
   current.min_thumb = positive_integer(current.min_thumb, defaults.min_thumb)
+  current.highlights.git_staged_dim = ratio(
+    current.highlights.git_staged_dim,
+    defaults.highlights.git_staged_dim
+  )
 
   current.map_view.min_width = positive_integer(
     current.map_view.min_width,
@@ -113,17 +126,21 @@ function M.apply(opts)
   if not vim.tbl_contains({ 'viewport', 'fit' }, current.map_view.mode) then
     current.map_view.mode = defaults.map_view.mode
   end
+
   current.map_view.large_file_behavior = 'scrollbar'
   if not vim.tbl_contains({ 'overlay', 'left', 'right' }, current.map_view.marker_layout) then
     current.map_view.marker_layout = defaults.map_view.marker_layout
   end
+
   current.map_view.marker_lane_width = positive_integer(
     current.map_view.marker_lane_width,
     defaults.map_view.marker_lane_width
   )
+
   if current.map_view.marker_position ~= 'left' then
     current.map_view.marker_position = 'right'
   end
+
   if type(current.cursor) ~= 'table' then current.cursor = vim.deepcopy(defaults.cursor) end
   if not vim.tbl_contains({ 'dots', 'line', 'horizontal', 'full', 'hidden' }, current.cursor.style) then
     current.cursor.style = defaults.cursor.style
@@ -131,21 +148,26 @@ function M.apply(opts)
   if current.cursor.side ~= 'left' then
     current.cursor.side = 'right'
   end
+
   current.cursor.width = positive_integer(
     current.cursor.width,
     defaults.cursor.width
   )
+
   if type(current.cursor.symbol) ~= 'string'
       or current.cursor.symbol == ''
   then
     current.cursor.symbol = defaults.cursor.symbol
   end
+
   if type(current.show_on_short_buffers) ~= 'boolean' then
     current.show_on_short_buffers = defaults.show_on_short_buffers
   end
+
   if type(current.interaction) ~= 'table' then
     current.interaction = vim.deepcopy(defaults.interaction)
   end
+
   local global_interaction = current.interaction
   local default_global_interaction = defaults.interaction
   if global_interaction.right_click ~= false
@@ -154,17 +176,21 @@ function M.apply(opts)
   then
     global_interaction.right_click = default_global_interaction.right_click
   end
+
   if not vim.tbl_contains({ 'follow', 'keep' }, global_interaction.cursor_on_drag) then
     global_interaction.cursor_on_drag = default_global_interaction.cursor_on_drag
   end
+
   if not vim.tbl_contains({ 'center', 'top', 'scrollbar' }, global_interaction.marker_click) then
     global_interaction.marker_click = default_global_interaction.marker_click
   end
+
   local interaction = current.map_view.interaction
   local default_interaction = defaults.map_view.interaction
   if type(interaction.edge_scroll) ~= 'boolean' then
     interaction.edge_scroll = default_interaction.edge_scroll
   end
+
   interaction.edge_margin = non_negative_integer(
     interaction.edge_margin,
     default_interaction.edge_margin
@@ -177,16 +203,20 @@ function M.apply(opts)
     interaction.edge_interval,
     default_interaction.edge_interval
   )
+
   if type(interaction.snap_to_edges) ~= 'boolean' then
     interaction.snap_to_edges = default_interaction.snap_to_edges
   end
+
   local degradation = current.map_view.degradation
   local default_degradation = defaults.map_view.degradation
+
   for _, key in ipairs({ 'folds', 'wrap', 'diff' }) do
     if not vim.tbl_contains({ 'viewport', 'fit', 'scrollbar' }, degradation[key]) then
       degradation[key] = default_degradation[key]
     end
   end
+
   current.map_view.syntax = require('vv-scrollbar.config.syntax').normalize(
     current.map_view.syntax,
     defaults.map_view.syntax
