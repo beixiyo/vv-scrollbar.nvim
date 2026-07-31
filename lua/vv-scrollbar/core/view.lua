@@ -70,14 +70,16 @@ end
 local function render(parent)
   local viewport = geometry.viewport(parent)
   local bar = state.bars[parent]
+
   if bar and not window.is_attached(parent, bar) then
     window.close(bar)
-    bar = nil
-  end
-  if not bar then
+    bar = window.create(parent)
+    state.bars[parent] = bar
+  elseif not bar then
     bar = window.create(parent)
     state.bars[parent] = bar
   end
+
   local map_mode = map_view.resolve_mode(
     parent,
     viewport.buf,
@@ -118,16 +120,24 @@ local function target_windows()
   return api.nvim_tabpage_list_wins(api.nvim_get_current_tabpage())
 end
 
-function M.refresh()
+---@param opts? { strict?: boolean }
+function M.refresh(opts)
+  if state.layout_suspend_depth > 0 then return end
   if not state.enabled then return end
 
   local keep = {}
+  local errors = {}
+
   for _, win in ipairs(target_windows()) do
     if should_show(win) then
       keep[win] = true
       local ok, err = pcall(render, win)
+
       if not ok then
-        if tostring(err):find('E565:', 1, true) then
+        M.close(win)
+        if opts and opts.strict then
+          errors[#errors + 1] = tostring(err)
+        elseif tostring(err):find('E565:', 1, true) then
           retry_refresh()
         else
           vim.schedule(function()
@@ -141,6 +151,8 @@ function M.refresh()
   for parent in pairs(vim.deepcopy(state.bars)) do
     if not keep[parent] then M.close(parent) end
   end
+
+  if #errors > 0 then error(table.concat(errors, '\n'), 0) end
 end
 
 function M.close_all()
@@ -175,6 +187,7 @@ end
 ---@param screencol integer
 ---@return VVScrollbar.MarkerHit?
 function M.marker_at(bar, row, screencol)
+  ---@type VVScrollbar.MarkerHit[]?
   local hits = bar.marker_hits and bar.marker_hits[row]
   if not hits or not api.nvim_win_is_valid(bar.win) then return nil end
 

@@ -201,6 +201,16 @@ require('vv-scrollbar').setup({
 
 `setup()` 每次都从默认配置重新合并传入值，不会继承上一次调用中未再次提供的字段
 
+需要执行会改变 split 布局的外部操作时，可通过公共入口暂时移除滚动条，操作完成后自动恢复：
+
+```lua
+require('vv-scrollbar').with_layout_suspended(function()
+  vim.cmd('vertical resize +3')
+end)
+```
+
+回调返回值会原样保留。即使回调抛错，滚动条也会恢复渲染并继续向上传播原错误；事件循环请求的刷新会延迟到最外层回调结束。若恢复渲染本身失败，会清理不完整的滚动条并传播恢复错误，而不是返回成功
+
 ## 基础配置
 
 | 选项 | 类型 | 默认值 | 说明 |
@@ -420,6 +430,7 @@ scrollbar.enable()
 scrollbar.disable()
 scrollbar.toggle()
 scrollbar.toggle_view()
+scrollbar.with_layout_suspended(function() vim.cmd('vertical resize +3') end)
 
 local current_config = scrollbar.get_config()
 ```
@@ -438,4 +449,3 @@ lua/vv-scrollbar/
 ├── config.lua   默认配置与合并
 └── init.lua     对外生命周期 API
 ```
-

@@ -193,6 +193,16 @@ require('vv-scrollbar').setup({
 
 Every `setup()` call merges its arguments into the defaults from scratch. It does not inherit fields omitted from the latest call.
 
+Use the public layout boundary when an external action needs to mutate the split tree temporarily:
+
+```lua
+require('vv-scrollbar').with_layout_suspended(function()
+  vim.cmd('vertical resize +3')
+end)
+```
+
+The callback's return value is preserved. The scrollbar view is restored even when the callback raises, after which the original error continues to propagate. Refreshes requested from the event loop stay deferred until the outermost callback finishes. If rendering the restored view fails, the partial scrollbar is removed and the recovery error is propagated instead of reporting success.
+
 ## Basic configuration
 
 | Option | Type | Default | Description |
@@ -409,6 +419,7 @@ scrollbar.enable()
 scrollbar.disable()
 scrollbar.toggle()
 scrollbar.toggle_view()
+scrollbar.with_layout_suspended(function() vim.cmd('vertical resize +3') end)
 
 local current_config = scrollbar.get_config()
 ```
@@ -427,4 +438,3 @@ lua/vv-scrollbar/
 ├── config.lua   Defaults and merging
 └── init.lua     Public lifecycle API
 ```
-

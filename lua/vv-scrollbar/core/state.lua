@@ -9,6 +9,7 @@ local M = {
   augroup = nil,
   refresh_throttled = nil,
   refresh_cancel = nil,
+  layout_suspend_depth = 0,
 }
 
 return M

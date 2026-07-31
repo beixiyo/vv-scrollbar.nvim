@@ -8,5 +8,6 @@
 ---@field augroup? integer
 ---@field refresh_throttled? fun()
 ---@field refresh_cancel? fun()
+---@field layout_suspend_depth integer
 
 return {}
