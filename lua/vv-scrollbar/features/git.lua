@@ -3,58 +3,119 @@ local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
 local state = require('vv-scrollbar.core.state')
+local Async = require('vv-utils.async')
 
 local M = {}
+local scopes = {}
 
 ---@param buf integer
----@param schedule_refresh fun()
-function M.refresh(buf, schedule_refresh)
-  if not config.current().markers.git then return end
-  if not api.nvim_buf_is_loaded(buf) or state.git_pending[buf] then return end
-
+---@return string? path
+---@return vv-utils.git.DiffSource? opts
+---@return string? signature
+local function resolve_source(buf)
   local source = vim.b[buf].vv_git_diff_source
-      or vim.b[buf].vv_scrollbar_git_source
-  local path
-  local opts
+    or vim.b[buf].vv_scrollbar_git_source
   if type(source) == 'table' and type(source.path) == 'string' and source.path ~= '' then
-    path = source.path
-    opts = {
+    local opts = {
       root = source.root,
       mode = source.mode,
       from_rev = source.from_rev,
       to_rev = source.to_rev,
       side = source.side,
     }
-  else
-    path = api.nvim_buf_get_name(buf)
-    if path == '' or fn.filereadable(path) == 0 then
-      state.git_marks[buf] = nil
-      return
-    end
+    local signature = table.concat({
+      source.path,
+      source.root or '',
+      source.mode or '',
+      source.from_rev or '',
+      source.to_rev or '',
+      source.side or '',
+    }, '\0')
+    return source.path, opts, signature
   end
 
-  state.git_pending[buf] = true
+  local path = api.nvim_buf_get_name(buf)
+  if path == '' or fn.filereadable(path) == 0 then return nil end
+  return path, nil, path
+end
+
+---@param buf integer
+---@param schedule_refresh fun()
+function M.refresh(buf, schedule_refresh)
+  if not config.current().markers.git then
+    M.clear(buf)
+    return
+  end
+  if not api.nvim_buf_is_loaded(buf) then return end
+
+  local path, opts, signature = resolve_source(buf)
+  if not path or not signature then
+    M.clear(buf)
+    return
+  end
+
+  local pending = state.git_pending[buf]
+  if pending and pending.signature == signature then
+    pending.dirty = true
+    pending.schedule_refresh = schedule_refresh
+    pending.request:invalidate()
+    return
+  end
+  if pending then pending.request:cancel() end
+
+  local scope = scopes[buf]
+  if not scope or scope:is_disposed() then
+    scope = Async.scope({ cancel_previous = true })
+    scopes[buf] = scope
+  end
+  local request = scope:begin()
+  local record = {
+    request = request,
+    signature = signature,
+    schedule_refresh = schedule_refresh,
+    dirty = false,
+  }
+  state.git_pending[buf] = record
+
   local function done(markers)
+    local current = request:finish()
+    if state.git_pending[buf] ~= record then return end
     state.git_pending[buf] = nil
+
+    if record.dirty then
+      if scopes[buf] == scope and not scope:is_disposed() then
+        local _, _, current_signature = resolve_source(buf)
+        if config.current().markers.git and current_signature == signature then
+          M.refresh(buf, record.schedule_refresh)
+        end
+      end
+      return
+    end
+
+    if not current then return end
     if not api.nvim_buf_is_loaded(buf) then
       state.git_marks[buf] = nil
       return
     end
 
+    local _, _, current_signature = resolve_source(buf)
+    if current_signature ~= signature then return end
     state.git_marks[buf] = markers
     schedule_refresh()
   end
 
+  local cancel
   if opts then
-    require('vv-utils.git').diff_lines(path, function(markers)
+    cancel = require('vv-utils.git').diff_lines(path, function(markers)
       local sets = { staged = {}, unstaged = {} }
       local channel = opts.mode == 'staged' and 'staged' or 'unstaged'
       sets[channel] = markers or {}
       done(sets)
     end, opts)
   else
-    require('vv-utils.git').diff_line_sets(path, done)
+    cancel = require('vv-utils.git').diff_line_sets(path, done)
   end
+  request:set_cancel(cancel)
 end
 
 ---@param schedule_refresh fun()
@@ -71,8 +132,22 @@ end
 
 ---@param buf integer
 function M.clear(buf)
+  if scopes[buf] then scopes[buf]:dispose() end
+  scopes[buf] = nil
   state.git_marks[buf] = nil
   state.git_pending[buf] = nil
+end
+
+function M.clear_all()
+  for buf in pairs(scopes) do
+    M.clear(buf)
+  end
+  for buf in pairs(state.git_marks) do
+    state.git_marks[buf] = nil
+  end
+  for buf in pairs(state.git_pending) do
+    state.git_pending[buf] = nil
+  end
 end
 
 ---@class VVScrollbarGitSource: vv-utils.git.DiffSource

@@ -141,6 +141,7 @@ function M.disable()
   state.enabled = false
   mouse.detach()
   events.detach()
+  git.clear_all()
   view.close_all()
   map_view.clear_all()
   close_refresh_throttle()
@@ -157,6 +158,7 @@ end
 ---@param opts? VVScrollbarConfigOpts
 function M.setup(opts)
   config.apply(opts)
+  git.clear_all()
   map_view.clear_all()
 
   close_refresh_throttle()
@@ -177,6 +179,7 @@ function M.setup(opts)
   if config.current().enabled then
     if state.enabled then
       highlights.setup()
+      refresh_visible_git()
       refresh()
     else
       M.enable()

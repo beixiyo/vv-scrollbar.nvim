@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.6 - 2026-08-03
+
+### Fixed
+
+- **Git marker 生命周期**：每个 buffer 的 Git diff 请求现在绑定 source 签名与 request scope；source 切换、buffer wipe、scrollbar 停用或重新 setup 时会取消旧 producer
+- **Git marker 刷新合并**：同一 source 的连续刷新事件会在当前请求完成后只补跑一次最新 diff，避免并发启动重复 Git 查询
+
 ## 0.2.5 - 2026-07-29
 
 ### Changed
