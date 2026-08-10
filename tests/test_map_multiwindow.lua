@@ -64,33 +64,33 @@ view.refresh()
 
 local first_bar = state.bars[first]
 local second_bar = state.bars[second]
-assert(first_bar and second_bar, 'same-buffer source windows did not receive independent bars')
-assert(first_bar ~= second_bar and first_bar.buf ~= second_bar.buf, 'source windows shared bar state')
+assert(first_bar and second_bar, '同源窗口未获得独立地图条')
+assert(first_bar ~= second_bar and first_bar.buf ~= second_bar.buf, '源窗口共享了滚动条状态')
 assert_bar_attached(first, first_bar, 'first')
 assert_bar_attached(second, second_bar, 'second')
 assert(
   first_bar.map_layout.content_height == second_bar.map_layout.content_height,
-  'same-buffer windows disagreed on cached map height'
+  '同一缓冲区窗口缓存地图高度不一致'
 )
 assert(
   first_bar.map_layout.top_row == 0
     and second_bar.map_layout.top_row > first_bar.map_layout.top_row,
-  'same-buffer windows did not preserve independent map viewports'
+  '同一缓冲区窗口未保持独立地图视口'
 )
 
 local second_top = second_bar.map_layout.top_row
 api.nvim_win_call(first, function() vim.cmd('normal! 201Gzt') end)
 view.refresh()
-assert(state.bars[first].map_layout.top_row > 0, 'first window map did not move independently')
+assert(state.bars[first].map_layout.top_row > 0, '首窗口地图未独立移动')
 assert(
   state.bars[second].map_layout.top_row == second_top,
-  'scrolling one source window moved the other map viewport'
+  '滚动一个源窗口影响了另一窗口地图视口'
 )
 
 api.nvim_win_close(second, true)
 view.refresh()
-assert(state.bars[second] == nil, 'closing a source window leaked its map state')
-assert(state.bars[first], 'closing a sibling removed the remaining map')
+assert(state.bars[second] == nil, '关闭源窗口时地图状态泄露')
+assert(state.bars[first], '关闭同级窗口移除了剩余地图')
 
 api.nvim_set_current_win(first)
 vim.o.splitbelow = true
@@ -104,8 +104,8 @@ assert_bar_attached(third, state.bars[third], 'bottom')
 
 api.nvim_win_close(third, true)
 view.refresh()
-assert(state.bars[third] == nil, 'closing a horizontal sibling leaked its map state')
+assert(state.bars[third] == nil, '关闭水平同级窗口时地图状态泄露')
 assert_bar_attached(first, state.bars[first], 'remaining')
 
 scrollbar.disable()
-print('PASS: vertical and horizontal splits keep independent attached map viewports')
+print('PASS: 垂直和水平分窗下保持独立附着的地图视口')

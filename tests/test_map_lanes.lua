@@ -46,11 +46,11 @@ end
 local left = configure('left')
 assert(
   left.map_columns.map_start_col == 2 and left.map_columns.map_width == 6,
-  'left lane did not shift and shrink the rendered map'
+  '左侧通道未移动且未收缩渲染地图'
 )
 assert(
   left.marker_hits[0][1].start_col == 0 and left.marker_hits[0][2].start_col == 1,
-  'left lane Git hit targets escaped their reserved columns'
+  '左侧通道的 Git 命中目标越过了保留列'
 )
 local namespace = api.nvim_get_namespaces()['vv-scrollbar']
 local left_extmarks = api.nvim_buf_get_extmarks(left.buf, namespace, 0, -1, { details = true })
@@ -60,24 +60,24 @@ for _, extmark in ipairs(left_extmarks) do
     found_shifted_map = found_shifted_map or extmark[3] == 2
   end
 end
-assert(found_shifted_map, 'left lane did not shift the map highlight byte range')
+assert(found_shifted_map, '左侧通道未移动地图高亮字节范围')
 
 local right = configure('right')
 assert(
   right.map_columns.map_start_col == 0 and right.map_columns.map_width == 6,
-  'right lane changed the map origin or failed to reserve width'
+  '右侧通道更改了地图起始列或未预留宽度'
 )
 assert(
   right.marker_hits[0][1].start_col == 6 and right.marker_hits[0][2].start_col == 7,
-  'right lane Git hit targets escaped their reserved columns'
+  '右侧通道的 Git 命中目标超出了保留列'
 )
 
 local overlay = configure('overlay', 'left')
-assert(overlay.map_columns.map_width == 8, 'overlay unexpectedly shrank the map')
+assert(overlay.map_columns.map_width == 8, '覆盖层意外缩小了地图')
 assert(
   overlay.marker_hits[0][1].start_col == 0,
-  'left overlay ignored marker_position'
+  '左侧 overlay 未尊重 marker_position'
 )
 
 scrollbar.disable()
-print('PASS: integrated overlay, left lane, right lane, map width and Git hit targets')
+print('PASS: 集成 overlay、左通道、右通道、地图宽度与 Git 命中目标')

@@ -20,8 +20,8 @@ local top = layout.resolve({
   thumb_row = 0,
   thumb_height = 1,
 }, opts)
-assert(top.content_height == 100, 'viewport map height did not use fixed vertical scale')
-assert(top.top_row == 0 and top.thumb_row == 0, 'top viewport did not anchor the map start')
+assert(top.content_height == 100, 'viewport 地图高度未使用固定的垂直比例')
+assert(top.top_row == 0 and top.thumb_row == 0, '顶部视口未锚定地图起始')
 
 local middle = layout.resolve({
   line_count = 400,
@@ -31,10 +31,10 @@ local middle = layout.resolve({
   thumb_row = 10,
   thumb_height = 1,
 }, opts)
-assert(middle.top_row == 43, 'middle source viewport was not centered in the map viewport')
-assert(middle.thumb_row == 7 and middle.thumb_height == 5, 'middle thumb coordinates drifted')
-assert(layout.line_to_row(middle, 201) == 7, 'source line did not map into the visible slice')
-assert(layout.row_to_line(middle, 7) == 201, 'visible map row did not map back to source')
+assert(middle.top_row == 43, '中部源码视口未在地图视口中居中')
+assert(middle.thumb_row == 7 and middle.thumb_height == 5, '中部拇指坐标偏移')
+assert(layout.line_to_row(middle, 201) == 7, '源码行未映射到可见切片')
+assert(layout.row_to_line(middle, 7) == 201, '可见地图行未映射回源码')
 
 local bottom = layout.resolve({
   line_count = 400,
@@ -44,8 +44,8 @@ local bottom = layout.resolve({
   thumb_row = 19,
   thumb_height = 1,
 }, opts)
-assert(bottom.top_row == 80, 'bottom viewport did not anchor the map end')
-assert(bottom.thumb_row + bottom.thumb_height == 20, 'bottom thumb escaped the visible map')
+assert(bottom.top_row == 80, '底部视口未锚定地图末端')
+assert(bottom.thumb_row + bottom.thumb_height == 20, '底部拇指超出可见地图范围')
 
 local short = layout.resolve({
   line_count = 10,
@@ -55,8 +55,8 @@ local short = layout.resolve({
   thumb_row = 0,
   thumb_height = 20,
 }, opts)
-assert(short.content_height == 3, 'short file map was stretched instead of staying compact')
-assert(short.top_row == 0 and short.thumb_height == 3, 'short file viewport was unstable')
+assert(short.content_height == 3, '短文件地图被拉伸而非保持紧凑')
+assert(short.top_row == 0 and short.thumb_height == 3, '短文件视口不稳定')
 
 local resized = layout.resolve({
   line_count = 400,
@@ -66,8 +66,8 @@ local resized = layout.resolve({
   thumb_row = 5,
   thumb_height = 1,
 }, opts)
-assert(resized.content_height == middle.content_height, 'window resize changed fixed map scale')
-assert(resized.top_row == 48 and resized.thumb_row == 2, 'resize did not recenter the map viewport')
+assert(resized.content_height == middle.content_height, '窗口重置更改了固定地图比例')
+assert(resized.top_row == 48 and resized.thumb_row == 2, '重置大小后地图视口未重新居中')
 
 local fit = layout.resolve({
   line_count = 400,
@@ -77,14 +77,14 @@ local fit = layout.resolve({
   thumb_row = 10,
   thumb_height = 2,
 }, { mode = 'fit' })
-assert(fit.content_height == 20 and fit.top_row == 0, 'fit compatibility mode became scrollable')
-assert(fit.thumb_row == 10 and fit.thumb_height == 2, 'fit mode changed classic thumb geometry')
+assert(fit.content_height == 20 and fit.top_row == 0, 'fit 兼容模式变成可滚动')
+assert(fit.thumb_row == 10 and fit.thumb_height == 2, 'fit 模式下传统拇指几何发生变化')
 
-assert(projection.row_to_line(0, 400, 20) == 1, 'classic projection lost the first line')
-assert(projection.row_to_line(19, 400, 20) == 400, 'classic projection lost the last line')
+assert(projection.row_to_line(0, 400, 20) == 1, '经典投影丢失首行')
+assert(projection.row_to_line(19, 400, 20) == 400, '经典投影丢失末行')
 assert(
   projection.line_to_row(projection.row_to_line(10, 400, 20), 400, 20) == 10,
-  'classic row-to-line projection did not round-trip to the clicked row'
+  '经典行到行号映射未能回到点击行'
 )
 
-print('PASS: viewport scale, source sync, short files, boundaries, resize, fit fallback')
+print('PASS: viewport 比例、源码同步、短文件、边界、重置窗口大小与 fit 回退')

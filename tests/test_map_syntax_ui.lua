@@ -67,14 +67,14 @@ local function has_syntax_color(expected)
   return false
 end
 
-assert(has_syntax_color(0x123456), 'syntax spans were not applied to the map buffer')
+assert(has_syntax_color(0x123456), '语法 span 未写入地图缓冲区')
 
 api.nvim_set_hl(0, '@keyword.lua', { fg = 0xabcdef })
 api.nvim_exec_autocmds('ColorScheme', { pattern = 'map-syntax-test' })
 assert(
   vim.wait(500, function() return has_syntax_color(0xabcdef) end, 10),
-  'ColorScheme did not rebuild the Tree-sitter map palette'
+  'ColorScheme 未重建 Tree-sitter 地图调色板'
 )
 
 scrollbar.disable()
-print('PASS: syntax extmarks use theme colors and refresh after ColorScheme')
+print('PASS: 语法 extmark 使用主题色并在 ColorScheme 后刷新')

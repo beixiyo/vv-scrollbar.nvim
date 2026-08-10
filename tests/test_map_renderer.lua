@@ -24,19 +24,19 @@ local function render(lines, width, opts)
 end
 
 local vertical = render({ 'x', 'x', 'x', 'x' }, 1)
-assert(vim.fn.str2list(vertical[1])[1] == 0x2847, 'vertical dots did not use Braille rows')
+assert(vim.fn.str2list(vertical[1])[1] == 0x2847, '垂直点未使用盲文点阵')
 
 local fullwidth = render({ '界' }, 1)
-assert(vim.fn.str2list(fullwidth[1])[1] == 0x2809, 'full-width codepoint lost a screen cell')
+assert(vim.fn.str2list(fullwidth[1])[1] == 0x2809, '全角码点丢失一个显示单元')
 
 local tabbed = render({ '\tx' }, 3)
 assert(
   vim.fn.strcharpart(tabbed[1], 2, 1) ~= ' ',
-  'tab width did not move following code to its display column'
+  'tab 宽度未将后续字符移到正确显示列'
 )
 
 local whitespace = render({ '  ' }, 1, { include_whitespace = true })
-assert(whitespace[1] ~= ' ', 'include_whitespace did not add map points')
+assert(whitespace[1] ~= ' ', 'include_whitespace 未添加地图点')
 
 local tail_lines = {}
 for index = 1, 398 do tail_lines[index] = index == 398 and 'return M' or '' end
@@ -51,7 +51,7 @@ local fitted_tail = renderer.render(tail_buf, 55, 16, {
 api.nvim_buf_delete(tail_buf, { force = true })
 assert(
   fitted_tail[55]:find('[^ ]'),
-  'fit projection left the final source lines above the map bottom'
+  'fit 投影将末尾源码行留在地图底部以上'
 )
 
 local compact_buf = api.nvim_create_buf(false, true)
@@ -67,7 +67,7 @@ local compact = renderer.render(compact_buf, 2, 1, {
 api.nvim_buf_delete(compact_buf, { force = true })
 assert(
   vim.fn.str2list(compact[1])[1] == 0x2803 and compact[2] == ' ',
-  'viewport projection stretched a short file instead of keeping fixed scale'
+  'viewport 投影拉伸短文件而未保持固定比例'
 )
 
-print('PASS: Braille renderer, UTF-8, tabs, whitespace, fit and viewport projection')
+print('PASS: Braille 渲染、UTF-8、制表符、空白处理、fit 与 viewport 投影')

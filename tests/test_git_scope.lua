@@ -34,27 +34,29 @@ Git.refresh(buf, refresh)
 Git.refresh(buf, refresh)
 Git.refresh(buf, refresh)
 assert(#callbacks == 1 and state.git_pending[buf].dirty,
-  'same-signature dirty events started duplicate producers')
+  '同签名脏事件启动了重复生产者')
 
 callbacks[1].callback({ [1] = 'A' })
-assert(#callbacks == 2, 'dirty producer completion did not queue exactly one latest refresh')
-assert(state.git_marks[buf] == nil and state.git_pending[buf].request ~= nil,
-  'stale dirty result published or cleared the replacement pending owner')
+assert(#callbacks == 2, '脏数据生产者完成时未只排队一次最新刷新')
+assert(state.git_marks[buf].staged[1] == 'A' and refreshes == 1,
+  '脏数据生产者在尾随刷新前未发布有效结果')
+assert(state.git_pending[buf].request ~= nil,
+  '脏数据生产者未保留替换中的待处理拥有者')
 callbacks[2].callback({ [2] = 'C' })
-assert(state.git_marks[buf].staged[2] == 'C' and refreshes == 1,
-  'coalesced latest refresh did not publish')
+assert(state.git_marks[buf].staged[2] == 'C' and refreshes == 2,
+  '合并后的最新刷新未发布')
 
 vim.b[buf].vv_git_diff_source = { path = 'b.lua', root = '/repo-b', mode = 'staged' }
 Git.refresh(buf, refresh)
 vim.b[buf].vv_git_diff_source = { path = 'c.lua', root = '/repo-c', mode = 'staged' }
 Git.refresh(buf, refresh)
 local pending_c = state.git_pending[buf].request
-assert(callbacks[3].cancels == 1, 'source replacement did not physically cancel old producer')
+assert(callbacks[3].cancels == 1, '源替换未实际取消旧生产者')
 callbacks[3].callback({ [3] = 'A' })
 assert(state.git_pending[buf].request == pending_c and state.git_marks[buf].staged[2] == 'C',
-  'cancelled source callback affected newer pending or markers')
+  '被取消的源回调影响了更新中的待处理或标记')
 callbacks[4].callback({ [4] = 'A' })
-assert(state.git_marks[buf].staged[4] == 'A', 'new source request did not publish')
+assert(state.git_marks[buf].staged[4] == 'A', '新源请求未发布')
 
 vim.b[buf].vv_git_diff_source = { path = 'd.lua', root = '/repo-d', mode = 'staged' }
 Git.refresh(buf, refresh)
@@ -63,13 +65,13 @@ local count_before_clear = #callbacks
 Git.clear_all()
 callbacks[5].callback({ [5] = 'A' })
 assert(#callbacks == count_before_clear and state.git_pending[buf] == nil,
-  'clear allowed a dirty request to replenish work')
+  '清理后脏请求仍继续产生工作')
 
 vim.b[buf].vv_git_diff_source = { path = 'e.lua', root = '/repo-e', mode = 'staged' }
 Git.refresh(buf, refresh)
 callbacks[6].callback({ [6] = 'A' })
-assert(state.git_marks[buf].staged[6] == 'A', 'new lifecycle request did not publish')
+assert(state.git_marks[buf].staged[6] == 'A', '新生命周期请求未发布')
 
 Git.clear_all()
 vim.api.nvim_buf_delete(buf, { force = true })
-print('PASS: scrollbar git coalesces dirty refreshes and preserves request ownership')
+print('PASS: 滚动条 Git 合并脏刷新并保留请求所有权')

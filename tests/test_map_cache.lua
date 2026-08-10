@@ -20,11 +20,11 @@ api.nvim_buf_set_lines(buf, 0, -1, false, { ' ' })
 local stale = cache.get(buf, 1, 1, config.current().map_view, function()
   refresh_count = refresh_count + 1
 end)
-assert(stale[1] == initial[1], 'changed buffer did not keep its cached map during debounce')
-assert(vim.wait(500, function() return refresh_count == 1 end, 10), 'debounced map did not rebuild')
+assert(stale[1] == initial[1], '缓冲区修改后防抖期间未保留缓存地图')
+assert(vim.wait(500, function() return refresh_count == 1 end, 10), '防抖后的地图未重建')
 
 local rebuilt = cache.get(buf, 1, 1, config.current().map_view, function() end)
-assert(rebuilt[1] == ' ', 'debounced map cache kept stale source text')
+assert(rebuilt[1] == ' ', '防抖地图缓存仍保留旧文本')
 
 cache.clear(buf)
 api.nvim_buf_set_lines(buf, 0, -1, false, { 'xx' })
@@ -41,7 +41,7 @@ cache.get(buf, 1, 2, config.current().map_view, function()
 end)
 assert(
   vim.wait(500, function() return multi_width_refreshes == 2 end, 10),
-  'generation tokens canceled a valid rebuild for another map width'
+  '不同地图宽度的有效重建因代际令牌而被取消'
 )
 
 api.nvim_buf_set_lines(buf, 0, -1, false, { 'x' })
@@ -52,4 +52,4 @@ cache.clear(buf)
 vim.wait(200, function() return false end, 10)
 api.nvim_buf_delete(buf, { force = true })
 
-print('PASS: stale reuse, per-key generations, cancellation and cache cleanup')
+print('PASS: 缓存复用、按键代际、取消与清理')

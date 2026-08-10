@@ -58,7 +58,6 @@ function M.refresh(buf, schedule_refresh)
   if pending and pending.signature == signature then
     pending.dirty = true
     pending.schedule_refresh = schedule_refresh
-    pending.request:invalidate()
     return
   end
   if pending then pending.request:cancel() end
@@ -82,16 +81,6 @@ function M.refresh(buf, schedule_refresh)
     if state.git_pending[buf] ~= record then return end
     state.git_pending[buf] = nil
 
-    if record.dirty then
-      if scopes[buf] == scope and not scope:is_disposed() then
-        local _, _, current_signature = resolve_source(buf)
-        if config.current().markers.git and current_signature == signature then
-          M.refresh(buf, record.schedule_refresh)
-        end
-      end
-      return
-    end
-
     if not current then return end
     if not api.nvim_buf_is_loaded(buf) then
       state.git_marks[buf] = nil
@@ -102,6 +91,10 @@ function M.refresh(buf, schedule_refresh)
     if current_signature ~= signature then return end
     state.git_marks[buf] = markers
     schedule_refresh()
+
+    if record.dirty and scopes[buf] == scope and not scope:is_disposed() then
+      M.refresh(buf, record.schedule_refresh)
+    end
   end
 
   local cancel

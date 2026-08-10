@@ -17,29 +17,29 @@ vim.wo[win].wrap = false
 vim.wo[win].diff = false
 vim.wo[win].foldenable = false
 config.apply()
-assert(map_view.resolve_mode(win, buf) == 'viewport', 'ordinary window did not use viewport')
+assert(map_view.resolve_mode(win, buf) == 'viewport', '普通窗口未使用 viewport 模式')
 
 vim.wo[win].wrap = true
-assert(map_view.resolve_mode(win, buf) == 'viewport', 'default wrap strategy changed viewport mode')
+assert(map_view.resolve_mode(win, buf) == 'viewport', '默认 wrap 策略将 viewport 模式改写')
 
 config.apply({
   map_view = {
     degradation = { wrap = 'fit' },
   },
 })
-assert(map_view.resolve_mode(win, buf) == 'fit', 'explicit wrap fit fallback was ignored')
+assert(map_view.resolve_mode(win, buf) == 'fit', '显式 wrap fit 降级策略未生效')
 
 config.apply({
   map_view = {
     degradation = { wrap = 'scrollbar' },
   },
 })
-assert(map_view.resolve_mode(win, buf) == nil, 'wrap scrollbar fallback kept the map active')
+assert(map_view.resolve_mode(win, buf) == nil, 'wrap scrollbar 降级策略未关闭地图显示')
 
 config.apply()
 vim.wo[win].wrap = false
 vim.wo[win].diff = true
-assert(map_view.resolve_mode(win, buf) == 'fit', 'diff window did not fall back to fit')
+assert(map_view.resolve_mode(win, buf) == 'fit', 'diff 窗口未降级到 fit')
 
 vim.wo[win].diff = false
 vim.wo[win].foldmethod = 'manual'
@@ -51,19 +51,19 @@ api.nvim_win_call(win, function()
 end)
 assert(
   map_view.resolve_mode(win, buf) == 'fit',
-  'default viewport wrap strategy masked the visible-fold fallback'
+  '默认 viewport wrap 策略遮蔽了可见折叠 fallback'
 )
 
 api.nvim_win_call(win, function() vim.cmd('normal! 50Gzt') end)
 assert(
   map_view.resolve_mode(win, buf) == 'fit',
-  'scrolling past a closed fold switched the map from fit back to viewport'
+  '滚动越过已闭合折叠后，地图从 fit 切回 viewport'
 )
 
 api.nvim_win_call(win, function() vim.cmd('normal! zR') end)
 assert(
   map_view.resolve_mode(win, buf) == 'viewport',
-  'opening every fold did not restore the configured viewport mode'
+  '全部展开折叠后未恢复配置的 viewport 模式'
 )
 
 api.nvim_win_call(win, function() vim.cmd('normal! zM') end)
@@ -74,7 +74,7 @@ config.apply({
 })
 assert(
   map_view.resolve_mode(win, buf) == 'viewport',
-  'explicit fold viewport strategy was ignored'
+  '显式折叠 viewport 策略未生效'
 )
 
-print('PASS: ordinary, wrap, diff and stable closed-fold map degradation strategies')
+print('PASS: 普通窗口、wrap、diff 与稳定闭合折叠地图降级策略')

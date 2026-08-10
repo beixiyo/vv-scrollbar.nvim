@@ -33,23 +33,23 @@ api.nvim_win_call(win, function()
 end)
 
 local anchor = geometry.begin_cursor_follow(win)
-assert(anchor and anchor.screen_row == 11, 'ordinary viewport did not capture its cursor screen row')
-assert(vim.wo[win].scrolloff == 0, 'cursor follow did not suspend scrolloff during dragging')
+assert(anchor and anchor.screen_row == 11, '普通视图未正确捕获光标屏幕行')
+assert(vim.wo[win].scrolloff == 0, '跟随拖拽时未暂停 scrolloff')
 
 geometry.scroll_to_line(win, 80, 'top', anchor)
 local cursor = api.nvim_win_get_cursor(win)
-assert(vim.fn.line('w0', win) == 80, 'follow drag lost its requested topline')
-assert(cursor[1] == 90 and cursor[2] == 7, 'follow drag did not preserve cursor row and column')
+assert(vim.fn.line('w0', win) == 80, '拖拽跟随后未保持请求的 topline')
+assert(cursor[1] == 90 and cursor[2] == 7, '拖拽跟随未保持光标行和列')
 assert(
   api.nvim_win_call(win, function() return vim.fn.winline() end) == 11,
-  'follow drag did not preserve the cursor screen row'
+  '拖拽跟随未保持光标屏幕行'
 )
 
 geometry.scroll_to_line(win, 120, 'top', anchor)
 cursor = api.nvim_win_get_cursor(win)
 assert(
   vim.fn.line('w0', win) == 120 and cursor[1] == 130,
-  'consecutive follow drag drifted from its cursor anchor'
+  '连续拖拽跟随偏离了光标锚点'
 )
 
 vim.wo[win].wrap = true
@@ -68,7 +68,7 @@ cursor = api.nvim_win_get_cursor(win)
 assert(
   cursor[1] == 150
     and api.nvim_win_call(win, function() return vim.fn.winline() end) == anchor.screen_row,
-  'track drag did not place the preferred cursor line before following'
+  '拖拽追踪未在开始前将光标定位到首选行'
 )
 
 api.nvim_buf_set_lines(0, 49, 50, false, { string.rep('x', 200) })
@@ -86,7 +86,7 @@ local wrapped_screen_row = anchor.screen_row
 geometry.scroll_to_line(win, 80, 'top', anchor)
 assert(
   api.nvim_win_call(win, function() return vim.fn.winline() end) == wrapped_screen_row,
-  'soft-wrapped drag did not preserve the cursor display row'
+  '软换行拖拽未保持光标显示行'
 )
 api.nvim_buf_set_lines(0, 49, 50, false, { 'line 050 content' })
 vim.wo[win].wrap = false
@@ -108,7 +108,7 @@ api.nvim_buf_set_extmark(0, namespace, 84, 0, {
 geometry.scroll_to_line(win, 80, 'top', anchor)
 assert(
   api.nvim_win_call(win, function() return vim.fn.winline() end) == anchor.screen_row,
-  'virtual display rows pulled the cursor to a viewport edge'
+  '虚拟显示行将光标拉到了视口边缘'
 )
 api.nvim_buf_clear_namespace(0, namespace, 0, -1)
 
@@ -129,7 +129,7 @@ local folded_screen_row = anchor.screen_row
 geometry.scroll_to_line(win, 100, 'top', anchor)
 assert(
   api.nvim_win_call(win, function() return vim.fn.winline() end) == folded_screen_row,
-  'closed fold pulled the cursor to a viewport edge'
+  '闭合折叠将光标拉到了视口边缘'
 )
 
 vim.wo[win].foldenable = false
@@ -144,6 +144,6 @@ end)
 geometry.end_cursor_follow(win, anchor)
 anchor = assert(geometry.begin_cursor_follow(win))
 geometry.end_cursor_follow(win, anchor)
-assert(vim.wo[win].scrolloff == 5, 'cursor follow did not restore scrolloff after dragging')
+assert(vim.wo[win].scrolloff == 5, '拖拽后未恢复 scrolloff')
 
-print('PASS: display-row cursor follow, column anchor, scrolloff, wraps and folds')
+print('PASS: 显示行光标跟随、列锚点、scrolloff、换行与折叠')

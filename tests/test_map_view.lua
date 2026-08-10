@@ -50,37 +50,37 @@ local state = require('vv-scrollbar.core.state')
 view.refresh()
 
 local bar = state.bars[parent]
-assert(bar and api.nvim_win_is_valid(bar.win), 'default map view did not create a scrollbar')
+assert(bar and api.nvim_win_is_valid(bar.win), '默认地图视图未创建滚动条窗口')
 local visual_guards = api.nvim_get_autocmds({ event = 'ModeChanged', buffer = bar.buf })
 assert(
   vim.iter(visual_guards):any(function(autocmd)
     return autocmd.desc == 'vv-utils: 面板禁止鼠标拖拽 / 多击进入 visual'
   end),
-  'scrollbar buffer did not install the nofile visual-mode guard'
+  '地图缓冲区未安装 nofile visual-mode 防护'
 )
-assert(bar.track_width >= 8 and bar.track_width <= 16, 'auto map width escaped configured bounds')
+assert(bar.track_width >= 8 and bar.track_width <= 16, '自动地图宽度未被限制在配置范围内')
 assert(
   bar.map_layout and bar.map_layout.content_height > bar.height,
-  'long buffer map height is still coupled to the window height'
+  '长文件地图高度仍与窗口高度耦合'
 )
 assert(
   api.nvim_get_option_value('winhighlight', { win = parent })
     == original_winhighlight .. ',WinSeparator:VVScrollbarSeparator',
-  'map split separator did not use the configurable scrollbar highlight'
+  '地图分割线未使用可配置的滚动条高亮组'
 )
 assert(
   api.nvim_get_hl(0, { name = 'VVScrollbarMapCursor' }).fg == 0xabcdef,
-  'custom map cursor color was shadowed by its default semantic link'
+  '自定义地图光标颜色被默认语义链接覆盖'
 )
 local separator_hl = api.nvim_get_hl(0, { name = 'VVScrollbarSeparator' })
 assert(
   separator_hl.fg == 0x123456 and separator_hl.bg == 0x123456,
-  'custom separator color was not registered'
+  '自定义分隔符颜色未注册'
 )
 local map_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
 assert(
   table.concat(map_lines):find('[^ ]'),
-  'map view buffer did not contain a visible code preview'
+  '地图视图缓冲区未显示可见代码预览'
 )
 
 local content = require('vv-scrollbar.ui.content')
@@ -99,7 +99,7 @@ content_opts.height = content_opts.height + 1
 local tall_lines, tall_id = content.build(content_opts)
 assert(
   #tall_lines == #short_lines + 1 and tall_id ~= short_id,
-  'map content identity ignored a window height change'
+  '地图内容身份未随窗口高度变化'
 )
 
 local original_ensure = content.ensure
@@ -127,16 +127,16 @@ assert(not render_error, render_error)
 view.refresh()
 assert(
   api.nvim_buf_get_lines(bar.buf, 0, 1, false)[1] == map_lines[1],
-  'cached map content did not repair a stale scrollbar buffer row'
+  '缓存地图内容未修复过时的滚动条缓冲行'
 )
 
 api.nvim_win_call(parent, function() vim.cmd('normal! 201Gzt') end)
 view.refresh()
 bar = state.bars[parent]
-assert(bar.map_layout.top_row > 0, 'source scrolling did not move the map viewport')
+assert(bar.map_layout.top_row > 0, '源码滚动未带动地图视口移动')
 assert(
   bar.thumb_row > 0 and bar.thumb_row + bar.thumb_height < bar.height,
-  'middle source viewport did not keep the map thumb visible'
+  '源码居中区域未保持地图 thumb 可见'
 )
 
 api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
@@ -144,11 +144,11 @@ view.refresh()
 bar = state.bars[parent]
 assert(
   bar.map_layout.top_row == bar.map_layout.content_height - bar.height,
-  'file end did not anchor the map viewport end'
+  '文件末尾未锚定地图视口终点'
 )
 assert(
   bar.thumb_row + bar.thumb_height == bar.height,
-  'file end did not anchor the map thumb'
+  '文件末尾未锚定地图 thumb'
 )
 
 api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
@@ -160,20 +160,20 @@ for index = 1, 400 do blank_lines[index] = '' end
 api.nvim_buf_set_lines(blank_buf, 0, -1, false, blank_lines)
 assert(
   api.nvim_buf_get_changedtick(blank_buf) == api.nvim_buf_get_changedtick(source_buf),
-  'buffer switch regression fixture does not share the same changedtick'
+  '缓冲区切换回归用例未共享同一 changedtick'
 )
 
 api.nvim_win_set_buf(parent, blank_buf)
 view.refresh()
 local blank_map = table.concat(api.nvim_buf_get_lines(bar.buf, 0, -1, false))
-assert(not blank_map:find('[^ ]'), 'blank source buffer produced code-map points')
+assert(not blank_map:find('[^ ]'), '空源码缓冲却产出代码地图点')
 
 api.nvim_win_set_buf(parent, source_buf)
 view.refresh()
 local restored_map = table.concat(api.nvim_buf_get_lines(bar.buf, 0, -1, false))
 assert(
   restored_map:find('[^ ]'),
-  'same-changedtick buffer switch reused another buffer map'
+  '共享 changedtick 的缓冲切换复用了其他缓冲地图'
 )
 api.nvim_buf_delete(blank_buf, { force = true })
 
@@ -217,11 +217,11 @@ end
 
 assert(
   empty_git_lane_uses('VVScrollbarThumb'),
-  'empty Git lane cut a hole in the thumb background'
+  '空 Git 轨道打了 thumb 背景空洞'
 )
 assert(
   bar.row_markers[0].chunks[2][2] == 'VVScrollbarTrack',
-  'thumb composition mutated cached Git marker chunks'
+  'thumb 组合污染了缓存的 Git 标记 chunk'
 )
 state.dragging = {
   parent = parent,
@@ -233,7 +233,7 @@ view.refresh()
 bar = state.bars[parent]
 assert(
   empty_git_lane_uses('VVScrollbarActive'),
-  'empty Git lane cut a hole in the active background before dragging'
+  '拖拽前空 Git 轨道打了 active 背景空洞'
 )
 state.dragging = nil
 view.refresh()
@@ -248,16 +248,16 @@ bar = state.bars[parent]
 local visible_git_row = map_view.line_to_row(bar.map_layout, 201)
 assert(
   visible_git_row ~= projection.line_to_row(201, #source_lines, bar.height),
-  'long-file marker projection fixture does not distinguish map and classic coordinates'
+  '长文件坐标映射用例未区分地图坐标与标准坐标'
 )
 assert(
   bar.row_markers[visible_git_row]
     and bar.row_markers[visible_git_row].hits[1].source_line == 201,
-  'long-file Git marker did not align with its visible map row'
+  '长文件 Git 标记未对齐其可见地图行'
 )
 for _, marker in pairs(bar.row_markers) do
   for _, hit in ipairs(marker.hits or {}) do
-    assert(hit.source_line ~= 400, 'off-slice Git marker remained visible in map view')
+    assert(hit.source_line ~= 400, '超出切片范围的 Git 标记仍在地图中可见')
   end
 end
 
@@ -276,7 +276,7 @@ for line = 6, #source_lines do
     break
   end
 end
-assert(staged_line and unstaged_line, 'Git lane fixture did not find a shared projected row')
+assert(staged_line and unstaged_line, 'Git 轨道用例未找到共享投影行')
 
 state.git_marks[source_buf] = {
   staged = { [1] = 'A', [staged_line] = 'A' },
@@ -288,29 +288,29 @@ bar = state.bars[parent]
 
 local git_row = map_view.line_to_row(bar.map_layout, unstaged_line)
 local git_marker = bar.row_markers[git_row]
-assert(git_marker and #git_marker.hits == 2, 'Git marker lost its independent hit targets')
+assert(git_marker and #git_marker.hits == 2, 'Git 标记未保留独立点击命中目标')
 
 local git_hits = bar.marker_hits[git_row]
-assert(git_hits and #git_hits == 2, 'Git tracks lost their independent hit targets')
-assert(git_hits[1].start_col == bar.track_width - 2, 'Git tracks are not right aligned')
+assert(git_hits and #git_hits == 2, 'Git 轨道未保留独立点击命中目标')
+assert(git_hits[1].start_col == bar.track_width - 2, 'Git 轨道未靠右对齐')
 local bar_left = vim.fn.win_screenpos(bar.win)[2]
 assert(
   view.marker_at(bar, git_row, bar_left + git_hits[1].start_col).source_line == staged_line,
-  'staged Git marker did not retain its exact source line'
+  '已暂存 Git 标记未保留准确源行'
 )
 assert(
   view.marker_at(bar, git_row, bar_left + git_hits[2].start_col).source_line == unstaged_line,
-  'unstaged Git marker did not retain its exact source line'
+  '未暂存 Git 标记未保留准确源行'
 )
 assert(
   view.marker_at(bar, git_row, bar_left) == nil,
-  'Git marker hit area still covers the left-side code map'
+  'Git 标记点击区域仍覆盖左侧代码地图'
 )
 
 local cursor_row = map_view.line_to_row(bar.map_layout, 1)
 assert(
   bar.row_markers[cursor_row] and bar.row_markers[cursor_row].hits,
-  'map cursor still displaced a Git marker on the same projected row'
+  '地图光标仍挤占同一投影行的 Git 标记'
 )
 
 api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
@@ -319,12 +319,12 @@ local centered_top = vim.fn.line('w0', parent)
 local centered_bottom = vim.fn.line('w$', parent)
 assert(
   centered_top <= unstaged_line and centered_bottom >= unstaged_line,
-  'exact marker navigation did not reveal its source line'
+  '精确标记跳转未将源行滚入可见范围'
 )
 geometry.set_cursor_line(parent, unstaged_line)
 assert(
   api.nvim_win_get_cursor(parent)[1] == unstaged_line,
-  'exact marker navigation did not place the source cursor'
+  '精确标记跳转未将光标移动到源行'
 )
 
 local namespace = api.nvim_get_namespaces()['vv-scrollbar']
@@ -356,11 +356,11 @@ for _, extmark in ipairs(extmarks) do
     end
   end
 end
-assert(found_map, 'map view foreground highlight was not applied')
-assert(found_thumb, 'thumb background was not layered over the map')
-assert(found_right_git, 'Git marker was not floated on the right edge')
-assert(found_cursor_line, 'map cursor did not render its configured slim line')
-assert(not found_cursor_span, 'slim cursor line still recolored the map dots')
+assert(found_map, '地图前景高亮未应用')
+assert(found_thumb, 'thumb 背景未叠加到地图上')
+assert(found_right_git, 'Git 标记未浮在右侧边缘')
+assert(found_cursor_line, '地图光标未绘制配置的细线')
+assert(not found_cursor_span, '细线光标仍重色了地图点')
 
 runtime_config.cursor.style = 'horizontal'
 runtime_config.cursor.symbol = '▁'
@@ -381,7 +381,7 @@ for _, extmark in ipairs(extmarks) do
     break
   end
 end
-assert(found_horizontal_cursor, 'horizontal cursor did not span the map columns')
+assert(found_horizontal_cursor, '横向光标未横跨完整地图列')
 
 api.nvim_set_hl(0, 'VVScrollbarTestSeparator', { fg = '#654321' })
 local latest_winhighlight = 'Normal:Normal,WinSeparator:VVScrollbarTestSeparator'
@@ -395,15 +395,15 @@ local active_winhighlight = api.nvim_get_option_value('winhighlight', { win = pa
 assert(
   active_winhighlight:find('Normal:Normal', 1, true)
     and active_winhighlight:find('WinSeparator:VVScrollbarSeparator', 1, true),
-  'scrollbar lifetime replaced unrelated parent window highlights: ' .. active_winhighlight
+  '滚动条生命周期错误改写了无关父窗口高亮: ' .. active_winhighlight
 )
 scrollbar.disable()
 local restored_winhighlight = api.nvim_get_option_value('winhighlight', { win = parent })
 assert(
   restored_winhighlight == latest_winhighlight,
-  ('disabling the scrollbar did not restore the parent window highlight: %q ~= %q')
+  ('禁用滚动条后未恢复父窗口高亮: %q ~= %q')
     :format(restored_winhighlight, latest_winhighlight)
 )
 api.nvim_win_set_buf(parent, original_buf)
 api.nvim_buf_delete(source_buf, { force = true })
-print('PASS: map window, highlights, layers, exact Git hits, separator lifecycle')
+print('PASS: 地图窗口、高亮、分层、精确 Git 命中与分隔符生命周期')

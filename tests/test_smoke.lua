@@ -40,36 +40,36 @@ scrollbar.setup({
 view.refresh()
 
 local win, buf = scrollbar_window()
-assert(api.nvim_win_get_width(win) == 2, 'window width is not 2')
+assert(api.nvim_win_get_width(win) == 2, '窗口宽度不是 2')
 assert(
   api.nvim_win_get_width(parent) == width_before_scrollbar - 3,
-  'scrollbar did not reserve its width and split separator from the parent window'
+  '滚动条未在父窗口保留宽度和分隔条'
 )
-assert(api.nvim_win_get_config(win).relative == '', 'scrollbar is still a floating window')
-assert(vim.fn.exists(':VVScrollbarToggleView') == 2, 'view toggle command was not registered')
+assert(api.nvim_win_get_config(win).relative == '', '滚动条仍是浮动窗口')
+assert(vim.fn.exists(':VVScrollbarToggleView') == 2, '视图切换命令未注册')
 
-assert(scrollbar.toggle_view(), 'Lua API did not enable map view')
+assert(scrollbar.toggle_view(), 'Lua 接口未开启地图视图')
 win = scrollbar_window()
-assert(scrollbar.get_config().map_view.enabled, 'Lua API did not update map-view config')
-assert(api.nvim_win_get_width(win) >= 8, 'map view did not resize the scrollbar window')
+assert(scrollbar.get_config().map_view.enabled, 'Lua 接口未更新地图视图配置')
+assert(api.nvim_win_get_width(win) >= 8, '地图视图未调整滚动条窗口宽度')
 
-assert(not scrollbar.toggle_view(), 'Lua API did not restore the classic scrollbar')
+assert(not scrollbar.toggle_view(), 'Lua 接口未恢复经典滚动条')
 win = scrollbar_window()
-assert(not scrollbar.get_config().map_view.enabled, 'Lua API did not disable map view')
-assert(api.nvim_win_get_width(win) == 2, 'classic scrollbar width was not restored')
+assert(not scrollbar.get_config().map_view.enabled, 'Lua 接口未关闭地图视图')
+assert(api.nvim_win_get_width(win) == 2, '经典滚动条宽度未恢复')
 
 vim.cmd('VVScrollbarToggleView')
-assert(scrollbar.get_config().map_view.enabled, 'view toggle command did not enable map view')
+assert(scrollbar.get_config().map_view.enabled, '视图切换命令未开启地图视图')
 vim.cmd('VVScrollbarToggleView')
-assert(not scrollbar.get_config().map_view.enabled, 'view toggle command did not restore the scrollbar')
+assert(not scrollbar.get_config().map_view.enabled, '视图切换命令未恢复滚动条')
 
 local top_thumb_row = state.bars[parent].thumb_row
 api.nvim_win_call(parent, function() vim.cmd('normal! Gzt') end)
 view.refresh()
-assert(state.bars[parent].thumb_row > top_thumb_row, 'thumb did not move after scrolling to the bottom')
+assert(state.bars[parent].thumb_row > top_thumb_row, '滚到底部后拇指未移动')
 api.nvim_win_call(parent, function() vim.cmd('normal! ggzt') end)
 view.refresh()
-assert(state.bars[parent].thumb_row == top_thumb_row, 'thumb did not return after scrolling to the top')
+assert(state.bars[parent].thumb_row == top_thumb_row, '滚到顶部后拇指未回位')
 
 local namespace = api.nvim_get_namespaces()['vv-scrollbar']
 local extmarks = api.nvim_buf_get_extmarks(buf, namespace, 0, -1, { details = true })
@@ -81,7 +81,7 @@ for _, extmark in ipairs(extmarks) do
     if found_two_cell_thumb then break end
   end
 end
-assert(found_two_cell_thumb, 'thumb highlight does not cover 2 cells')
+assert(found_two_cell_thumb, '拇指高亮未覆盖 2 个单元格')
 
 scrollbar.setup({
   width = 3,
@@ -89,7 +89,7 @@ scrollbar.setup({
   markers = { git = false },
 })
 win = scrollbar_window()
-assert(api.nvim_win_get_width(win) == 3, 'runtime width did not update to 3')
+assert(api.nvim_win_get_width(win) == 3, '运行时宽度未更新为 3')
 
 scrollbar.setup({
   width = 2,
@@ -120,8 +120,8 @@ for _, extmark in ipairs(cursor_extmarks) do
     end
   end
 end
-assert(found_horizontal_cursor, 'classic scrollbar did not render a horizontal cursor')
-assert(not found_full_cursor, 'classic scrollbar still rendered a full-width cursor')
+assert(found_horizontal_cursor, '经典滚动条未渲染水平光标')
+assert(not found_full_cursor, '经典滚动条仍渲染了全宽光标')
 
 api.nvim_buf_set_mark(0, 'a', 200, 0, {})
 scrollbar.setup({
@@ -149,17 +149,17 @@ assert(
     and #mark_hits == 1
     and mark_hits[1].start_col == 1
     and mark_hits[1].source_line == 200,
-  'classic marker did not retain its right-aligned exact hit target'
+  '经典标记未保留其右对齐的精确命中目标'
 )
 local bar_left = vim.fn.win_screenpos(classic_bar.win)[2]
 assert(
   view.marker_at(classic_bar, mark_row, bar_left + 1).source_line == 200,
-  'classic marker hit test did not resolve its exact source line'
+  '经典标记点击测试未解析出精确源行'
 )
 
 vim.w[parent].vv_scrollbar_disabled = true
 view.refresh()
-assert(state.bars[parent] == nil, 'window-local disable did not hide the scrollbar')
+assert(state.bars[parent] == nil, '窗口级禁用未隐藏滚动条')
 
 vim.w[parent].vv_scrollbar_disabled = nil
 scrollbar.setup({
@@ -169,14 +169,14 @@ scrollbar.setup({
     return win ~= parent
   end,
 })
-assert(state.bars[parent] == nil, 'window_filter did not hide the scrollbar')
+assert(state.bars[parent] == nil, '窗口过滤规则未隐藏滚动条')
 
 scrollbar.setup({
   map_view = { enabled = false },
   markers = marker_config,
 })
 view.refresh()
-assert(state.bars[parent], 'scrollbar did not return after clearing window filters')
+assert(state.bars[parent], '清理窗口过滤规则后滚动条未恢复')
 
 view.close(parent)
 local original_open_win = api.nvim_open_win
@@ -194,8 +194,8 @@ local lock_retry_succeeded = vim.wait(200, function()
   local bar = state.bars[parent]
   return bar and api.nvim_win_is_valid(bar.win)
 end, 10)
-assert(locked_attempts == 1, 'E565 path did not exercise the locked render attempt')
-assert(lock_retry_succeeded, 'scrollbar did not retry after a transient E565 lock')
+assert(locked_attempts == 1, 'E565 分支未执行锁定重试路径')
+assert(lock_retry_succeeded, 'E565 临时锁定后未重试渲染滚动条')
 
 vim.cmd('vsplit')
 local split = api.nvim_get_current_win()
@@ -208,7 +208,7 @@ local layout_updated = vim.wait(200, function()
   local cfg = api.nvim_win_get_config(bar.win)
   return cfg.relative == '' and api.nvim_win_get_width(bar.win) == scrollbar.get_config().width
 end, 10)
-assert(layout_updated, 'scrollbar position stayed stale after closing a split')
+assert(layout_updated, '关闭分屏后滚动条位置未及时更新')
 
 local tmp_dir = vim.fn.tempname()
 vim.fn.mkdir(tmp_dir, 'p')
@@ -256,11 +256,11 @@ local staged_marker_loaded = vim.wait(3000, function()
   local git_marks = state.git_marks[staged_buf]
   return git_marks and git_marks.staged and git_marks.staged[200] == 'A'
 end, 10)
-assert(staged_marker_loaded, 'visible staged scratch buffer did not load cached git markers')
+assert(staged_marker_loaded, '可见的暂存临时缓冲区未加载缓存 git 标记')
 
 view.refresh()
 local staged_bar = state.bars[parent]
-assert(staged_bar and api.nvim_buf_is_valid(staged_bar.buf), 'staged scratch buffer has no scrollbar')
+assert(staged_bar and api.nvim_buf_is_valid(staged_bar.buf), '暂存临时缓冲区未创建滚动条')
 local staged_extmarks = api.nvim_buf_get_extmarks(staged_bar.buf, namespace, 0, -1, { details = true })
 local found_staged_marker = false
 
@@ -271,7 +271,7 @@ for _, extmark in ipairs(staged_extmarks) do
     break
   end
 end
-assert(found_staged_marker, 'staged git marker was not rendered on the scrollbar')
+assert(found_staged_marker, '滚动条未渲染暂存 git 标记')
 
 local worktree_lines = vim.deepcopy(staged_lines)
 worktree_lines[200] = 'staged line edited again'
@@ -287,7 +287,7 @@ local dual_git_loaded = vim.wait(3000, function()
     and sets.staged and sets.staged[200] == 'A'
     and sets.unstaged and sets.unstaged[200] == 'C'
 end, 10)
-assert(dual_git_loaded, 'ordinary buffer did not load staged and unstaged markers together')
+assert(dual_git_loaded, '普通缓冲区未同时加载暂存与未暂存标记')
 
 view.refresh()
 local dual_bar = state.bars[parent]
@@ -303,7 +303,7 @@ for _, extmark in ipairs(dual_extmarks) do
     break
   end
 end
-assert(found_dual_git_marker, 'scrollbar did not render staged left and unstaged right')
+assert(found_dual_git_marker, '滚动条未在左侧渲染暂存、右侧渲染未暂存')
 
 vim.fn.system({ 'git', '-C', tmp_dir, 'commit', '-qm', 'second' })
 local revision_buf = api.nvim_create_buf(false, true)
@@ -322,7 +322,7 @@ local revision_marker_loaded = vim.wait(3000, function()
   local sets = state.git_marks[revision_buf]
   return sets and sets.unstaged and sets.unstaged[200] == 'A'
 end, 10)
-assert(revision_marker_loaded, 'revision scratch buffer did not load generic git markers')
+assert(revision_marker_loaded, '修订版临时缓冲区未加载通用 git 标记')
 
 view.refresh()
 local revision_bar = state.bars[parent]
@@ -344,7 +344,7 @@ for _, extmark in ipairs(revision_extmarks) do
   end
   if found_revision_marker then break end
 end
-assert(found_revision_marker, 'revision git marker was not rendered on the scrollbar')
+assert(found_revision_marker, '修订版 git 标记未在滚动条渲染')
 
 api.nvim_win_set_buf(parent, original_buf)
 api.nvim_buf_delete(worktree_buf, { force = true })
@@ -354,7 +354,7 @@ vim.fn.delete(tmp_dir, 'rf')
 scrollbar.disable()
 for _, candidate in ipairs(api.nvim_list_wins()) do
   local candidate_buf = api.nvim_win_get_buf(candidate)
-  assert(vim.bo[candidate_buf].filetype ~= 'vv-scrollbar', 'disable left a scrollbar window')
+  assert(vim.bo[candidate_buf].filetype ~= 'vv-scrollbar', '停用后仍残留滚动条窗口')
 end
 
-print('PASS: width, markers, filters, split lifecycle, disable cleanup')
+print('PASS: 宽度、标记、过滤器、分屏生命周期与停用清理')

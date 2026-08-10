@@ -9,9 +9,9 @@ local overlay = columns.resolve(12, {
   marker_layout = 'overlay',
   marker_lane_width = 2,
 })
-assert(overlay.map_width == 12 and overlay.marker_width == 12, 'overlay reserved a lane')
-assert(columns.marker_col(overlay, 2, 'right') == 10, 'right overlay marker drifted')
-assert(columns.marker_col(overlay, 1, 'left') == 0, 'left overlay marker drifted')
+assert(overlay.map_width == 12 and overlay.marker_width == 12, '覆盖模式未保留专用列')
+assert(columns.marker_col(overlay, 2, 'right') == 10, '右侧覆盖标记偏移')
+assert(columns.marker_col(overlay, 1, 'left') == 0, '左侧覆盖标记偏移')
 
 local left = columns.resolve(12, {
   marker_layout = 'left',
@@ -22,9 +22,9 @@ assert(
     and left.map_width == 10
     and left.marker_start_col == 0
     and left.marker_width == 2,
-  'left marker lane did not reserve the expected columns'
+  '左侧标记槽未预留预期列宽'
 )
-assert(columns.marker_col(left, 1, 'right') == 1, 'left lane marker was not lane-aligned')
+assert(columns.marker_col(left, 1, 'right') == 1, '左侧标记槽未对齐')
 
 local right = columns.resolve(12, {
   marker_layout = 'right',
@@ -35,9 +35,9 @@ assert(
     and right.map_width == 9
     and right.marker_start_col == 9
     and right.marker_width == 3,
-  'right marker lane did not reserve the expected columns'
+  '右侧标记槽未预留预期列宽'
 )
-assert(columns.marker_col(right, 2, 'left') == 10, 'right lane marker was not lane-aligned')
+assert(columns.marker_col(right, 2, 'left') == 10, '右侧标记槽未对齐')
 
 local narrow = columns.resolve(1, {
   marker_layout = 'right',
@@ -45,7 +45,7 @@ local narrow = columns.resolve(1, {
 })
 assert(
   narrow.mode == 'overlay' and narrow.map_width == 1,
-  'one-cell map did not fall back to overlay'
+  '一格地图未回退到 overlay 模式'
 )
 
-print('PASS: marker overlay, left lane, right lane and narrow fallback')
+print('PASS: 标记 overlay、左列、右列与窄宽度回退')

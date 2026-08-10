@@ -25,43 +25,43 @@ local opts = {
 }
 
 local center = drag.update(layout, 10, 2, opts)
-assert(center.top_row == 43, 'center drag unexpectedly moved the map viewport')
-assert(center.source_line == 205, 'center drag lost the thumb grab offset')
-assert(not center.repeat_edge, 'center drag incorrectly started edge scrolling')
+assert(center.top_row == 43, '中心拖拽意外移动了地图视口')
+assert(center.source_line == 205, '中心拖拽丢失了拇指抓取偏移')
+assert(not center.repeat_edge, '中心拖拽错误触发边缘滚动')
 
 local top_edge = drag.update(layout, 0, 2, opts)
-assert(top_edge.top_row == 41, 'top edge did not pan the map upward')
-assert(top_edge.source_line == 165, 'top edge pan did not update the source target')
-assert(top_edge.repeat_edge, 'top edge did not request continuous scrolling')
+assert(top_edge.top_row == 41, '顶部边缘未上移地图')
+assert(top_edge.source_line == 165, '顶部边缘未更新源目标行')
+assert(top_edge.repeat_edge, '顶部边缘未请求持续滚动')
 
 local bottom_edge = drag.update(layout, 19, 2, opts)
-assert(bottom_edge.top_row == 45, 'bottom edge did not pan the map downward')
-assert(bottom_edge.source_line == 241, 'bottom edge pan did not update the source target')
-assert(bottom_edge.repeat_edge, 'bottom edge did not request continuous scrolling')
+assert(bottom_edge.top_row == 45, '底部边缘未下移地图')
+assert(bottom_edge.source_line == 241, '底部边缘未更新源目标行')
+assert(bottom_edge.repeat_edge, '底部边缘未请求持续滚动')
 
 local above = drag.update(layout, -1, 2, opts)
 assert(
   above.snapped == 'top' and above.top_row == 0 and above.source_line == 1,
-  'dragging above the map did not snap to the file start'
+  '在地图上方拖拽时未吸附到文件起始'
 )
 
 local below = drag.update(layout, 20, 2, opts)
 assert(
   below.snapped == 'bottom' and below.top_row == 80 and below.source_line == 400,
-  'dragging below the map did not snap to the file end'
+  '在地图下方拖拽时未吸附到文件末尾'
 )
 
 local at_top = vim.tbl_extend('force', layout, { top_row = 0 })
 local top_limit = drag.update(at_top, 0, 2, opts)
-assert(top_limit.top_row == 0 and not top_limit.repeat_edge, 'top edge repeated past its limit')
+assert(top_limit.top_row == 0 and not top_limit.repeat_edge, '顶部边界已到顶仍重复触发边缘滚动')
 
 local no_edge = vim.tbl_extend('force', opts, { edge_scroll = false })
 local stationary = drag.update(layout, 0, 2, no_edge)
-assert(stationary.top_row == 43, 'disabled edge scrolling still moved the map')
+assert(stationary.top_row == 43, '禁用边缘滚动后地图仍发生位移')
 
 local no_snap = vim.tbl_extend('force', opts, { snap_to_edges = false })
 local clamped = drag.update(layout, -1, 2, no_snap)
-assert(not clamped.snapped and clamped.top_row == 41, 'disabled edge snapping ignored edge pan')
+assert(not clamped.snapped and clamped.top_row == 41, '禁用边缘吸附时仍发生边缘平移')
 
 local sanitized = config.apply({
   map_view = {
@@ -89,7 +89,7 @@ assert(
     and sanitized.interaction.right_click == 'toggle_view'
     and sanitized.interaction.cursor_on_drag == 'follow'
     and sanitized.interaction.marker_click == 'center',
-  'invalid viewport interaction options were not normalized'
+  '无效的视口交互配置未标准化'
 )
 
 local custom_right_click = function() end
@@ -100,7 +100,7 @@ local right_click_options = config.apply({
 }).interaction
 assert(
   right_click_options.right_click == custom_right_click,
-  'custom right-click callback was not preserved'
+  '自定义右键回调未保留'
 )
 
 right_click_options = config.apply({
@@ -108,7 +108,7 @@ right_click_options = config.apply({
     right_click = false,
   },
 }).interaction
-assert(right_click_options.right_click == false, 'disabled right-click action was not preserved')
+assert(right_click_options.right_click == false, '禁用右键动作未保留')
 
 local kept_cursor = config.apply({
   interaction = {
@@ -118,7 +118,7 @@ local kept_cursor = config.apply({
 }).interaction
 assert(
   kept_cursor.cursor_on_drag == 'keep' and kept_cursor.marker_click == 'top',
-  'shared marker and cursor interaction modes were not preserved'
+  '共享标记与光标交互模式未保留'
 )
 
 local invalid_shared = config.apply({
@@ -132,7 +132,7 @@ assert(
     and invalid_shared.interaction.cursor_on_drag == 'follow'
     and invalid_shared.interaction.marker_click == 'center'
     and invalid_shared.show_on_short_buffers,
-  'invalid shared options were not normalized'
+  '共享配置中的非法项未标准化'
 )
 
-print('PASS: grab offset, edge pan, continuous scroll, snapping and configurable fallbacks')
+print('PASS: 抓取偏移、边缘平移、持续滚动、吸附与可配置回退')

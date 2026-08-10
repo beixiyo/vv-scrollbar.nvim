@@ -59,8 +59,8 @@ api.nvim_buf_set_lines(lua_buf, 0, -1, false, {
 
 local _, lua_highlights = render(lua_buf, 1, syntax_opts())
 local lua_colors = highlight_colors(lua_highlights)
-assert(lua_colors[0x112233], 'Lua keyword capture did not color a Braille cell')
-assert(lua_colors[0x445566], 'Lua string capture did not color a Braille cell')
+assert(lua_colors[0x112233], 'Lua 关键字捕获未给 Braille 单元着色')
+assert(lua_colors[0x445566], 'Lua 字符串捕获未给 Braille 单元着色')
 
 api.nvim_set_hl(0, 'MapKeywordOverride', { fg = 0x778899 })
 palette.clear()
@@ -69,11 +69,11 @@ local _, overridden = render(lua_buf, 1, syntax_opts({
 }))
 assert(
   highlight_colors(overridden)[0x778899],
-  'capture_map did not override the Tree-sitter keyword color'
+  'capture_map 未覆盖 Tree-sitter 关键字颜色'
 )
 
 local _, mono = render(lua_buf, 1, syntax_opts({ enabled = false }))
-assert(not next(mono), 'disabled syntax coloring still emitted highlight spans')
+assert(not next(mono), '禁用语法高亮仍然产生了高亮 span')
 
 palette.clear()
 local fence = string.rep(string.char(96), 3)
@@ -89,11 +89,11 @@ api.nvim_buf_set_lines(markdown_buf, 0, -1, false, {
 local _, injected = render(markdown_buf, 2, syntax_opts())
 assert(
   highlight_colors(injected)[0x112233],
-  'injected Lua capture did not override the Markdown map color'
+  '注入的 Lua 捕获未覆盖 Markdown 地图颜色'
 )
 
 local large_opts = syntax_opts({ max_lines = 1, fallback = 'mono' })
-assert(syntax.behavior(lua_buf, large_opts) == 'mono', 'large syntax map ignored mono fallback')
+assert(syntax.behavior(lua_buf, large_opts) == 'mono', '大文件语法地图未触发 mono 回退')
 
 local original_get_parser = vim.treesitter.get_parser
 local parser_calls = 0
@@ -105,13 +105,13 @@ local _, large_mono = render(lua_buf, 1, large_opts)
 vim.treesitter.get_parser = original_get_parser
 assert(
   parser_calls == 0 and not next(large_mono),
-  'large mono fallback still parsed Tree-sitter captures'
+  'mono 回退时仍解析了 Tree-sitter 捕获'
 )
 
 large_opts.fallback = 'scrollbar'
 assert(
   syntax.behavior(lua_buf, large_opts) == 'scrollbar',
-  'large syntax map ignored scrollbar fallback'
+  '大文件语法地图未触发 scrollbar 回退'
 )
 
 config.apply({
@@ -124,14 +124,14 @@ config.apply({
 })
 assert(
   map_view.resolve_mode(api.nvim_get_current_win(), lua_buf) == nil,
-  'syntax scrollbar fallback kept map view active'
+  '语法 scrollbar 回退后地图未停用'
 )
 
 config.apply({ map_view = { syntax = false } })
 assert(
   config.current().map_view.syntax.enabled
     and config.current().map_view.syntax.fallback == 'mono',
-  'invalid syntax config did not fall back to defaults'
+  '无效的语法配置未回退到默认值'
 )
 
 config.apply()
@@ -139,4 +139,4 @@ palette.clear()
 api.nvim_buf_delete(lua_buf, { force = true })
 api.nvim_buf_delete(markdown_buf, { force = true })
 
-print('PASS: theme colors, capture overrides, injections and syntax budget fallbacks')
+print('PASS: 主题颜色、捕获覆盖、注入与语法预算回退')

@@ -34,17 +34,17 @@ local function assert_stable_geometry(label)
   assert(
     top.thumb_height == folded.thumb_height
       and folded.thumb_height == after.thumb_height,
-    label .. ': closed fold changed the thumb height while scrolling'
+    label .. ': 闭合折叠滚动时改变了缩略条高度'
   )
   assert(
     top.thumb_row < folded.thumb_row
       and folded.thumb_row <= after.thumb_row
       and after.thumb_row < bottom.thumb_row,
-    label .. ': closed fold made the thumb position non-monotonic'
+    label .. ': 闭合折叠导致缩略条位置不再单调'
   )
   assert(
     bottom.thumb_row == bottom.max_row,
-    label .. ': folded buffer end did not anchor the thumb'
+    label .. ': 折叠缓冲区末尾未锚定缩略条'
   )
 
   local middle_line = geometry.bar_row_to_line(win, math.floor(bottom.height / 2))
@@ -53,7 +53,7 @@ local function assert_stable_geometry(label)
   end)
   assert(
     closed_start == -1 or closed_start == middle_line,
-    label .. ': scrollbar projection targeted a hidden line inside a closed fold'
+    label .. ': 滚动条投影指向了闭合折叠内的隐藏行'
   )
 
   viewport_at('normal! ggzt')
@@ -61,7 +61,7 @@ local function assert_stable_geometry(label)
   local scrolled = geometry.viewport(win)
   assert(
     scrolled.thumb_row == scrolled.max_row,
-    label .. ': dragging to the track end did not reveal the folded buffer end'
+    label .. ': 拖动到轨道末端未展示折叠缓冲区末尾'
   )
 end
 
@@ -71,4 +71,4 @@ assert_stable_geometry('nowrap')
 vim.wo[win].wrap = true
 assert_stable_geometry('wrap')
 
-print('PASS: fold-aware thumb size, position, boundaries and track projection')
+print('PASS: 折叠感知的缩略条尺寸、位置、边界与轨道投影')
