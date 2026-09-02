@@ -346,9 +346,67 @@ for _, extmark in ipairs(revision_extmarks) do
 end
 assert(found_revision_marker, '修订版 git 标记未在滚动条渲染')
 
+vim.fn.writefile(staged_lines, git_path)
+vim.fn.system({ 'git', '-C', tmp_dir, 'checkout', '-qb', 'conflict-theirs' })
+local theirs_lines = vim.deepcopy(staged_lines)
+theirs_lines[201] = 'theirs'
+vim.fn.writefile(theirs_lines, git_path)
+vim.fn.system({ 'git', '-C', tmp_dir, 'add', 'sample.txt' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'commit', '-qm', 'theirs' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'checkout', '-qb', 'conflict-ours', 'HEAD^' })
+local ours_lines = vim.deepcopy(staged_lines)
+ours_lines[201] = 'ours'
+vim.fn.writefile(ours_lines, git_path)
+vim.fn.system({ 'git', '-C', tmp_dir, 'add', 'sample.txt' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'commit', '-qm', 'ours' })
+vim.fn.system({ 'git', '-C', tmp_dir, 'merge', '--no-edit', 'conflict-theirs' })
+
+local conflict_buf = api.nvim_create_buf(false, true)
+api.nvim_set_option_value('buftype', 'nowrite', { buf = conflict_buf })
+api.nvim_buf_set_lines(conflict_buf, 0, -1, false, theirs_lines)
+vim.b[conflict_buf].vv_git_diff_source = {
+  root = tmp_dir,
+  path = 'sample.txt',
+  from_index_stage = 2,
+  to_index_stage = 3,
+  side = 'new',
+  marker_kind = 'U',
+}
+api.nvim_win_set_buf(parent, conflict_buf)
+
+local conflict_marker_loaded = vim.wait(3000, function()
+  local sets = state.git_marks[conflict_buf]
+  return sets and sets.staged and next(sets.staged) == nil
+    and sets.unstaged and sets.unstaged[201] == 'U'
+end, 10)
+assert(conflict_marker_loaded, '冲突 scratch buffer 未把 ours-to-theirs 映射为单一 U 状态')
+
+view.refresh()
+local conflict_bar = state.bars[parent]
+local conflict_extmarks = api.nvim_buf_get_extmarks(
+  conflict_bar.buf,
+  namespace,
+  0,
+  -1,
+  { details = true }
+)
+local found_conflict_marker = false
+for _, extmark in ipairs(conflict_extmarks) do
+  local virt_text = extmark[4].virt_text
+  if virt_text and virt_text[1] and virt_text[2]
+    and virt_text[1][2] == 'VVScrollbarTrack'
+    and virt_text[2][2] == 'VVGitConflict'
+  then
+    found_conflict_marker = true
+    break
+  end
+end
+assert(found_conflict_marker, '冲突 scratch buffer 未在 scrollbar 右侧单轨渲染 U')
+
 api.nvim_win_set_buf(parent, original_buf)
 api.nvim_buf_delete(worktree_buf, { force = true })
 api.nvim_buf_delete(revision_buf, { force = true })
+api.nvim_buf_delete(conflict_buf, { force = true })
 vim.fn.delete(tmp_dir, 'rf')
 
 scrollbar.disable()

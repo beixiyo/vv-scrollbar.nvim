@@ -7,6 +7,7 @@ local api = vim.api
 local config = require('vv-scrollbar.config')
 local state = require('vv-scrollbar.core.state')
 local view = require('vv-scrollbar.core.view')
+local conflicts = require('vv-scrollbar.features.conflicts')
 local git = require('vv-scrollbar.features.git')
 local map_view = require('vv-scrollbar.features.map_view')
 local mouse = require('vv-scrollbar.input.mouse')
@@ -55,6 +56,25 @@ local function refresh_colors()
   refresh()
 end
 
+---关闭或重建滚动条 split 时抑制宽度均分：'equalalways'（默认开启）会在关闭
+---垂直 split 时把整行没有 'winfixwidth' 的窗口重新均分，而事务只快照了滚动条
+---父窗口的宽度，无法替其它窗口恢复。不能直接开关 'equalalways'，把它重新打开
+---本身就会触发一次全局均分；'eadirection' 改动没有副作用，滚动条只是垂直 split，
+---所以临时只允许高度方向的均分即可
+---@generic T
+---@param fn fun(): T
+---@return T
+local function without_width_equalization(fn)
+  local eadirection = vim.o.eadirection
+  vim.o.eadirection = 'ver'
+
+  local ok, result = pcall(fn)
+  vim.o.eadirection = eadirection
+
+  if not ok then error(result, 0) end
+  return result
+end
+
 ---暂时移除滚动条 split，执行布局操作后恢复渲染
 ---@generic T
 ---@param callback fun(): T
@@ -83,12 +103,15 @@ function M.with_layout_suspended(callback)
   state.layout_suspend_depth = state.layout_suspend_depth + 1
   local ok, err = xpcall(function()
     if outermost then
-      view.close_all()
-      for _, item in ipairs(widths) do
-        if api.nvim_win_is_valid(item.win) then
-          api.nvim_win_set_width(item.win, item.width)
+      without_width_equalization(function()
+        view.close_all()
+
+        for _, item in ipairs(widths) do
+          if api.nvim_win_is_valid(item.win) then
+            api.nvim_win_set_width(item.win, item.width)
+          end
         end
-      end
+      end)
       if api.nvim_win_is_valid(current_win) then api.nvim_set_current_win(current_win) end
     end
 
@@ -98,8 +121,9 @@ function M.with_layout_suspended(callback)
 
   if outermost then
     local refresh_ok, refresh_err = xpcall(function()
-      view.refresh({ strict = true })
+      without_width_equalization(function() view.refresh({ strict = true }) end)
     end, debug.traceback)
+
     if not refresh_ok then
       if ok then
         ok = false
@@ -141,6 +165,7 @@ function M.disable()
   state.enabled = false
   mouse.detach()
   events.detach()
+  conflicts.clear_all()
   git.clear_all()
   view.close_all()
   map_view.clear_all()
@@ -158,6 +183,7 @@ end
 ---@param opts? VVScrollbarConfigOpts
 function M.setup(opts)
   config.apply(opts)
+  conflicts.clear_all()
   git.clear_all()
   map_view.clear_all()
 

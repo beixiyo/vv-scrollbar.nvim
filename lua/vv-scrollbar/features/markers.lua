@@ -1,6 +1,7 @@
 local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
+local conflicts = require('vv-scrollbar.features.conflicts')
 local state = require('vv-scrollbar.core.state')
 
 local M = {}
@@ -18,6 +19,7 @@ local git_hl = {
   A = 'VVGitAdded',
   C = 'VVGitModified',
   D = 'VVGitDeleted',
+  U = 'VVGitConflict',
 }
 
 local staged_git_hl = {
@@ -33,6 +35,8 @@ local PRIORITY = {
   git = 65,
   git_delete = 70,
   diagnostic = 80,
+  -- 冲突标记本身就是诊断来源，未解决冲突比落在同一行的诊断更需要被看见
+  git_conflict = 85,
 }
 
 ---@param current? { priority: integer, source_line?: integer }
@@ -110,18 +114,43 @@ local function add_git(markers, viewport, track_width, line_to_row)
 
   local sets = state.git_marks[viewport.buf] or {}
   local rows = {}
+
+  ---@param channel 'staged'|'unstaged'
+  ---@param line integer
+  ---@param kind 'A'|'C'|'D'|'U'
+  local function record(channel, line, kind)
+    local row = line_to_row(line)
+    if row == nil then return end
+
+    rows[row] = rows[row] or {}
+    if kind == 'U' then
+      -- U 是整行冲突状态，不允许同一投影行残留 staged / unstaged 双重含义。
+      -- 只清 staged；unstaged 交给 should_replace：A/C/D 优先级更低会被替换，U 之间保留最小行号
+      rows[row].staged = nil
+      channel = 'unstaged'
+    elseif rows[row].unstaged and rows[row].unstaged.kind == 'U' then
+      return
+    end
+
+    local current = rows[row][channel]
+    local priority = kind == 'U' and PRIORITY.git_conflict
+      or kind == 'D' and PRIORITY.git_delete
+      or PRIORITY.git
+    if should_replace(current, priority, line) then
+      rows[row][channel] = { kind = kind, priority = priority, source_line = line }
+    end
+  end
+
   for channel, line_markers in pairs(sets) do
     for line, kind in pairs(line_markers) do
-      local row = line_to_row(line)
-      if row ~= nil then
-        rows[row] = rows[row] or {}
-        local current = rows[row][channel]
-        local priority = kind == 'D' and PRIORITY.git_delete or PRIORITY.git
-        if should_replace(current, priority, line) then
-          rows[row][channel] = { kind = kind, priority = priority, source_line = line }
-        end
-      end
+      record(channel, line, kind)
     end
+  end
+
+  -- 未解决冲突是单一 U 状态，不复用 staged / unstaged 双状态语义。
+  -- 视觉上落在右轨；单轨布局下仍与普通 Git marker 一样合并显示。
+  for line in pairs(conflicts.lines(viewport.buf)) do
+    record('unstaged', line, 'U')
   end
 
   for row, channels in pairs(rows) do
@@ -129,6 +158,7 @@ local function add_git(markers, viewport, track_width, line_to_row)
     local hits = {}
     local chunk_width = 0
     local priority = PRIORITY.git
+
     local channel_names = track_width >= 2 and { 'staged', 'unstaged' } or { 'merged' }
 
     for _, channel in ipairs(channel_names) do

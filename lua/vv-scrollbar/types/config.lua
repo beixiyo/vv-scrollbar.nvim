@@ -22,12 +22,12 @@
 ---@field mark string mark 标记 @default '◆'
 ---@field quickfix string quickfix / loclist 标记 @default '■'
 ---@field diagnostics table<integer,string> 诊断 severity -> 标记 @default { [ERROR] = '●', [WARN] = '●', [INFO] = '●', [HINT] = '●' }
----@field git table<'A'|'C'|'D', string> git 行级标记 @default { A = '▎', C = '▎', D = '󰆐' }
+---@field git table<'A'|'C'|'D'|'U', string> git 行级标记，U 表示未解决冲突 @default { A = '▎', C = '▎', D = '󰆐', U = '▎' }
 
 ---@class VVScrollbarMarkerConfig
 ---@field diagnostics boolean 是否显示诊断标记 @default true
 ---@field git boolean 是否显示 git 行级标记 @default true
----@field search boolean 是否显示当前 / 搜索命中 @default true
+---@field search boolean 是否显示当前 / 搜索命中；`/` 寄存器在 `:noh` 后仍保留，标记会持续存在，默认关闭 @default false
 ---@field marks boolean 是否显示 Vim marks @default true
 ---@field quickfix boolean 是否显示 quickfix / loclist @default true
 ---@field cursor boolean 是否显示光标位置 @default true
@@ -161,7 +161,7 @@
 ---@field mark? string
 ---@field quickfix? string
 ---@field diagnostics? table<integer, string>
----@field git? table<'A'|'C'|'D', string>
+---@field git? table<'A'|'C'|'D'|'U', string>
 
 ---@class VVScrollbarMarkerConfigOpts
 ---@field diagnostics? boolean

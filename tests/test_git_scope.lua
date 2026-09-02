@@ -16,8 +16,8 @@ package.loaded['vv-scrollbar.config'] = {
 }
 package.loaded['vv-scrollbar.core.state'] = state
 package.loaded['vv-utils.git'] = {
-  diff_lines = function(path, callback)
-    local item = { path = path, callback = callback, cancels = 0 }
+  diff_lines = function(path, callback, opts)
+    local item = { path = path, callback = callback, opts = opts, cancels = 0 }
     callbacks[#callbacks + 1] = item
     return function() item.cancels = item.cancels + 1 end
   end,
@@ -71,6 +71,26 @@ vim.b[buf].vv_git_diff_source = { path = 'e.lua', root = '/repo-e', mode = 'stag
 Git.refresh(buf, refresh)
 callbacks[6].callback({ [6] = 'A' })
 assert(state.git_marks[buf].staged[6] == 'A', '新生命周期请求未发布')
+
+Git.clear_all()
+
+vim.b[buf].vv_git_diff_source = {
+  path = 'conflict.lua',
+  root = '/repo-conflict',
+  from_index_stage = 2,
+  to_index_stage = 3,
+  side = 'new',
+  marker_kind = 'U',
+}
+Git.refresh(buf, refresh)
+local conflict = callbacks[7]
+assert(conflict.opts.from_index_stage == 2 and conflict.opts.to_index_stage == 3,
+  '冲突 source 未透传 index stage 范围')
+conflict.callback({ [7] = 'C', [8] = 'A' })
+assert(state.git_marks[buf].staged[7] == nil
+    and state.git_marks[buf].unstaged[7] == 'U'
+    and state.git_marks[buf].unstaged[8] == 'U',
+  '冲突 source 未归一化到单一右侧 U 轨道')
 
 Git.clear_all()
 vim.api.nvim_buf_delete(buf, { force = true })

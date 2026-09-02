@@ -75,7 +75,7 @@ return {
   markers = {
     diagnostics = true,
     git = true,
-    search = true,
+    search = false,
     marks = true,
     quickfix = true,
     cursor = true,
@@ -96,6 +96,7 @@ return {
       A = '▎',
       C = '▎',
       D = '󰆐',
+      U = '▎',
     },
   },
   highlights = {

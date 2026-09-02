@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.8 - 2026-09-02
+
+### Added
+
+- **冲突 marker**：未解决冲突统一显示为单一右侧 `U` 轨道；普通 buffer 按 changedtick 投影冲突块，`vv-git` 冲突视图在上方 theirs diff 显示 ours-to-theirs 范围，底部 Result 不再重复显示
+- **marker 优先级**：同一投影行上未解决冲突 `U` 高于诊断，冲突标记引发的语法诊断不再遮住冲突轨道
+
+### Changed
+
+- **搜索标记默认关闭**：`markers.search` 默认 `false`。它读取的是 `/` 寄存器而非 `hlsearch` 状态，`*`、`gd`、`:s` 等间接写入后标记会一直存在，容易被误认为不明元素；需要时显式开启
+
+### Fixed
+
+- **冲突跳转目标**：同一投影行覆盖多条冲突行时，点击与拖拽跳转到块内最小行号
+- **依赖降级**：`vv-utils` 缺少冲突解析 API 时静默不显示冲突标记，不再让整条滚动条渲染失败
+- **布局事务**：`with_layout_suspended()` 在关闭与重建滚动条 split 期间临时把 `eadirection` 设为 `ver`，`equalalways` 开启时不再把没有滚动条的窗口重新均分
+
 ## 0.2.7 - 2026-08-10
 
 ### Fixed

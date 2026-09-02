@@ -155,7 +155,7 @@ require('vv-scrollbar').setup({
   markers = {
     diagnostics = true,
     git = true,
-    search = true,
+    search = false,
     marks = true,
     quickfix = true,
     cursor = true,
@@ -169,7 +169,7 @@ require('vv-scrollbar').setup({
       [vim.diagnostic.severity.INFO] = '●',
       [vim.diagnostic.severity.HINT] = '●',
     },
-    git = { A = '▎', C = '▎', D = '󰆐' },
+    git = { A = '▎', C = '▎', D = '󰆐', U = '▎' },
   },
 
   highlights = {
@@ -299,13 +299,13 @@ vim.w[win].vv_scrollbar_always_show = true
 | Option | Default | Source |
 |---|---|---|
 | `markers.diagnostics` | `true` | `vim.diagnostic.get()`; the highest severity wins on a projected row |
-| `markers.git` | `true` | Staged and unstaged tracks from `diff_line_sets()`, including `vv-git` scratch buffers |
-| `markers.search` | `true` | Matches for the current `/` register |
+| `markers.git` | `true` | Staged and unstaged tracks from `diff_line_sets()`; unresolved conflicts use one right-hand `U` lane; includes `vv-git` scratch buffers |
+| `markers.search` | `false` | Matches for the current `/` register; the register outlives `:noh`, so the markers stay until the next search |
 | `markers.marks` | `true` | Buffer-local and global letter marks |
 | `markers.quickfix` | `true` | Quickfix and current-window loclist entries |
 | `markers.cursor` | `true` | Active-window cursor row, spanning the whole scrollbar width |
 
-When several markers project to one row, priority is cursor, diagnostics, Git, quickfix/loclist, marks, then search.
+When several markers project to one row, priority is cursor, Git conflicts, diagnostics, Git, quickfix/loclist, marks, then search.
 
 ## Symbol configuration
 
@@ -317,9 +317,10 @@ When several markers project to one row, priority is cursor, diagnostics, Git, q
 | `symbols.mark` | `'◆'` | Vim mark |
 | `symbols.quickfix` | `'■'` | Quickfix or loclist entry |
 | `symbols.diagnostics` | Four severity mappings | Diagnostic marker characters |
-| `symbols.git` | `{ A, C, D }` | Added, changed, and deleted markers |
+| `symbols.git` | `{ A, C, D, U }` | Added, changed, deleted, and unmerged conflict markers |
 
-Only the first character of each symbol is used. Markers other than thumb and cursor are not repeated horizontally.
+Only the first character of each symbol is used. Markers other than thumb and cursor are not
+repeated horizontally.
 
 ## Highlight configuration
 
@@ -344,6 +345,10 @@ Only the first character of each symbol is used. Markers other than thumb and cu
 Unstaged Git markers use `VVGitAdded`, `VVGitModified`, and `VVGitDeleted` from
 `vv-utils.git.register_hl()`. Staged markers derive their colors from the same groups using
 `highlights.git_staged_dim`.
+Complete `<<<<<<<` through `>>>>>>>` conflict blocks in ordinary worktree buffers use the shared
+`VVGitConflict` highlight on the right-hand `U` lane and update after each changedtick without an
+additional Git process. In a `vv-git` conflict view, the ours-to-theirs diff is projected onto the
+upper-right diff window, while the bottom Result editor does not repeat the scrollbar.
 The defaults link to Neovim semantic highlight groups and are registered again after `ColorScheme`,
 so they follow the active theme automatically.
 

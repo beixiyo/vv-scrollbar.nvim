@@ -1,6 +1,7 @@
 local api = vim.api
 
 local state = require('vv-scrollbar.core.state')
+local conflicts = require('vv-scrollbar.features.conflicts')
 local git = require('vv-scrollbar.features.git')
 
 local M = {}
@@ -102,6 +103,7 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout, refresh
   api.nvim_create_autocmd('BufWipeout', {
     group = state.augroup,
     callback = function(args)
+      conflicts.clear(args.buf)
       git.clear(args.buf)
       require('vv-scrollbar.features.map_view').clear(args.buf)
     end,

@@ -72,6 +72,93 @@ assert(
   '合并后的 Git 轨道未保留可见源行'
 )
 
+api.nvim_buf_set_lines(buf, 19, 24, false, {
+  '<<<<<<< ours',
+  'ours',
+  '=======',
+  'theirs',
+  '>>>>>>> theirs',
+})
+state.git_marks[buf] = {
+  staged = { [20] = 'A' },
+  unstaged = { [20] = 'D' },
+}
+local conflict_viewport = { buf = buf, line_count = 100, height = 100 }
+local conflict_markers = markers.collect(0, conflict_viewport, {
+  track_width = 2,
+  line_to_row = function(line) return line - 1 end,
+})
+for row = 19, 23 do
+  local marker = conflict_markers[row]
+  assert(marker and #marker.chunks == 2, '冲突块未保留双轨布局宽度')
+  assert(marker.chunks[1][2] == 'VVScrollbarTrack'
+      and marker.chunks[2][2] == 'VVGitConflict',
+    '冲突块应只占右侧 U 轨道')
+  assert(#marker.hits == 1 and marker.hits[1].start_col == 1
+      and marker.hits[1].end_col == 2 and marker.hits[1].source_line == row + 1,
+    '冲突块右轨未保留精确跳转范围')
+end
+
+api.nvim_buf_set_lines(buf, 19, 24, false, {
+  'resolved one',
+  'resolved two',
+  'resolved three',
+  'resolved four',
+  'resolved five',
+})
+local resolved_markers = markers.collect(0, conflict_viewport, {
+  track_width = 2,
+  line_to_row = function(line) return line - 1 end,
+})
+assert(
+  resolved_markers[19].chunks[1][2] == 'VVScrollbarGitStagedA'
+    and resolved_markers[19].chunks[2][2] == 'VVGitDeleted',
+  '解决冲突后未按 changedtick 失效缓存并恢复普通 Git marker'
+)
+
+-- 冲突标记本身就是诊断来源：同一投影行上 U 轨道必须压过诊断，压缩投影时跳转目标取块首行
+api.nvim_buf_set_lines(buf, 19, 24, false, {
+  '<<<<<<< ours',
+  'ours',
+  '=======',
+  'theirs',
+  '>>>>>>> theirs',
+})
+config.apply({
+  width = 2,
+  markers = { diagnostics = true, git = true, search = false, marks = false, quickfix = false, cursor = false },
+})
+local conflict_diag_ns = api.nvim_create_namespace('vv-scrollbar-test-conflict')
+vim.diagnostic.set(conflict_diag_ns, buf, {
+  { lnum = 19, col = 0, severity = vim.diagnostic.severity.ERROR, message = 'unexpected <<<<<<<' },
+  { lnum = 21, col = 0, severity = vim.diagnostic.severity.ERROR, message = 'unexpected =======' },
+})
+local diag_conflict_markers = markers.collect(0, conflict_viewport, {
+  track_width = 2,
+  line_to_row = function(line) return line - 1 end,
+})
+for _, row in ipairs({ 19, 21 }) do
+  local marker = diag_conflict_markers[row]
+  assert(marker.chunks and marker.chunks[2][2] == 'VVGitConflict',
+    '冲突块所在行的诊断不应遮住右侧 U 轨道')
+end
+
+local compressed_markers = markers.collect(0, conflict_viewport, {
+  track_width = 2,
+  line_to_row = function(line) return math.floor((line - 1) / 5) end,
+})
+assert(compressed_markers[3].chunks[1][2] == 'VVScrollbarTrack'
+    and compressed_markers[3].chunks[2][2] == 'VVGitConflict',
+  '压缩投影下 U 仍应清掉同行 staged 并只占右轨')
+assert(#compressed_markers[4].hits == 1 and compressed_markers[4].hits[1].source_line == 21,
+  '同一投影行多条冲突行时跳转目标应为最小行号')
+
+vim.diagnostic.reset(conflict_diag_ns, buf)
+config.apply({
+  width = 1,
+  markers = { diagnostics = false, git = true, search = false, marks = false, quickfix = false, cursor = false },
+})
+
 local map_viewport = { buf = buf, line_count = 400, height = 20 }
 local middle_layout = layout.resolve({
   line_count = 400,

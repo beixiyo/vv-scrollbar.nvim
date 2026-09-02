@@ -155,7 +155,7 @@ require('vv-scrollbar').setup({
   markers = {
     diagnostics = true,
     git = true,
-    search = true,
+    search = false,
     marks = true,
     quickfix = true,
     cursor = true,
@@ -177,6 +177,7 @@ require('vv-scrollbar').setup({
       A = '▎',
       C = '▎',
       D = '󰆐',
+      U = '▎',
     },
   },
 
@@ -308,13 +309,13 @@ vim.w[win].vv_scrollbar_always_show = true
 | 选项 | 默认值 | 数据来源 |
 |------|--------|----------|
 | `markers.diagnostics` | `true` | `vim.diagnostic.get()`，同一投影行优先显示最高严重级别 |
-| `markers.git` | `true` | 普通文件通过 `diff_line_sets()` 显示 staged / unstaged 双轨；支持 `vv-git` scratch buffer |
-| `markers.search` | `true` | 当前 `/` 寄存器匹配结果 |
+| `markers.git` | `true` | 普通文件通过 `diff_line_sets()` 显示 staged / unstaged 双轨；未解决冲突显示为单一右轨 `U`；支持 `vv-git` scratch buffer |
+| `markers.search` | `false` | 当前 `/` 寄存器匹配结果；寄存器在 `:noh` 后仍保留，标记会一直存在到下次搜索 |
 | `markers.marks` | `true` | 当前 buffer 与全局的字母 mark |
 | `markers.quickfix` | `true` | quickfix 与当前窗口 loclist |
 | `markers.cursor` | `true` | 当前活动窗口的光标行，横向占满滚动条宽度 |
 
-同一投影行出现多个 marker 时按优先级只显示一个：光标 > 诊断 > Git >
+同一投影行出现多个 marker 时按优先级只显示一个：光标 > Git 冲突 > 诊断 > Git >
 quickfix / loclist > mark > 搜索
 
 ## 符号配置
@@ -327,9 +328,9 @@ quickfix / loclist > mark > 搜索
 | `symbols.mark` | `'◆'` | Vim mark 标记 |
 | `symbols.quickfix` | `'■'` | quickfix / loclist 标记 |
 | `symbols.diagnostics` | 四种 severity 映射 | 诊断标记字符 |
-| `symbols.git` | `{ A, C, D }` | Git 新增、修改、删除标记字符 |
+| `symbols.git` | `{ A, C, D, U }` | Git 新增、修改、删除与未解决冲突标记字符 |
 
-每个符号只读取第一个字符。除 thumb 和 cursor 外，其余 marker 不会横向重复
+每个符号只读取第一个字符。除 thumb 与 cursor 外，其余 marker 不会横向重复
 
 ## 高亮配置
 
@@ -355,6 +356,11 @@ unstaged Git marker 使用 `vv-utils.git.register_hl()` 提供的 `VVGitAdded`�
 `VVGitModified`、`VVGitDeleted`；staged marker 从同一组颜色按
 `highlights.git_staged_dim` 派生。默认配置链接 Neovim 语义高亮组，并在
 `ColorScheme` 后重新注册，因此会自动跟随当前主题
+
+普通工作区 buffer 中完整的 `<<<<<<<` 至 `>>>>>>>` 冲突块使用共享
+`VVGitConflict` 高亮，只占右侧 `U` 轨道，并按当前 buffer changedtick 更新，不会额外启动
+Git 进程。`vv-git` 冲突视图则把 ours 与 theirs 的差异投影到上方右侧 diff 窗口；底部
+Result 编辑窗口不重复显示 scrollbar
 
 `highlights` 中的每一项都接受标准 `vim.api.nvim_set_hl()` 配置。传入不含 `link`
 的具体样式时，会移除继承的语义链接。若使用主题色板，可以在插件管理配置中读取当前

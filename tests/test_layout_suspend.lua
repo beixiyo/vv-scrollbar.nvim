@@ -83,5 +83,27 @@ require('vv-scrollbar.core.view').refresh()
 assert(state.bars[parent] and api.nvim_win_is_valid(state.bars[parent].win),
   '渲染失败桩移除后滚动条未能恢复')
 
+-- 'equalalways'（Neovim 默认开启）下关闭滚动条 split 会让整行窗口重新均分；
+-- 事务只快照滚动条父窗口，因此必须在关闭/重建期间禁用它，保护没有滚动条的窗口
+vim.o.equalalways = true
+vim.o.splitright = true
+vim.cmd('vsplit')
+local plain = api.nvim_get_current_win()
+vim.w[plain].vv_scrollbar_disabled = true
+api.nvim_set_current_win(parent)
+require('vv-scrollbar.core.view').refresh()
+assert(state.bars[parent] and not state.bars[plain], '测试布局：只有 parent 应有滚动条')
+api.nvim_win_set_width(plain, 20)
+local plain_before = api.nvim_win_get_width(plain)
+local parent_before = api.nvim_win_get_width(parent)
+assert(plain_before == 20, '测试布局：无滚动条窗口应能设为 20 列')
+
+scrollbar.with_layout_suspended(function() end)
+assert(api.nvim_win_get_width(plain) == plain_before,
+  ('equalalways 下布局事务改变了无滚动条窗口的宽度：%d -> %d'):format(plain_before, api.nvim_win_get_width(plain)))
+assert(api.nvim_win_get_width(parent) == parent_before, 'equalalways 下布局事务未恢复滚动条父窗口宽度')
+assert(vim.o.equalalways == true and vim.o.eadirection == 'both', '布局事务结束后未恢复 equalalways / eadirection')
+vim.o.equalalways = false
+
 scrollbar.disable()
 print('PASS: 暂停布局所有权与错误恢复')
