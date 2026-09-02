@@ -62,8 +62,8 @@ end
 ---本身就会触发一次全局均分；'eadirection' 改动没有副作用，滚动条只是垂直 split，
 ---所以临时只允许高度方向的均分即可
 ---@generic T
----@param fn fun(): T
----@return T
+---@param fn fun(): T?
+---@return T?
 local function without_width_equalization(fn)
   local eadirection = vim.o.eadirection
   vim.o.eadirection = 'ver'
