@@ -26,9 +26,11 @@ end
 
 local function ensure_refresh_throttle()
   if state.refresh_throttled then return end
+  -- trailing：Git diff 等异步结果只在完成时请求一次刷新，落在节流窗口内也必须在窗口结束时补刷
   state.refresh_throttled, state.refresh_cancel = require('vv-utils.timer').throttle(
     refresh,
-    config.current().throttle_ms
+    config.current().throttle_ms,
+    { trailing = true }
   )
 end
 

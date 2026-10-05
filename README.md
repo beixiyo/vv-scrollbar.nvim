@@ -212,7 +212,7 @@ The callback's return value is preserved. The scrollbar view is restored even wh
 | `width` | `integer` | `2` | Track width in screen cells; minimum one |
 | `right_offset` | `integer` | `0` | Offset from the parent window's right edge; minimum zero |
 | `min_thumb` | `integer` | `2` | Minimum thumb height; minimum one |
-| `throttle_ms` | `integer` | `30` | Refresh throttle outside direct mouse interaction; zero disables delay |
+| `throttle_ms` | `integer` | `30` | Refresh throttle outside direct mouse interaction; requests inside the window are coalesced into one trailing refresh; zero disables delay |
 | `search_line_limit` | `integer` | `20000` | Skip search projection above this line count |
 | `show_on_short_buffers` | `boolean` | `true` | Keep the active scrollbar view visible when the file does not need scrolling |
 | `cursor.style` | `'dots'\|'line'\|'horizontal'\|'full'\|'hidden'` | `'horizontal'` | Current-line style in either view; `horizontal` spans the map with a slim glyph while leaving map details visible inside each cell |
@@ -443,3 +443,13 @@ lua/vv-scrollbar/
 ├── config.lua   Defaults and merging
 └── init.lua     Public lifecycle API
 ```
+
+## Development tests
+
+```sh
+./tests/run.sh [literal-filter]
+```
+
+Requires Neovim 0.12+, Git, POSIX shell and an existing vv-utils checkout (development vendors, lazy or native pack; `VV_UTILS` overrides discovery). `NVIM_BIN` selects Neovim. Syntax fixtures require Lua, Markdown and Markdown-inline parsers plus highlight/injection queries (bundled with the standard Neovim 0.12 distribution). Additional existing runtime roots can be supplied with `VV_TEST_SITE` / `VV_TEST_RUNTIME_PATHS`; no parsers are installed.
+
+Dependency discovery, explicit overrides, isolation and CI checkout requirements: [shared test entry](https://github.com/beixiyo/vv-utils.nvim/blob/main/dev/test/README.md). Headless tests do not replace real TUI validation.

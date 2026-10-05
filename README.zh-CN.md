@@ -221,7 +221,7 @@ end)
 | `width` | `integer` | `2` | 轨道宽度，单位为屏幕格；最小值为 `1` |
 | `right_offset` | `integer` | `0` | 距父窗口右边缘的偏移格数；最小值为 `0` |
 | `min_thumb` | `integer` | `2` | thumb 最小高度；最小值为 `1` |
-| `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间；`0` 表示不延迟 |
+| `throttle_ms` | `integer` | `30` | 非鼠标直接交互的刷新节流时间，窗口内的请求在窗口结束时合并补刷一次；`0` 表示不延迟 |
 | `search_line_limit` | `integer` | `20000` | 超过该行数时跳过搜索结果投影 |
 | `show_on_short_buffers` | `boolean` | `true` | 文件无需滚动时仍显示当前滚动条视图 |
 | `cursor.style` | `'dots'\|'line'\|'horizontal'\|'full'\|'hidden'` | `'horizontal'` | 两种视图的当前行样式；`horizontal` 用细字形横跨地图，保留字符格内的地图可见性 |
@@ -455,3 +455,13 @@ lua/vv-scrollbar/
 ├── config.lua   默认配置与合并
 └── init.lua     对外生命周期 API
 ```
+
+## 开发测试
+
+```sh
+./tests/run.sh [literal-filter]
+```
+
+要求 Neovim 0.12+、Git、POSIX shell 与已有 vv-utils 源码（开发 vendors、lazy 或 native pack；`VV_UTILS` 可覆盖发现）。`NVIM_BIN` 可选择 Neovim。语法夹具需要 Lua、Markdown、Markdown-inline parser 和高亮/注入 queries（标准 Neovim 0.12 发行版已包含）。额外已有 runtime 可通过 `VV_TEST_SITE` / `VV_TEST_RUNTIME_PATHS` 接入；不安装 parser。
+
+依赖发现、显式覆盖、隔离与 CI 检出要求见[共享测试入口](https://github.com/beixiyo/vv-utils.nvim/blob/main/dev/test/README.zh-CN.md)。headless 不替代真实 TUI 验证。
