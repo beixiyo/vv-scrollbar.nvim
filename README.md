@@ -127,6 +127,7 @@ require('vv-scrollbar').setup({
     marker_lane_width = 2,
     marker_position = 'right',
     interaction = {
+      drag_mode = 'proportional',
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
@@ -233,6 +234,7 @@ The effective width shrinks automatically when a window is narrower than the con
 `map_view` is enabled by default. `viewport` mode renders the complete buffer at a fixed Braille
 scale, then follows the source window with a scrollable map slice. The thumb uses absolute map
 coordinates, and its background is layered over the preview without hiding the Braille cells.
+Dragging uses whole-file proportions by default: the thumb position expresses file progress while the map slice follows, without recentering on release.
 Use `fit` to compress the complete buffer into the current window height.
 
 | Option | Type | Default | Description |
@@ -255,10 +257,11 @@ Use `fit` to compress the complete buffer into the current window height.
 | `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | Float markers over the map or reserve a left/right lane |
 | `map_view.marker_lane_width` | `integer` | `2` | Width reserved by left/right marker lanes |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | Float code-state markers over the selected map edge |
-| `map_view.interaction.edge_scroll` | `boolean` | `true` | Pan the map while dragging near its top or bottom edge |
-| `map_view.interaction.edge_margin` | `integer` | `2` | Map rows that activate edge panning |
-| `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick |
-| `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds |
+| `map_view.interaction.drag_mode` | `'proportional'\|'local'` | `'proportional'` | Drag by whole-file proportions; `local` restores slice-local dragging and edge panning. Only affects viewport mode |
+| `map_view.interaction.edge_scroll` | `boolean` | `true` | Pan near the map edges in `local` mode |
+| `map_view.interaction.edge_margin` | `integer` | `2` | Map rows that activate edge panning in `local` mode |
+| `map_view.interaction.edge_speed` | `integer` | `2` | Maximum map rows advanced per edge-panning tick in `local` mode |
+| `map_view.interaction.edge_interval` | `integer` | `50` | Continuous edge-panning interval in milliseconds in `local` mode |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | Snap to the file start or end when dragging outside the map |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | Behavior while the window contains a closed fold |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | Behavior for wrapped windows |
@@ -380,7 +383,8 @@ the cell entirely requires a floating window, which would cover the parent windo
 | Click the track | Center the thumb, jump, and place the cursor on the projected source line |
 | Press the thumb | Keep the current position and immediately use the active color |
 | Drag the thumb | Preserve the grab offset, update the viewport continuously, and keep the cursor on the same source-window screen row |
-| Hold near the map edge | Keep panning the frozen map viewport at the configured speed |
+| Drag to the track middle / bottom | Immediately reach the file middle / end while the map follows, without releasing |
+| Hold near the map edge | Keep the position by default; only `local` mode continuously pans the map |
 | Drag beyond the track | Snap to the beginning or end of the file |
 | Right-click the scrollbar | Toggle between map view and the classic scrollbar |
 | Release or press Esc | End dragging, resume source/map synchronization, and restore the thumb |

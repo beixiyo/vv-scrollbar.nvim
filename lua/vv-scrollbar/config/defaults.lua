@@ -51,6 +51,7 @@ return {
     marker_lane_width = 2,
     marker_position = 'right',
     interaction = {
+      drag_mode = 'proportional',
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,

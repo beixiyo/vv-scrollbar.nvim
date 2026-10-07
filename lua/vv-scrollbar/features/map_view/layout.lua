@@ -43,8 +43,15 @@ function M.resolve(viewport, opts, top_override)
   )
 
   local max_top = math.max(content_height - height, 0)
-  local centered_top = thumb_start - math.floor((height - thumb_height) / 2)
-  local top_row = projection.clamp(top_override or centered_top, 0, max_top)
+  local follow_top
+  if opts.interaction.drag_mode == 'proportional' then
+    -- thumb 在轨道中的位置表达全文进度，地图切片同步平移；拖拽结束也沿用同一映射
+    local max_start = math.max(content_height - thumb_height, 1)
+    follow_top = math.floor(thumb_start / max_start * max_top + 0.5)
+  else
+    follow_top = thumb_start - math.floor((height - thumb_height) / 2)
+  end
+  local top_row = projection.clamp(top_override or follow_top, 0, max_top)
 
   return {
     mode = 'viewport',

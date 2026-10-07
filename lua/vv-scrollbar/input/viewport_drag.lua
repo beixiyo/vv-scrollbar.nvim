@@ -1,4 +1,4 @@
--- Viewport 地图拖拽坐标：边缘平移、thumb 绝对位置与首尾吸附
+-- Viewport 地图拖拽坐标：全文比例定位、局部边缘平移与首尾吸附
 
 local projection = require('vv-scrollbar.core.projection')
 
@@ -45,10 +45,23 @@ function M.update(layout, mouse_row, offset, opts)
   end
 
   local row = projection.clamp(mouse_row, 0, layout.window_height - 1)
-  local delta = edge_delta(row, layout.window_height, opts)
-  local top_row = projection.clamp(layout.top_row + delta, 0, max_top)
   local max_thumb_row = math.max(layout.window_height - layout.thumb_height, 0)
   local thumb_row = projection.clamp(row - offset, 0, max_thumb_row)
+
+  if opts.drag_mode == 'proportional' and max_top > 0 and max_thumb_row > 0 then
+    local top_row = math.floor(thumb_row / max_thumb_row * max_top + 0.5)
+    -- 保留抓取偏移；thumb 抵达轨道末端时直接展示 EOF，不等鼠标移出地图或松手
+    local source_line = thumb_row == max_thumb_row and layout.line_count
+      or (top_row + thumb_row) * layout.rows_per_cell + 1
+    return {
+      top_row = top_row,
+      source_line = projection.clamp(source_line, 1, layout.line_count),
+      repeat_edge = false,
+    }
+  end
+
+  local delta = edge_delta(row, layout.window_height, opts)
+  local top_row = projection.clamp(layout.top_row + delta, 0, max_top)
   local max_absolute_thumb = math.max(layout.content_height - layout.thumb_height, 0)
   local absolute_thumb = projection.clamp(top_row + thumb_row, 0, max_absolute_thumb)
   local source_line = projection.clamp(

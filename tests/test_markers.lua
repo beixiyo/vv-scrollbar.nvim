@@ -169,6 +169,7 @@ T['标记轨道、精确命中与诊断颜色'] = function()
       mode = 'viewport',
       y_multiplier = 1,
       min_thumb = 2,
+      interaction = { drag_mode = 'local' },
     })
     state.git_marks[buf] = {
       staged = { [1] = 'A', [201] = 'C', [204] = 'C' },
@@ -199,6 +200,7 @@ T['标记轨道、精确命中与诊断颜色'] = function()
       mode = 'viewport',
       y_multiplier = 1,
       min_thumb = 2,
+      interaction = { drag_mode = 'local' },
     })
     map_viewport.height = 10
     local resized_markers = markers.collect(0, map_viewport, {

@@ -187,6 +187,10 @@ function M.apply(opts)
 
   local interaction = current.map_view.interaction
   local default_interaction = defaults.map_view.interaction
+  if not vim.tbl_contains({ 'proportional', 'local' }, interaction.drag_mode) then
+    interaction.drag_mode = default_interaction.drag_mode
+  end
+
   if type(interaction.edge_scroll) ~= 'boolean' then
     interaction.edge_scroll = default_interaction.edge_scroll
   end

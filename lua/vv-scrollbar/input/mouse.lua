@@ -166,7 +166,7 @@ local function continue_drag(position)
 
   drag.moved = true
   if bar.map_layout and bar.map_layout.mode == 'viewport' then
-    -- 只有真正开始拖拽才冻结地图窗口；普通点击始终沿用当前同步后的投影
+    -- 按下不改变地图；实际拖拽后由比例定位或局部边缘平移更新切片
     if drag.map_top == nil then drag.map_top = bar.map_layout.top_row end
     drag.mouse_row = geometry.screenrow_to_bar_row_raw(drag.parent, position.screenrow)
     if drag.mouse_row == nil then return end

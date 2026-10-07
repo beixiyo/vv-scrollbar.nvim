@@ -9,6 +9,12 @@ T['显示行跟随、列锚点与 scrolloff 恢复'] = function()
 
     local api = vim.api
     local geometry = require('vv-scrollbar.core.geometry')
+    local text_height = api.nvim_win_text_height
+    local height_queries = 0
+    api.nvim_win_text_height = function(...)
+      height_queries = height_queries + 1
+      return text_height(...)
+    end
 
     local lines = {}
     for index = 1, 200 do
@@ -145,6 +151,8 @@ T['显示行跟随、列锚点与 scrolloff 恢复'] = function()
     anchor = assert(geometry.begin_cursor_follow(win))
     geometry.end_cursor_follow(win, anchor)
     assert(vim.wo[win].scrolloff == 5, '拖拽后未恢复 scrolloff')
+    api.nvim_win_text_height = text_height
+    assert(height_queries == 0, '已知源行的拖拽定位不应重新扫描全文显示高度')
   end)
 end
 

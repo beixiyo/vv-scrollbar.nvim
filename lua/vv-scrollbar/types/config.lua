@@ -55,10 +55,11 @@
 ---@field marker_click 'center'|'top'|'scrollbar' 点击 marker 后的定位方式 @default 'center'
 
 ---@class VVScrollbarMapViewInteractionConfig
----@field edge_scroll boolean 拖拽接近上下边缘时是否自动平移地图 @default true
----@field edge_margin integer 触发边缘平移的地图行数 @default 2
----@field edge_speed integer 每次边缘平移的最大地图行数 @default 2
----@field edge_interval integer 持续边缘平移的时间间隔，单位 ms @default 50
+---@field drag_mode 'proportional'|'local' 按全文比例拖拽，或在当前地图切片内拖拽并在边缘持续平移 @default 'proportional'
+---@field edge_scroll boolean local 模式拖拽接近上下边缘时是否自动平移地图 @default true
+---@field edge_margin integer local 模式触发边缘平移的地图行数 @default 2
+---@field edge_speed integer local 模式每次边缘平移的最大地图行数 @default 2
+---@field edge_interval integer local 模式持续边缘平移的时间间隔，单位 ms @default 50
 ---@field snap_to_edges boolean 拖出地图顶部或底部时是否吸附文件首尾 @default true
 
 ---@class VVScrollbarMapViewDegradationConfig
@@ -183,6 +184,7 @@
 ---@field marker_click? 'center'|'top'|'scrollbar'
 
 ---@class VVScrollbarMapViewInteractionConfigOpts
+---@field drag_mode? 'proportional'|'local' @default 'proportional'
 ---@field edge_scroll? boolean
 ---@field edge_margin? integer
 ---@field edge_speed? integer

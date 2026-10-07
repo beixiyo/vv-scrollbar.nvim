@@ -127,6 +127,7 @@ require('vv-scrollbar').setup({
     marker_lane_width = 2,
     marker_position = 'right',
     interaction = {
+      drag_mode = 'proportional',
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
@@ -240,7 +241,11 @@ end)
 ## Map View 配置
 
 `map_view` 默认开启。`viewport` 模式按固定 Braille 比例渲染完整 buffer，再根据源窗口
+
 滚动位置显示对应地图切片；thumb 使用地图绝对坐标，并通过背景色叠在地图上，不遮住字符
+
+默认拖拽按全文比例定位，thumb 在轨道中的位置表达全文进度，地图切片同步跟随；松手不重新居中
+
 需要把全文压入当前窗口高度时，可以切换为 `fit`
 
 | 选项 | 类型 | 默认值 | 说明 |
@@ -263,10 +268,11 @@ end)
 | `map_view.marker_layout` | `'overlay'\|'left'\|'right'` | `'right'` | marker 浮在地图上，或保留左/右独立 lane |
 | `map_view.marker_lane_width` | `integer` | `2` | 左/右 marker lane 占用的列数 |
 | `map_view.marker_position` | `'left'\|'right'` | `'right'` | 把代码状态 marker 浮动到地图指定侧 |
-| `map_view.interaction.edge_scroll` | `boolean` | `true` | 拖拽接近地图上下边缘时自动平移 |
-| `map_view.interaction.edge_margin` | `integer` | `2` | 触发边缘平移的地图行数 |
-| `map_view.interaction.edge_speed` | `integer` | `2` | 每次边缘平移的最大地图行数 |
-| `map_view.interaction.edge_interval` | `integer` | `50` | 持续边缘平移间隔，单位 ms |
+| `map_view.interaction.drag_mode` | `'proportional'\|'local'` | `'proportional'` | 按全文比例拖拽；`local` 恢复当前切片内拖拽与边缘平移，仅影响 viewport 模式 |
+| `map_view.interaction.edge_scroll` | `boolean` | `true` | `local` 模式拖拽接近地图上下边缘时自动平移 |
+| `map_view.interaction.edge_margin` | `integer` | `2` | `local` 模式触发边缘平移的地图行数 |
+| `map_view.interaction.edge_speed` | `integer` | `2` | `local` 模式每次边缘平移的最大地图行数 |
+| `map_view.interaction.edge_interval` | `integer` | `50` | `local` 模式持续边缘平移间隔，单位 ms |
 | `map_view.interaction.snap_to_edges` | `boolean` | `true` | 拖出地图时吸附到文件开头或结尾 |
 | `map_view.degradation.folds` | `'viewport'\|'fit'\|'scrollbar'` | `'fit'` | 窗口存在关闭折叠时的行为 |
 | `map_view.degradation.wrap` | `'viewport'\|'fit'\|'scrollbar'` | `'viewport'` | wrap 窗口的行为 |
@@ -390,7 +396,8 @@ require('vv-scrollbar').setup({
 | 点击轨道 | 以点击点为中心放置 thumb，跳转并把 cursor 放到对应投影源代码行 |
 | 按下 thumb | 保持原位置并立即切换为 active 色 |
 | 拖动 thumb | 保留抓取偏移，实时更新视口，并让 cursor 保持在源窗口相同屏幕行 |
-| 停在地图上下边缘 | 按配置速度持续平移冻结的地图 viewport |
+| 拖到轨道中间 / 底部 | 默认立即定位到全文中部 / 末尾，地图同步移动，不必松手 |
+| 停在地图上下边缘 | 默认保持位置；`local` 模式才按配置速度持续平移地图 |
 | 拖出轨道顶部或底部 | 吸附到文件开头或结尾 |
 | 右键单击滚动条 | 在 map-view 与基础滚动条之间切换 |
 | 松开鼠标或按 Esc | 结束拖拽、恢复 source/map 同步和普通 thumb 高亮 |
@@ -402,7 +409,7 @@ require('vv-scrollbar').setup({
 display row 移动，因此软换行和关闭折叠不会再把 cursor 压到 `scrolloff` 边缘；拖拽期间
 暂时忽略 `scrolloff`，松开、按 Esc 或禁用插件时立即恢复
 
-`interaction.right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区。
+`interaction.right_click = false` 会关闭右键动作，但仍消费滚动条区域内的右键事件，避免进入原生选区
 也可以提供函数替换默认动作：
 
 ```lua
@@ -462,6 +469,6 @@ lua/vv-scrollbar/
 ./tests/run.sh [literal-filter]
 ```
 
-要求 Neovim 0.12+、Git、POSIX shell 与已有 vv-utils 源码（开发 vendors、lazy 或 native pack；`VV_UTILS` 可覆盖发现）。`NVIM_BIN` 可选择 Neovim。语法夹具需要 Lua、Markdown、Markdown-inline parser 和高亮/注入 queries（标准 Neovim 0.12 发行版已包含）。额外已有 runtime 可通过 `VV_TEST_SITE` / `VV_TEST_RUNTIME_PATHS` 接入；不安装 parser。
+要求 Neovim 0.12+、Git、POSIX shell 与已有 vv-utils 源码（开发 vendors、lazy 或 native pack；`VV_UTILS` 可覆盖发现）。`NVIM_BIN` 可选择 Neovim。语法夹具需要 Lua、Markdown、Markdown-inline parser 和高亮/注入 queries（标准 Neovim 0.12 发行版已包含）。额外已有 runtime 可通过 `VV_TEST_SITE` / `VV_TEST_RUNTIME_PATHS` 接入；不安装 parser
 
-依赖发现、显式覆盖、隔离与 CI 检出要求见[共享测试入口](https://github.com/beixiyo/vv-utils.nvim/blob/main/dev/test/README.zh-CN.md)。headless 不替代真实 TUI 验证。
+依赖发现、显式覆盖、隔离与 CI 检出要求见[共享测试入口](https://github.com/beixiyo/vv-utils.nvim/blob/main/dev/test/README.zh-CN.md)。headless 不替代真实 TUI 验证

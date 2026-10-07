@@ -17,6 +17,7 @@ T['抓取偏移、边缘平移与回退策略'] = function()
       rows_per_cell = 4,
     }
     local opts = {
+      drag_mode = 'local',
       edge_scroll = true,
       edge_margin = 2,
       edge_speed = 2,
@@ -66,6 +67,7 @@ T['抓取偏移、边缘平移与回退策略'] = function()
     local sanitized = config.apply({
       map_view = {
         interaction = {
+          drag_mode = 'invalid',
           edge_scroll = 'invalid',
           edge_margin = -2,
           edge_speed = 0,
@@ -81,7 +83,8 @@ T['抓取偏移、边缘平移与回退策略'] = function()
     })
     local sanitized_interaction = sanitized.map_view.interaction
     assert(
-      sanitized_interaction.edge_scroll
+      sanitized_interaction.drag_mode == 'proportional'
+        and sanitized_interaction.edge_scroll
         and sanitized_interaction.edge_margin == 0
         and sanitized_interaction.edge_speed == 1
         and sanitized_interaction.edge_interval == 1

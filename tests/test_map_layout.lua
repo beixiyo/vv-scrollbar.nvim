@@ -10,6 +10,7 @@ T['地图比例、源码同步与窗口缩放'] = function()
       mode = 'viewport',
       y_multiplier = 1,
       min_thumb = 2,
+      interaction = { drag_mode = 'local' },
     }
 
     local top = layout.resolve({

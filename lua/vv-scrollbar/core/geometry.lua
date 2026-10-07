@@ -1,3 +1,4 @@
+-- 源窗口与滚动条的几何投影、显示行定位和光标跟随
 local api = vim.api
 local fn = vim.fn
 
@@ -214,9 +215,12 @@ end
 function M.scroll_to_line(win, line, align, cursor_anchor, preferred_cursor_line)
   if not api.nvim_win_is_valid(win) then return end
 
-  local viewport = M.viewport(win)
+  -- 已知源行不需要全文显示高度；仅居中时读取当前可见源行范围
   local target = line
-  if align == 'center' then target = line - math.floor(viewport.visible / 2) end
+  if align == 'center' then
+    local visible = math.max(fn.line('w$', win) - fn.line('w0', win) + 1, 1)
+    target = line - math.floor(visible / 2)
+  end
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()
     set_topline(win, target, cursor_anchor, preferred_cursor_line)
