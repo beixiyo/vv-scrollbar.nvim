@@ -26,7 +26,7 @@ function M.ensure(bar, lines, width, content_id)
   bar.content_tick = api.nvim_buf_get_changedtick(bar.buf)
 end
 
----@param opts { buf: integer, height: integer, track_width: integer, width: integer, winbar_offset: integer, map_layout?: VVScrollbar.MapLayout, map_columns?: VVScrollbar.MapColumns, refresh: fun() }
+---@param opts { owner?: integer, buf: integer, height: integer, track_width: integer, width: integer, winbar_offset: integer, map_layout?: VVScrollbar.MapLayout, map_columns?: VVScrollbar.MapColumns, refresh: fun() }
 ---@return string[]
 ---@return string
 ---@return table<integer,VVScrollbar.MapHighlight[]>
@@ -41,7 +41,8 @@ function M.build(opts)
       map_layout.content_height,
       map_columns.map_width,
       opts.refresh,
-      map_layout.mode
+      map_layout.mode,
+      opts.owner
     )
     local left_fill = string.rep(' ', map_columns.map_start_col)
     local track_right_fill = string.rep(

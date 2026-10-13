@@ -58,6 +58,10 @@ function M.apply(opts)
     end
   end
 
+  if current.lightweight ~= nil and type(current.lightweight) ~= 'function' then
+    error('vv-scrollbar: lightweight must be a function or nil')
+  end
+
   current.width = positive_integer(current.width, defaults.width)
   current.min_thumb = positive_integer(current.min_thumb, defaults.min_thumb)
   current.highlights.git_staged_dim = ratio(

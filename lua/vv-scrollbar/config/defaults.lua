@@ -30,6 +30,7 @@ return {
   },
   excluded_buftypes = { 'nofile', 'terminal', 'prompt', 'quickfix' },
   window_filter = nil,
+  lightweight = nil,
   map_view = {
     enabled = true,
     mode = 'viewport',

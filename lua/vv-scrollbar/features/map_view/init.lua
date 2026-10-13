@@ -111,13 +111,15 @@ end
 ---@return string[]
 ---@return string
 ---@return table<integer,VVScrollbar.MapHighlight[]>
-function M.lines(buf, height, width, refresh, mode)
+---@param owner? integer 消费该地图的源窗口
+function M.lines(buf, height, width, refresh, mode, owner)
   return require('vv-scrollbar.features.map_view.cache').get(
     buf,
     height,
     width,
     options_for(mode),
-    refresh
+    refresh,
+    owner
   )
 end
 
@@ -170,6 +172,7 @@ end
 
 ---@param win integer
 function M.clear_window(win)
+  require('vv-scrollbar.features.map_view.cache').release(win)
   fold_cache[win] = nil
 end
 

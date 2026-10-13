@@ -4,6 +4,7 @@ local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
 local projection = require('vv-scrollbar.core.projection')
+local policy = require('vv-scrollbar.core.policy')
 
 local M = {}
 
@@ -50,25 +51,57 @@ local function display_row_to_line(win, display_row)
   return projection.clamp(height.end_row + 1, 1, line_count)
 end
 
+---读取视口；轻量分支只使用源码行数与当前可见范围，绝不计算全文显示高度
 ---@param win integer
+---@param opts? { lightweight?: boolean }
 ---@return table
-function M.viewport(win)
+function M.viewport(win, opts)
   local buf = api.nvim_win_get_buf(win)
   local line_count = api.nvim_buf_line_count(buf)
   local view = api.nvim_win_call(win, fn.winsaveview)
+
   local topline = view.topline
   local botline = fn.line('w$', win)
   local visible = math.max(botline - topline + 1, 1)
+
   local height = M.win_height(win)
+  local lightweight = opts and opts.lightweight
+
+  if lightweight == nil then lightweight = policy.is_lightweight(win) end
+  if lightweight then
+    local page = math.min(visible, line_count)
+    local thumb_height = projection.clamp(
+      math.floor(height * page / line_count + 0.5),
+      math.min(config.current().min_thumb, height),
+      height
+    )
+
+    local max_row = math.max(height - thumb_height, 0)
+    local max_top = math.max(line_count - page, 1)
+    local row = math.floor((topline - 1) / max_top * max_row + 0.5)
+
+    if botline == line_count then row = max_row end
+    if topline == 1 then row = 0 end
+
+    return {
+      buf = buf, lightweight = true, line_count = line_count,
+      topline = topline, botline = botline, visible = visible, height = height,
+      thumb_row = projection.clamp(row, 0, max_row), thumb_height = thumb_height,
+      max_row = max_row, max_top = max_top,
+    }
+  end
+
   local display_height = math.max(api.nvim_win_text_height(win, {}).all, 1)
   local page_height = math.min(height, display_height)
   local top_height = api.nvim_win_text_height(win, {
     end_row = topline - 1,
     end_vcol = view.skipcol,
   }).all
+
   local display_top = math.max(top_height - view.topfill, 0)
   local thumb_height =
     math.floor(height * page_height / display_height + 0.5)
+
   thumb_height = projection.clamp(
     thumb_height,
     math.min(config.current().min_thumb, height),
@@ -78,12 +111,14 @@ function M.viewport(win)
   local max_row = math.max(height - thumb_height, 0)
   local max_top = math.max(display_height - page_height, 1)
   local row = 0
+
   if max_row > 0 then
     row = math.floor((display_top / max_top) * max_row + 0.5)
   end
 
   return {
     buf = buf,
+    lightweight = false,
     line_count = line_count,
     display_height = display_height,
     display_top = display_top,
@@ -98,11 +133,21 @@ function M.viewport(win)
   }
 end
 
+---仅检查目标行所在折叠，不遍历全文、不展开折叠
+local function visible_line(win, line)
+  local closed = api.nvim_win_call(win, function() return fn.foldclosed(line) end)
+  return closed >= 1 and closed or line
+end
+
 ---@param win integer
 ---@param row integer
+---@param opts? { lightweight?: boolean }
 ---@return integer
-function M.bar_row_to_line(win, row)
-  local viewport = M.viewport(win)
+function M.bar_row_to_line(win, row, opts)
+  local viewport = M.viewport(win, opts)
+  if viewport.lightweight then
+    return visible_line(win, projection.row_to_line(row, viewport.line_count, viewport.height))
+  end
   local display_row =
     projection.row_to_line(row, viewport.display_height, viewport.height) - 1
   return display_row_to_line(win, display_row)
@@ -191,15 +236,21 @@ end
 ---@param win integer
 ---@param row integer
 ---@param cursor_anchor? VVScrollbar.CursorAnchor
-function M.scroll_to_bar_row(win, row, cursor_anchor)
+---@param opts? { lightweight?: boolean }
+function M.scroll_to_bar_row(win, row, cursor_anchor, opts)
   if not api.nvim_win_is_valid(win) then return end
 
-  local viewport = M.viewport(win)
+  local viewport = M.viewport(win, opts)
   local target = 1
   if viewport.max_row > 0 then
     local ratio = projection.clamp(row, 0, viewport.max_row) / viewport.max_row
     local display_row = math.floor(ratio * viewport.max_top + 0.5)
-    target = display_row_to_line(win, display_row)
+    if viewport.lightweight then
+      target = row >= viewport.max_row and viewport.line_count or display_row + 1
+      target = visible_line(win, target)
+    else
+      target = display_row_to_line(win, display_row)
+    end
   end
 
   require('vv-utils.scroll').with_auto_suppressed(win, function()

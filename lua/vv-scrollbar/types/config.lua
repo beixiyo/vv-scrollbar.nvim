@@ -100,6 +100,13 @@
 ---@field degradation VVScrollbarMapViewDegradationConfig 特殊窗口降级策略
 ---@field syntax VVScrollbarMapViewSyntaxConfig Tree-sitter 语法着色配置
 
+---@class VVScrollbarLightweightContext
+---@field win integer 源窗口
+---@field buf integer 源 buffer（包括无名 Git 快照）
+---@field filetype string 当前 filetype
+---@field line_count integer 当前 buffer 行数
+---@field byte_count integer 当前 buffer 字节数
+
 ---@class VVScrollbarConfig
 ---@field enabled boolean 是否启用 @default true
 ---@field current_only boolean 是否只显示当前窗口 @default false
@@ -114,6 +121,7 @@
 ---@field excluded_filetypes string[] 排除的 filetype @default { 'terminal', 'toggleterm', ... }
 ---@field excluded_buftypes string[] 排除的 buftype @default { 'nofile', 'terminal', 'prompt', 'quickfix' }
 ---@field window_filter? fun(win:integer, buf:integer):boolean 窗口过滤器，返回 false 时隐藏滚动条 @default nil
+---@field lightweight? fun(ctx:VVScrollbarLightweightContext):boolean 额外轻量策略，true 禁用地图及全文显示高度计算；bigfile 与 max_lines 保护始终生效 @default nil
 ---@field markers VVScrollbarMarkerConfig 标记开关
 ---@field map_view VVScrollbarMapViewConfig 代码地图配置
 ---@field symbols VVScrollbarSymbolsConfig 标记字符
@@ -133,6 +141,7 @@
 ---@field excluded_filetypes? string[]
 ---@field excluded_buftypes? string[]
 ---@field window_filter? fun(win:integer, buf:integer):boolean
+---@field lightweight? fun(ctx:VVScrollbarLightweightContext):boolean 额外轻量策略 @default nil
 ---@field markers? VVScrollbarMarkerConfigOpts
 ---@field map_view? VVScrollbarMapViewConfigOpts
 ---@field symbols? VVScrollbarSymbolsConfigOpts

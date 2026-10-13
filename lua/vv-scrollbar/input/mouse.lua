@@ -64,7 +64,7 @@ local function scroll_to_row(bar, row, cursor_anchor)
     )
     return
   end
-  geometry.scroll_to_bar_row(bar.parent, row, cursor_anchor)
+  geometry.scroll_to_bar_row(bar.parent, row, cursor_anchor, { lightweight = bar.lightweight })
 end
 
 ---@param bar VVScrollbar.Bar
@@ -125,7 +125,7 @@ local function start_drag(bar, mouse_row)
   if not in_thumb then
     click_line = bar.map_layout
         and map_view.row_to_line(bar.map_layout, mouse_row)
-      or geometry.bar_row_to_line(bar.parent, mouse_row)
+      or geometry.bar_row_to_line(bar.parent, mouse_row, { lightweight = bar.lightweight })
   end
   local cursor_anchor
   if config.current().interaction.cursor_on_drag == 'follow' then
@@ -134,6 +134,7 @@ local function start_drag(bar, mouse_row)
 
   local drag = {
     parent = bar.parent,
+    lightweight = bar.lightweight,
     offset = offset,
     moved = false,
     click_line = click_line,

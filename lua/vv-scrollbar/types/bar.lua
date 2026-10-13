@@ -2,6 +2,8 @@
 ---@field win integer
 ---@field buf integer
 ---@field parent integer
+---@field lightweight boolean 是否使用源码行数投影
+---@field source_buf integer 源 buffer
 ---@field thumb_row integer
 ---@field thumb_height integer
 ---@field height integer

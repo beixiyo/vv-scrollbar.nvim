@@ -6,6 +6,8 @@ local M = {}
 local cache_by_buf = {}
 local pending_by_buf = {}
 local generation_by_buf = {}
+-- 一个窗口只消费一个投影 key；同 buffer 的不同窗口可共享重建任务
+local owners = {}
 
 ---@param capture_map table<string,string|false>?
 ---@return string
@@ -56,6 +58,25 @@ local function stop_pending(buf, key)
   entry.timer:close()
   pending_by_key[key] = nil
   if not next(pending_by_key) then pending_by_buf[buf] = nil end
+end
+
+---释放窗口的地图需求；最后一个消费者离开时物理取消待重建任务
+---@param win integer
+function M.release(win)
+  local previous = owners[win]
+  owners[win] = nil
+  if not previous then return end
+  for _, owner in pairs(owners) do
+    if owner.buf == previous.buf and owner.key == previous.key then return end
+  end
+  stop_pending(previous.buf, previous.key)
+end
+
+local function bind(win, buf, key)
+  if not win then return end
+  local previous = owners[win]
+  if previous and (previous.buf ~= buf or previous.key ~= key) then M.release(win) end
+  owners[win] = { buf = buf, key = key }
 end
 
 ---@param buf integer
@@ -126,8 +147,10 @@ end
 ---@return string[]
 ---@return string
 ---@return table<integer,VVScrollbar.MapHighlight[]>
-function M.get(buf, height, width, opts, refresh)
+---@param owner? integer 消费窗口；省略时由调用方显式 clear 管理生命周期
+function M.get(buf, height, width, opts, refresh, owner)
   local key = cache_key(buf, height, width, opts)
+  bind(owner, buf, key)
   local tick = api.nvim_buf_get_changedtick(buf)
   local cached = cache_by_buf[buf] and cache_by_buf[buf][key]
 
@@ -144,6 +167,9 @@ end
 
 ---@param buf integer
 function M.clear(buf)
+  for win, owner in pairs(owners) do
+    if owner.buf == buf then owners[win] = nil end
+  end
   local pending_by_key = pending_by_buf[buf]
   if pending_by_key then
     local keys = vim.tbl_keys(pending_by_key)

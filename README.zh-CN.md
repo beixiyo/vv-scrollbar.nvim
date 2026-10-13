@@ -310,6 +310,34 @@ vim.w[win].vv_scrollbar_always_show = true
 `vv-git.nvim` 会为右侧 diff 窗口自动设置，避免折叠、换行或 diff filler 导致轨道
 随滚动位置出现或消失
 
+## 自动轻量模式
+
+在地图、折叠扫描或全文显示高度计算之前，超过 `map_view.max_lines` 或被
+`vv-utils.bigfile.is_big(buf)` 判为大文件的 buffer 会自动使用轻量经典滚动条
+判断基于内存内容，因此无名 Git 快照同样受保护；不需要先把 filetype 改为 bigfile
+
+可用可选的 `lightweight(ctx)` 回调增加规则（默认 `nil`，不覆盖内置大文件保护）：
+
+```lua
+require('vv-scrollbar').setup({
+  lightweight = function(ctx)
+    return ctx.filetype == 'markdown' and ctx.line_count >= 1000
+  end,
+})
+```
+
+ctx 提供 `win`、`buf`、`filetype`、`line_count`、`byte_count`。回调应只做轻量判断；
+抛错时报告一次并安全降级。策略在每次刷新时按窗口求值，不依赖外部插件的私有状态
+
+轻量模式不生成地图、不计算全文显示高度、不扫描全文折叠或搜索命中；冲突标记改为
+可取消的分片扫描，扫描完成后显示。Git / 诊断 / mark 等轨道和标记精确跳转仍保留
+thumb、轨道点击与拖拽统一按源码行数投影，折行、diff filler、conceal 和折叠不参与
+全文比例，因此比例不是精确的显示行比例；折叠内的轨道目标落在折叠首行
+
+自动降级仅影响当前窗口，切回普通文件恢复用户选择的地图形态，不改写全局
+`map_view.enabled`，右键切换也不会绕过保护。其他窗口仍需使用的共享地图任务不会被取消，
+最后一个消费者离开后取消旧的待重建任务。正文高亮、Markdown 渲染和窗口选项保持不变
+
 ## Marker 配置
 
 | 选项 | 默认值 | 数据来源 |

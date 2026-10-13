@@ -5,6 +5,7 @@
 
 ---@class VVScrollbar.DragState
 ---@field parent integer
+---@field lightweight? boolean
 ---@field offset integer
 ---@field moved boolean
 ---@field click_line? integer

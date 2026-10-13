@@ -124,7 +124,7 @@ local function add_git(markers, viewport, track_width, line_to_row)
 
     rows[row] = rows[row] or {}
     if kind == 'U' then
-      -- U 是整行冲突状态，不允许同一投影行残留 staged / unstaged 双重含义。
+      -- U 是整行冲突状态，不允许同一投影行残留 staged / unstaged 双重含义
       -- 只清 staged；unstaged 交给 should_replace：A/C/D 优先级更低会被替换，U 之间保留最小行号
       rows[row].staged = nil
       channel = 'unstaged'
@@ -147,9 +147,12 @@ local function add_git(markers, viewport, track_width, line_to_row)
     end
   end
 
-  -- 未解决冲突是单一 U 状态，不复用 staged / unstaged 双状态语义。
-  -- 视觉上落在右轨；单轨布局下仍与普通 Git marker 一样合并显示。
-  for line in pairs(conflicts.lines(viewport.buf)) do
+  -- 未解决冲突是单一 U 状态，不复用 staged / unstaged 双状态语义
+  -- 视觉上落在右轨；单轨布局下仍与普通 Git marker 一样合并显示
+  for line in pairs(conflicts.lines(viewport.buf, {
+    deferred = viewport.lightweight,
+    on_update = viewport.on_update,
+  })) do
     record('unstaged', line, 'U')
   end
 
@@ -204,7 +207,8 @@ end
 ---@param line_to_row fun(line: integer): integer?
 local function add_search(markers, viewport, line_to_row)
   local cfg = config.current()
-  if not cfg.markers.search or viewport.line_count > cfg.search_line_limit then return end
+  if not cfg.markers.search or viewport.lightweight
+      or viewport.line_count > cfg.search_line_limit then return end
 
   local pattern = fn.getreg('/')
   if not pattern or pattern == '' then return end

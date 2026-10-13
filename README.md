@@ -297,6 +297,39 @@ vim.w[win].vv_scrollbar_always_show = true
 
 `vv-git.nvim` sets this for its right diff window so wrapping, folds, and diff filler do not make the track appear or disappear while scrolling.
 
+## Automatic lightweight mode
+
+Before map generation, fold scans or whole-buffer display-height queries, buffers exceeding
+`map_view.max_lines` or classified by `vv-utils.bigfile.is_big(buf)` use a lightweight classic
+scrollbar. Classification uses buffer contents, including unnamed Git snapshots, without requiring
+a bigfile filetype.
+
+The optional `lightweight(ctx)` callback adds application-specific rules (default `nil`;
+it cannot override the built-in large-buffer protection):
+
+```lua
+require('vv-scrollbar').setup({
+  lightweight = function(ctx)
+    return ctx.filetype == 'markdown' and ctx.line_count >= 1000
+  end,
+})
+```
+
+Context contains `win`, `buf`, `filetype`, `line_count`, and `byte_count`. Keep the callback cheap.
+Errors are reported once and fall back to lightweight mode. Policy is evaluated per window on each
+refresh, without relying on other plugins' private state.
+
+Lightweight mode skips maps, whole-buffer display-height/fold calculations and search scans.
+Conflict markers are scanned in cancellable chunks and appear on completion. Git, diagnostic and
+mark tracks retain exact marker navigation. The thumb, track clicks and dragging share source-line
+coordinates: wrapping, diff filler, conceal and folds do not contribute to total progress, so the
+ratio is approximate. Track targets inside closed folds resolve to the fold start.
+
+Degradation is window-local. Switching to an ordinary buffer restores the chosen map view without
+changing global `map_view.enabled`; right-click cannot bypass protection. Shared map jobs remain
+alive while another window needs them; pending rebuilds are cancelled when the last consumer leaves.
+Source highlighting, Markdown rendering and window options are unchanged.
+
 ## Marker configuration
 
 | Option | Default | Source |

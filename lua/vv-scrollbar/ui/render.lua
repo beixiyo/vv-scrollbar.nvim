@@ -159,6 +159,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
     or nil
   local map_columns = has_map_view and map_view.resolve_columns(track_width) or nil
   local content_lines, content_id, map_highlights = content.build({
+    owner = parent,
     buf = viewport.buf,
     height = viewport.height,
     track_width = track_width,
@@ -186,6 +187,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
     return projection.line_to_row(line, viewport.line_count, viewport.height)
   end
 
+  viewport.on_update = refresh
   local row_markers = markers.collect(parent, viewport, {
     track_width = map_columns and map_columns.marker_width or track_width,
     line_to_row = line_to_row,

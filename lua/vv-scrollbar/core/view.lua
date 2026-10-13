@@ -80,14 +80,17 @@ local function render(parent)
     state.bars[parent] = bar
   end
 
-  local map_mode = map_view.resolve_mode(
-    parent,
-    viewport.buf,
-    viewport.display_height
-  )
+  local map_mode
+  if not viewport.lightweight then
+    map_mode = map_view.resolve_mode(parent, viewport.buf, viewport.display_height)
+  end
+  if not map_mode then map_view.clear_window(parent) end
   local has_map_view = map_mode ~= nil
 
+  -- 自动降级是 window-local 的实际模式，不改写全局 map_view.enabled
   bar.parent = parent
+  bar.lightweight = viewport.lightweight
+  bar.source_buf = viewport.buf
   bar.height = viewport.height
   bar.thumb_row = viewport.thumb_row
   bar.thumb_height = viewport.thumb_height
@@ -101,6 +104,11 @@ local function render(parent)
   window.sync(parent, bar, has_map_view)
   local dragging = state.dragging
   if not dragging or dragging.parent ~= parent then dragging = nil end
+  if dragging and dragging.lightweight ~= nil and dragging.lightweight ~= bar.lightweight then
+    geometry.end_cursor_follow(parent, dragging.cursor_anchor)
+    state.dragging = nil
+    dragging = nil
+  end
   render_ui.render(
     parent,
     bar,
@@ -152,6 +160,12 @@ function M.refresh(opts)
     if not keep[parent] then M.close(parent) end
   end
 
+  local buffers = {}
+  for _, bar in pairs(state.bars) do
+    if bar.source_buf then buffers[bar.source_buf] = true end
+  end
+  require('vv-scrollbar.features.conflicts').retain(buffers)
+
   if #errors > 0 then error(table.concat(errors, '\n'), 0) end
 end
 
@@ -159,6 +173,7 @@ function M.close_all()
   for parent in pairs(vim.deepcopy(state.bars)) do
     M.close(parent)
   end
+  require('vv-scrollbar.features.conflicts').retain({})
 end
 
 ---@param screenrow integer
