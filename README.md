@@ -192,8 +192,6 @@ require('vv-scrollbar').setup({
 })
 ```
 
-Every `setup()` call merges its arguments into the defaults from scratch. It does not inherit fields omitted from the latest call.
-
 Use the public layout boundary when an external action needs to mutate the split tree temporarily:
 
 ```lua

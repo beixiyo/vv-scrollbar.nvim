@@ -33,7 +33,7 @@ function M.resolve(viewport, opts, top_override)
   local max_thumb_height = math.min(height, content_height)
   local thumb_height = projection.clamp(
     thumb_end - thumb_start + 1,
-    math.min(opts.min_thumb or 1, max_thumb_height),
+    math.min(opts.min_thumb, max_thumb_height),
     max_thumb_height
   )
   thumb_start = projection.clamp(

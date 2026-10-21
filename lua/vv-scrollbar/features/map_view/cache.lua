@@ -9,11 +9,11 @@ local generation_by_buf = {}
 -- 一个窗口只消费一个投影 key；同 buffer 的不同窗口可共享重建任务
 local owners = {}
 
----@param capture_map table<string,string|false>?
+---@param capture_map table<string,string|false>
 ---@return string
 local function capture_map_key(capture_map)
   local entries = {}
-  for capture, group in pairs(capture_map or {}) do
+  for capture, group in pairs(capture_map) do
     entries[#entries + 1] = capture .. '=' .. tostring(group)
   end
   table.sort(entries)
@@ -37,13 +37,13 @@ local function cache_key(buf, height, width, opts)
     tab_width,
     opts.include_whitespace and 1 or 0,
     vim.bo[buf].filetype,
-    opts.syntax and opts.syntax.enabled and 1 or 0,
-    opts.syntax and opts.syntax.max_lines or 0,
-    opts.syntax and opts.syntax.max_bytes or 0,
-    opts.syntax and opts.syntax.max_captures or 0,
-    opts.syntax and opts.syntax.max_time_ms or 0,
-    opts.syntax and opts.syntax.fallback or 'mono',
-    capture_map_key(opts.syntax and opts.syntax.capture_map),
+    opts.syntax.enabled and 1 or 0,
+    opts.syntax.max_lines,
+    opts.syntax.max_bytes,
+    opts.syntax.max_captures,
+    opts.syntax.max_time_ms,
+    opts.syntax.fallback,
+    capture_map_key(opts.syntax.capture_map),
   }, ':')
 end
 

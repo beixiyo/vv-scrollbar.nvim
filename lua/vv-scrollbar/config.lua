@@ -41,7 +41,7 @@ local function ratio(value, fallback)
   return number
 end
 
----@param opts? VVScrollbarConfigOpts
+---@param opts? VVScrollbarOpts
 ---@return VVScrollbarConfig
 function M.apply(opts)
   current = vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})

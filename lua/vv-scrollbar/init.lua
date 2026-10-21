@@ -182,7 +182,7 @@ function M.toggle()
   end
 end
 
----@param opts? VVScrollbarConfigOpts
+---@param opts? VVScrollbarOpts
 function M.setup(opts)
   config.apply(opts)
   conflicts.clear_all()

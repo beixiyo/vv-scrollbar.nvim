@@ -14,10 +14,10 @@ local M = {}
 ---@field sequence integer
 
 ---@param buf integer
----@param opts VVScrollbarMapViewSyntaxConfig?
+---@param opts VVScrollbarMapViewSyntaxConfig
 ---@return 'syntax'|'mono'|'scrollbar'
 function M.behavior(buf, opts)
-  if not opts or not opts.enabled or not api.nvim_buf_is_valid(buf) then return 'mono' end
+  if not opts.enabled or not api.nvim_buf_is_valid(buf) then return 'mono' end
 
   local line_count = api.nvim_buf_line_count(buf)
   local exceeds_lines = opts.max_lines > 0 and line_count > opts.max_lines
@@ -82,7 +82,7 @@ end
 
 ---@param buf integer
 ---@param lines string[]
----@param opts VVScrollbarMapViewSyntaxConfig?
+---@param opts VVScrollbarMapViewSyntaxConfig
 ---@return fun(row:integer, col:integer):string?
 function M.resolver(buf, lines, opts)
   if M.behavior(buf, opts) ~= 'syntax' then return function() end end
@@ -111,8 +111,8 @@ function M.resolver(buf, lines, opts)
         metadata = metadata or {}
         capture_count = capture_count + 1
         local exceeded_captures =
-          (opts.max_captures or 0) > 0 and capture_count > opts.max_captures
-        local exceeded_time = (opts.max_time_ms or 0) > 0
+          opts.max_captures > 0 and capture_count > opts.max_captures
+        local exceeded_time = opts.max_time_ms > 0
           and (vim.uv.hrtime() - started_at) / 1e6 > opts.max_time_ms
         if exceeded_captures or exceeded_time then
           coloring_limit_exceeded = true

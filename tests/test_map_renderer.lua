@@ -6,6 +6,11 @@ T['Braille 渲染、编码与投影'] = function()
     local api = vim.api
     local renderer = require('vv-scrollbar.features.map_view.renderer')
 
+    -- 走真实规格化入口取完整 syntax 配置，只关闭语法着色以测试单色投影
+    local mono_syntax = require('vv-scrollbar.config').apply({
+      map_view = { syntax = { enabled = false } },
+    }).map_view.syntax
+
     local function render(lines, width, opts)
       local buf = api.nvim_create_buf(false, true)
       api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -16,6 +21,7 @@ T['Braille 渲染、编码与投影'] = function()
         max_lines_per_dot = 8,
         tab_width = 4,
         include_whitespace = false,
+        syntax = mono_syntax,
       }, opts or {}))
       api.nvim_buf_delete(buf, { force = true })
       return result
@@ -45,6 +51,7 @@ T['Braille 渲染、编码与投影'] = function()
       max_lines_per_dot = 8,
       tab_width = 'buffer',
       include_whitespace = false,
+      syntax = mono_syntax,
     })
     api.nvim_buf_delete(tail_buf, { force = true })
     assert(
@@ -61,6 +68,7 @@ T['Braille 渲染、编码与投影'] = function()
       max_lines_per_dot = 8,
       tab_width = 4,
       include_whitespace = false,
+      syntax = mono_syntax,
     })
     api.nvim_buf_delete(compact_buf, { force = true })
     assert(

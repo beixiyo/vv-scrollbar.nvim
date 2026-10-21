@@ -287,10 +287,7 @@ end
 
 ---@param win integer
 ---@param viewport table
----@param opts {
----  track_width?: integer,
----  line_to_row: fun(line: integer): integer?,
----}
+---@param opts {track_width?: integer, line_to_row: fun(line: integer): integer?}
 ---@return table
 function M.collect(win, viewport, opts)
   assert(

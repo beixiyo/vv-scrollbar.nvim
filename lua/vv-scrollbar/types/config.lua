@@ -127,115 +127,27 @@
 ---@field symbols VVScrollbarSymbolsConfig 标记字符
 ---@field highlights VVScrollbarHighlightConfig 高亮定义
 
----@class VVScrollbarConfigOpts
----@field enabled? boolean
----@field current_only? boolean
----@field width? integer
----@field right_offset? integer
----@field min_thumb? integer
----@field throttle_ms? integer
----@field search_line_limit? integer
----@field show_on_short_buffers? boolean
----@field cursor? VVScrollbarCursorConfigOpts
----@field interaction? VVScrollbarInteractionConfigOpts
----@field excluded_filetypes? string[]
----@field excluded_buftypes? string[]
----@field window_filter? fun(win:integer, buf:integer):boolean
----@field lightweight? fun(ctx:VVScrollbarLightweightContext):boolean 额外轻量策略 @default nil
----@field markers? VVScrollbarMarkerConfigOpts
----@field map_view? VVScrollbarMapViewConfigOpts
----@field symbols? VVScrollbarSymbolsConfigOpts
----@field highlights? VVScrollbarHighlightConfigOpts
+-- 输入类型：由 Config 派生，嵌套表各写一行 (partial)，不复制叶子字段
+---@class (partial) VVScrollbarHighlightOpts: VVScrollbarHighlightConfig
+---@class (partial) VVScrollbarSymbolsOpts: VVScrollbarSymbolsConfig
+---@class (partial) VVScrollbarMarkerOpts: VVScrollbarMarkerConfig
+---@class (partial) VVScrollbarCursorOpts: VVScrollbarCursorConfig
+---@class (partial) VVScrollbarInteractionOpts: VVScrollbarInteractionConfig
+---@class (partial) VVScrollbarMapViewInteractionOpts: VVScrollbarMapViewInteractionConfig
+---@class (partial) VVScrollbarMapViewDegradationOpts: VVScrollbarMapViewDegradationConfig
+---@class (partial) VVScrollbarMapViewSyntaxOpts: VVScrollbarMapViewSyntaxConfig
 
----@class VVScrollbarHighlightConfigOpts
----@field git_staged_dim? number
----@field track? vim.api.keyset.highlight
----@field separator? vim.api.keyset.highlight
----@field map_view? vim.api.keyset.highlight
----@field map_cursor? vim.api.keyset.highlight
----@field thumb? vim.api.keyset.highlight
----@field active? vim.api.keyset.highlight
----@field cursor? vim.api.keyset.highlight
----@field search? vim.api.keyset.highlight
----@field mark? vim.api.keyset.highlight
----@field quickfix? vim.api.keyset.highlight
----@field diag_error? vim.api.keyset.highlight
----@field diag_warn? vim.api.keyset.highlight
----@field diag_info? vim.api.keyset.highlight
----@field diag_hint? vim.api.keyset.highlight
+---@class (partial) VVScrollbarMapViewOpts: VVScrollbarMapViewConfig
+---@field interaction? VVScrollbarMapViewInteractionOpts
+---@field degradation? VVScrollbarMapViewDegradationOpts
+---@field syntax? VVScrollbarMapViewSyntaxOpts
 
----@class VVScrollbarSymbolsConfigOpts
----@field thumb? string
----@field cursor? string
----@field search? string
----@field mark? string
----@field quickfix? string
----@field diagnostics? table<integer, string>
----@field git? table<'A'|'C'|'D'|'U', string>
-
----@class VVScrollbarMarkerConfigOpts
----@field diagnostics? boolean
----@field git? boolean
----@field search? boolean
----@field marks? boolean
----@field quickfix? boolean
----@field cursor? boolean
-
----@class VVScrollbarCursorConfigOpts
----@field style? 'dots'|'line'|'horizontal'|'full'|'hidden'
----@field side? 'left'|'right'
----@field width? integer
----@field symbol? string
-
----@class VVScrollbarInteractionConfigOpts
----@field right_click? VVScrollbarRightClickAction
----@field cursor_on_drag? VVScrollbarDragCursorMode
----@field marker_click? 'center'|'top'|'scrollbar'
-
----@class VVScrollbarMapViewInteractionConfigOpts
----@field drag_mode? 'proportional'|'local' @default 'proportional'
----@field edge_scroll? boolean
----@field edge_margin? integer
----@field edge_speed? integer
----@field edge_interval? integer
----@field snap_to_edges? boolean
-
----@class VVScrollbarMapViewDegradationConfigOpts
----@field folds? 'viewport'|'fit'|'scrollbar'
----@field wrap? 'viewport'|'fit'|'scrollbar'
----@field diff? 'viewport'|'fit'|'scrollbar'
-
----@class VVScrollbarMapViewSyntaxConfigOpts
----@field enabled? boolean
----@field max_lines? integer
----@field max_bytes? integer
----@field max_captures? integer
----@field max_time_ms? integer
----@field fallback? 'mono'|'scrollbar'
----@field capture_map? table<string, string|false>
-
----@class VVScrollbarMapViewConfigOpts
----@field enabled? boolean
----@field mode? 'viewport'|'fit'
----@field width? 'auto'|integer
----@field min_width? integer
----@field max_width? integer
----@field width_ratio? number
----@field x_multiplier? integer
----@field y_multiplier? integer
----@field min_thumb? integer
----@field max_lines_per_dot? integer
----@field tab_width? 'buffer'|integer
----@field include_whitespace? boolean
----@field debounce_ms? integer
----@field max_lines? integer
----@field large_file_behavior? 'scrollbar'
----@field preserve_map_under_thumb? boolean
----@field marker_layout? 'overlay'|'left'|'right'
----@field marker_lane_width? integer
----@field marker_position? 'left'|'right'
----@field interaction? VVScrollbarMapViewInteractionConfigOpts
----@field degradation? VVScrollbarMapViewDegradationConfigOpts
----@field syntax? VVScrollbarMapViewSyntaxConfigOpts
+---@class (partial) VVScrollbarOpts: VVScrollbarConfig
+---@field cursor? VVScrollbarCursorOpts
+---@field interaction? VVScrollbarInteractionOpts
+---@field markers? VVScrollbarMarkerOpts
+---@field map_view? VVScrollbarMapViewOpts
+---@field symbols? VVScrollbarSymbolsOpts
+---@field highlights? VVScrollbarHighlightOpts
 
 return {}
