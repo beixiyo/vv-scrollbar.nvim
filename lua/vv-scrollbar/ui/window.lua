@@ -45,11 +45,17 @@ end
 
 ---@param parent integer
 ---@param bar VVScrollbar.Bar
-local function apply_separator_highlight(parent, bar)
+---@param expected_separator? { present: boolean, target?: string }
+function M.apply_separator_highlight(parent, bar, expected_separator)
   if not api.nvim_win_is_valid(parent) then return end
 
   local value = api.nvim_get_option_value('winhighlight', { win = parent })
   local present, target = winhighlight_target(value, 'WinSeparator')
+  if expected_separator
+      and (present ~= expected_separator.present or target ~= expected_separator.target)
+  then
+    return
+  end
   if not present or target ~= 'VVScrollbarSeparator' then
     bar.parent_separator_hl = { present = present, target = target }
   end
@@ -62,8 +68,10 @@ local function apply_separator_highlight(parent, bar)
 end
 
 ---@param bar VVScrollbar.Bar
-local function restore_separator_highlight(bar)
+---@return { present: boolean, target?: string }? restored_separator
+function M.restore_separator_highlight(bar)
   local saved = bar.parent_separator_hl
+  bar.parent_separator_hl = nil
   local parent = bar.parent
   if not saved or not api.nvim_win_is_valid(parent) then return end
 
@@ -75,9 +83,8 @@ local function restore_separator_highlight(bar)
       replace_winhighlight(value, 'WinSeparator', saved.present and saved.target or nil),
       { win = parent, scope = 'local' }
     )
+    return saved
   end
-
-  bar.parent_separator_hl = nil
 end
 
 ---@param parent integer
@@ -131,7 +138,7 @@ function M.close(bar)
   if bar.win and api.nvim_win_is_valid(bar.win) then
     pcall(api.nvim_win_close, bar.win, true)
   end
-  restore_separator_highlight(bar)
+  M.restore_separator_highlight(bar)
   if bar.buf and api.nvim_buf_is_valid(bar.buf) then
     pcall(api.nvim_buf_delete, bar.buf, { force = true })
   end
@@ -160,7 +167,7 @@ function M.sync(parent, bar, has_map_view)
     api.nvim_win_set_width(bar.win, width)
   end
 
-  apply_separator_highlight(parent, bar)
+  M.apply_separator_highlight(parent, bar)
   vim.wo[bar.win].winfixbuf = true
   vim.wo[bar.win].winfixwidth = true
   vim.wo[bar.win].wrap = false
