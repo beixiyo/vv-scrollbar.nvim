@@ -139,6 +139,60 @@ local function visible_line(win, line)
   return closed >= 1 and closed or line
 end
 
+---源码行 → 滚动条行区间的投影，按显示行（折行、折叠之后）计算，与 thumb 和点击定位用同一套坐标
+---
+---源码行号直接等比投影只在「一行源码占一行屏幕」时成立；开了 wrap 后长行占多个显示行，
+---标记会偏离 thumb，相邻改动行之间也会留出空隙
+---
+---显示行起点按需累加：从最近一个已算过的行往后量，一次渲染内不重复量同一段
+---@param win integer
+---@param viewport table 非 lightweight 的 viewport
+---@return fun(line: integer): integer, integer first_row, last_row（0-based，含两端）
+function M.display_projection(win, viewport)
+  local display_height, height = viewport.display_height, viewport.height
+  local line_count = viewport.line_count
+  local anchor_lines, anchor_starts = { 1 }, { 0 }
+  local has_folds = vim.wo[win].foldenable
+
+  ---@param line integer
+  ---@return integer 该行首个显示行（0-based）
+  local function start_of(line)
+    local low, high = 1, #anchor_lines
+    while low < high do
+      local mid = math.floor((low + high + 1) / 2)
+      if anchor_lines[mid] <= line then low = mid else high = mid - 1 end
+    end
+    if anchor_lines[low] == line then return anchor_starts[low] end
+
+    local start = anchor_starts[low] + api.nvim_win_text_height(win, {
+      start_row = anchor_lines[low] - 1,
+      end_row = line - 2,
+    }).all
+    table.insert(anchor_lines, low + 1, line)
+    table.insert(anchor_starts, low + 1, start)
+    return start
+  end
+
+  return function(line)
+    line = projection.clamp(line, 1, line_count)
+    if has_folds then line = visible_line(win, line) end
+
+    local start = start_of(line)
+    local rows = math.max(api.nvim_win_text_height(win, {
+      start_row = line - 1,
+      end_row = line - 1,
+    }).all, 1)
+
+    local first = projection.line_to_row(start + 1, display_height, height)
+    local last = projection.line_to_row(start + rows, display_height, height)
+    -- 显示行少于滚动条高度时投影会被拉伸，填到下一行起点之前，相邻行的标记才连续
+    if start + rows < display_height then
+      last = math.max(last, projection.line_to_row(start + rows + 1, display_height, height) - 1)
+    end
+    return first, math.max(first, last)
+  end
+end
+
 ---@param win integer
 ---@param row integer
 ---@param opts? { lightweight?: boolean }

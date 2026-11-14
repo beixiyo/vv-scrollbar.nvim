@@ -108,7 +108,8 @@ end
 ---@param viewport table
 ---@param track_width integer
 ---@param line_to_row fun(line: integer): integer?
-local function add_git(markers, viewport, track_width, line_to_row)
+---@param line_to_rows? fun(line: integer): integer?, integer? 整行状态（A / C / U）铺满的行区间
+local function add_git(markers, viewport, track_width, line_to_row, line_to_rows)
   local cfg = config.current()
   if not cfg.markers.git then return end
 
@@ -118,10 +119,7 @@ local function add_git(markers, viewport, track_width, line_to_row)
   ---@param channel 'staged'|'unstaged'
   ---@param line integer
   ---@param kind 'A'|'C'|'D'|'U'
-  local function record(channel, line, kind)
-    local row = line_to_row(line)
-    if row == nil then return end
-
+  local function record_row(channel, line, kind, row)
     rows[row] = rows[row] or {}
     if kind == 'U' then
       -- U 是整行冲突状态，不允许同一投影行残留 staged / unstaged 双重含义
@@ -139,6 +137,21 @@ local function add_git(markers, viewport, track_width, line_to_row)
     if should_replace(current, priority, line) then
       rows[row][channel] = { kind = kind, priority = priority, source_line = line }
     end
+  end
+
+  ---@param channel 'staged'|'unstaged'
+  ---@param line integer
+  ---@param kind 'A'|'C'|'D'|'U'
+  local function record(channel, line, kind)
+    -- 删除标记指向行边界，只占首行；其余是整行状态，折行后的每个显示行都要画
+    if line_to_rows and kind ~= 'D' then
+      local first, last = line_to_rows(line)
+      for row = first or 0, last or -1 do record_row(channel, line, kind, row) end
+      return
+    end
+
+    local row = line_to_row(line)
+    if row ~= nil then record_row(channel, line, kind, row) end
   end
 
   for channel, line_markers in pairs(sets) do
@@ -287,7 +300,7 @@ end
 
 ---@param win integer
 ---@param viewport table
----@param opts {track_width?: integer, line_to_row: fun(line: integer): integer?}
+---@param opts {track_width?: integer, line_to_row: fun(line: integer): integer?, line_to_rows?: fun(line: integer): integer, integer}
 ---@return table
 function M.collect(win, viewport, opts)
   assert(
@@ -302,7 +315,14 @@ function M.collect(win, viewport, opts)
   end
 
   add_diagnostics(markers, viewport, visible_row)
-  add_git(markers, viewport, opts.track_width or config.current().width, visible_row)
+  local visible_rows = opts.line_to_rows and function(line)
+    local first, last = opts.line_to_rows(line)
+    first, last = math.max(first, 0), math.min(last, viewport.height - 1)
+    if first > last then return nil end
+    return first, last
+  end or nil
+
+  add_git(markers, viewport, opts.track_width or config.current().width, visible_row, visible_rows)
   add_search(markers, viewport, visible_row)
   add_marks(markers, viewport, visible_row)
   add_quickfix(win, markers, viewport, visible_row)

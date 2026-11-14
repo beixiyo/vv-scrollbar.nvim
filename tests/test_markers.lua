@@ -251,4 +251,55 @@ T['标记轨道、精确命中与诊断颜色'] = function()
   end)
 end
 
+T['折行窗口中 Git 标记按显示行投影并铺满续行'] = function()
+  child.lua_func(function()
+    local api = vim.api
+    local config = require('vv-scrollbar.config')
+    local geometry = require('vv-scrollbar.core.geometry')
+    local markers = require('vv-scrollbar.features.markers')
+    local state = require('vv-scrollbar.core.state')
+
+    vim.o.columns, vim.o.lines = 40, 24
+    local win = api.nvim_get_current_win()
+    local buf = api.nvim_get_current_buf()
+    vim.wo[win].wrap = true
+    vim.wo[win].number = false
+    vim.wo[win].signcolumn = 'no'
+    vim.wo[win].foldcolumn = '0'
+    vim.wo[win].statuscolumn = ''
+
+    -- 第 3、4 行各占 3 个显示行，其余各 1 行：共 10 + 4 = 14 个显示行
+    local lines = {}
+    for index = 1, 10 do lines[index] = 'line ' .. index end
+    lines[3] = string.rep('x', 100)
+    lines[4] = string.rep('y', 100)
+    api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+    config.apply({
+      width = 1,
+      markers = { diagnostics = false, git = true, search = false, marks = false, quickfix = false, cursor = false },
+    })
+    state.git_marks[buf] = { staged = {}, unstaged = { [3] = 'C', [4] = 'C', [5] = 'D', [9] = 'A' } }
+
+    local display_height = api.nvim_win_text_height(win, {}).all
+    assert(display_height == 14, '夹具应产生 14 个显示行，实际 ' .. display_height)
+    -- 滚动条高度取显示行数，投影 1:1，便于直接断言
+    local viewport = { buf = buf, line_count = 10, height = 14, display_height = 14, lightweight = false }
+    local rows = geometry.display_projection(win, viewport)
+    local collected = markers.collect(win, viewport, {
+      track_width = 1,
+      line_to_row = function(line) return (rows(line)) end,
+      line_to_rows = rows,
+    })
+
+    local marked = {}
+    for row = 0, 13 do marked[#marked + 1] = collected[row] and '1' or '0' end
+    -- 行 3 → 显示行 2..4，行 4 → 5..7，行 5（删除标记，只占首行）→ 8，行 9 → 12
+    assert(table.concat(marked) == '00111111100010', '折行续行的 Git 标记不连续：' .. table.concat(marked))
+    assert(collected[4].hits[1].source_line == 3 and collected[7].hits[1].source_line == 4, '续行的标记应指回所属源码行')
+
+    state.git_marks[buf] = nil
+  end)
+end
+
 return T

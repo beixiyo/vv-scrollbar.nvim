@@ -5,6 +5,7 @@ local fn = vim.fn
 
 local config = require('vv-scrollbar.config')
 local projection = require('vv-scrollbar.core.projection')
+local geometry = require('vv-scrollbar.core.geometry')
 local map_view = require('vv-scrollbar.features.map_view')
 local markers = require('vv-scrollbar.features.markers')
 local content = require('vv-scrollbar.ui.content')
@@ -182,8 +183,16 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   local rendered_lines = api.nvim_buf_get_lines(bar.buf, 0, -1, false)
   api.nvim_buf_clear_namespace(bar.buf, ns, 0, -1)
 
+  -- 折行 / 折叠让显示行数偏离源码行数时，标记改按显示行投影（见 geometry.display_projection）
+  local display_rows = not map_layout
+      and not viewport.lightweight
+      and viewport.display_height ~= viewport.line_count
+      and geometry.display_projection(parent, viewport)
+    or nil
+
   local function line_to_row(line)
     if map_layout then return map_view.line_to_row(map_layout, line) end
+    if display_rows then return (display_rows(line)) end
     return projection.line_to_row(line, viewport.line_count, viewport.height)
   end
 
@@ -191,6 +200,7 @@ function M.render(parent, bar, viewport, map_mode, winbar_offset, dragging, refr
   local row_markers = markers.collect(parent, viewport, {
     track_width = map_columns and map_columns.marker_width or track_width,
     line_to_row = line_to_row,
+    line_to_rows = display_rows,
   })
   local cursor_row
   if cfg.markers.cursor and parent == api.nvim_get_current_win() then
