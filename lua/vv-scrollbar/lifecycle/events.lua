@@ -116,6 +116,18 @@ function M.attach(schedule_refresh, refresh_visible_git, refresh_layout, refresh
     end,
   })
 
+  -- buffer 的 diff 源声明变化
+  api.nvim_create_autocmd('User', {
+    group = state.augroup,
+    pattern = require('vv-utils.git.diff_source').EVENT,
+    callback = function(args)
+      local buf = type(args.data) == 'table' and args.data.buf
+      if type(buf) ~= 'number' or not api.nvim_buf_is_valid(buf) then return end
+      git.refresh(buf, enqueue_refresh)
+      enqueue_refresh()
+    end,
+  })
+
   api.nvim_create_autocmd('User', {
     group = state.augroup,
     pattern = 'VVGitStatusChanged',

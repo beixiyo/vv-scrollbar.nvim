@@ -61,9 +61,13 @@ function M.close(parent)
   local bar = state.bars[parent]
   if not bar then return end
 
+  local win = bar.win
   window.close(bar)
   map_view.clear_window(parent)
   state.bars[parent] = nil
+
+  -- 窗口没关掉说明它被还原成了编辑窗口（见 window.close）：本轮已经跳过它，补一轮给它建滚动条
+  if state.enabled and win and api.nvim_win_is_valid(win) then retry_refresh() end
 end
 
 ---@param parent integer

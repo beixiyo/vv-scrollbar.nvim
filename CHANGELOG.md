@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.3 - 2026-11-15
+
+### Changed
+
+- scratch buffer 的 Git 来源改经 `vv-utils.git.diff_source` 读取，并订阅其变化事件；不再写死其它插件的变量名，私有的 `b:vv_scrollbar_git_source` 一并移除
+
+### Fixed
+
+- `:bdelete` / `nvim_buf_delete` 删除当前 buffer 后，接替显示的文件没有行号且窗口被锁定：Neovim 会关掉显示被删 buffer 的编辑窗口，只剩滚动条窗口，滚动条清理自己时又删掉了自己的 buffer，别的文件于是被换进这个带滚动条选项的窗口。现在滚动条窗口关不掉时先还原成普通编辑窗口（清除 `minimal` 样式并恢复父窗口的窗口选项）
+
 ## 0.3.2 - 2026-11-14
 
 ### Fixed

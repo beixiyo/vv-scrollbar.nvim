@@ -242,7 +242,7 @@ T['宽度、Git 标记、分屏与停用清理'] = function()
     api.nvim_set_option_value('buftype', 'nowrite', { buf = staged_buf })
     api.nvim_buf_set_lines(staged_buf, 0, -1, false, staged_lines)
     api.nvim_set_option_value('modifiable', false, { buf = staged_buf })
-    vim.b[staged_buf].vv_git_diff_source = {
+    vim.b[staged_buf].vv_diff_source = {
       root = tmp_dir,
       path = 'sample.txt',
       mode = 'staged',
@@ -307,7 +307,7 @@ T['宽度、Git 标记、分屏与停用清理'] = function()
     local revision_buf = api.nvim_create_buf(false, true)
     api.nvim_set_option_value('buftype', 'nowrite', { buf = revision_buf })
     api.nvim_buf_set_lines(revision_buf, 0, -1, false, staged_lines)
-    vim.b[revision_buf].vv_git_diff_source = {
+    vim.b[revision_buf].vv_diff_source = {
       root = tmp_dir,
       path = 'sample.txt',
       from_rev = 'HEAD^',
@@ -362,7 +362,7 @@ T['宽度、Git 标记、分屏与停用清理'] = function()
     local conflict_buf = api.nvim_create_buf(false, true)
     api.nvim_set_option_value('buftype', 'nowrite', { buf = conflict_buf })
     api.nvim_buf_set_lines(conflict_buf, 0, -1, false, theirs_lines)
-    vim.b[conflict_buf].vv_git_diff_source = {
+    vim.b[conflict_buf].vv_diff_source = {
       root = tmp_dir,
       path = 'sample.txt',
       from_index_stage = 2,

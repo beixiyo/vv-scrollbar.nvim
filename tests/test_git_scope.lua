@@ -20,7 +20,7 @@ T['Git 脏刷新合并与请求所有权'] = function()
 
     local Git = require('vv-scrollbar.features.git')
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.b[buf].vv_git_diff_source = { path = 'a.lua', root = '/repo-a', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'a.lua', root = '/repo-a', mode = 'staged' }
 
     local refreshes = 0
     local function refresh() refreshes = refreshes + 1 end
@@ -40,9 +40,9 @@ T['Git 脏刷新合并与请求所有权'] = function()
     assert(state.git_marks[buf].staged[2] == 'C' and refreshes == 2,
       '合并后的最新刷新未发布')
 
-    vim.b[buf].vv_git_diff_source = { path = 'b.lua', root = '/repo-b', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'b.lua', root = '/repo-b', mode = 'staged' }
     Git.refresh(buf, refresh)
-    vim.b[buf].vv_git_diff_source = { path = 'c.lua', root = '/repo-c', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'c.lua', root = '/repo-c', mode = 'staged' }
     Git.refresh(buf, refresh)
     local pending_c = state.git_pending[buf].request
     assert(callbacks[3].cancels == 1, '源替换未实际取消旧生产者')
@@ -52,7 +52,7 @@ T['Git 脏刷新合并与请求所有权'] = function()
     callbacks[4].callback({ [4] = 'A' })
     assert(state.git_marks[buf].staged[4] == 'A', '新源请求未发布')
 
-    vim.b[buf].vv_git_diff_source = { path = 'd.lua', root = '/repo-d', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'd.lua', root = '/repo-d', mode = 'staged' }
     Git.refresh(buf, refresh)
     Git.refresh(buf, refresh)
     local count_before_clear = #callbacks
@@ -61,14 +61,14 @@ T['Git 脏刷新合并与请求所有权'] = function()
     assert(#callbacks == count_before_clear and state.git_pending[buf] == nil,
       '清理后脏请求仍继续产生工作')
 
-    vim.b[buf].vv_git_diff_source = { path = 'e.lua', root = '/repo-e', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'e.lua', root = '/repo-e', mode = 'staged' }
     Git.refresh(buf, refresh)
     callbacks[6].callback({ [6] = 'A' })
     assert(state.git_marks[buf].staged[6] == 'A', '新生命周期请求未发布')
 
     Git.clear_all()
 
-    vim.b[buf].vv_git_diff_source = {
+    vim.b[buf].vv_diff_source = {
       path = 'conflict.lua',
       root = '/repo-conflict',
       from_index_stage = 2,

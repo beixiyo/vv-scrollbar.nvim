@@ -25,7 +25,7 @@ T['节流窗口内异步 Git 结果尾随渲染'] = function()
     for index = 1, 200 do lines[index] = ('line %03d'):format(index) end
     local buf = api.nvim_create_buf(true, false)
     api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    vim.b[buf].vv_scrollbar_git_source = { path = 'sample.txt', root = '/repo', mode = 'staged' }
+    vim.b[buf].vv_diff_source = { path = 'sample.txt', root = '/repo', mode = 'staged' }
 
     local state = require('vv-scrollbar.core.state')
     require('vv-scrollbar').setup({

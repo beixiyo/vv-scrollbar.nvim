@@ -17,5 +17,6 @@
 ---@field map_layout? VVScrollbar.MapLayout
 ---@field map_columns? VVScrollbar.MapColumns
 ---@field parent_separator_hl? { present: boolean, target?: string }
+---@field editor_options? table<string, any> 建窗时父窗口的窗口选项默认值；滚动条窗口无法关闭时据此还原成编辑窗口
 
 return {}

@@ -14,10 +14,8 @@ local scopes = {}
 ---@return string? signature
 ---@return 'U'? marker_kind
 local function resolve_source(buf)
-  local source = vim.b[buf].vv_git_diff_source
-    or vim.b[buf].vv_scrollbar_git_source
-
-  if type(source) == 'table' and type(source.path) == 'string' and source.path ~= '' then
+  local source = require('vv-utils.git.diff_source').get(buf)
+  if source then
     local opts = {
       root = source.root,
       mode = source.mode,

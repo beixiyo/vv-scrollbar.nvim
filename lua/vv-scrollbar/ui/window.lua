@@ -133,12 +133,51 @@ function M.is_attached(parent, bar)
     and api.nvim_win_get_height(bar.win) == api.nvim_win_get_height(parent)
 end
 
+-- sync 与 style = 'minimal' 写在滚动条窗口上的 window-local 选项
+local OWNED_OPTIONS = {
+  'winfixbuf', 'winfixwidth', 'wrap', 'statusline', 'winhighlight',
+  'number', 'relativenumber', 'cursorline', 'cursorcolumn', 'foldcolumn',
+  'spell', 'list', 'signcolumn', 'colorcolumn', 'statuscolumn',
+}
+
+---记录父窗口的窗口选项默认值，供 release_to_editor 使用
+---必须在建滚动条窗口时取：需要还原时父窗口已经不存在，而滚动条窗口自己的默认值早被改写
+---@param parent integer
+---@return table<string, any>
+local function capture_editor_options(parent)
+  local options = {}
+  for _, name in ipairs(OWNED_OPTIONS) do
+    local ok, value = pcall(api.nvim_get_option_value, name, { scope = 'global', win = parent })
+    if ok then options[name] = value end
+  end
+  return options
+end
+
+---把滚动条窗口还原成普通编辑窗口
+---@param win integer
+---@param options table<string, any>?
+local function release_to_editor(win, options)
+  -- 'minimal' 样式是窗口配置的一部分，每次换 buffer 都会被重新套用，必须先清掉
+  pcall(api.nvim_win_set_config, win, { style = '' })
+  -- 两个作用域都要写：局部值管当前 buffer，窗口自己的默认值管之后换进来的 buffer
+  for name, value in pairs(options or {}) do
+    pcall(api.nvim_set_option_value, name, value, { win = win, scope = 'local' })
+    pcall(api.nvim_set_option_value, name, value, { win = win, scope = 'global' })
+  end
+end
+
 ---@param bar VVScrollbar.Bar
 function M.close(bar)
-  if bar.win and api.nvim_win_is_valid(bar.win) then
-    pcall(api.nvim_win_close, bar.win, true)
+  local win = bar.win
+  if win and api.nvim_win_is_valid(win) then
+    pcall(api.nvim_win_close, win, true)
   end
   M.restore_separator_highlight(bar)
+
+  -- 关不掉说明它成了最后一个普通窗口：父窗口先被关闭（如 `:bdelete` 当前 buffer 时
+  -- Neovim 会关掉显示它的窗口）。接下来删掉滚动条 buffer，Neovim 会把别的 buffer 换进这个窗口
+  -- 所以先把它还原成普通编辑窗口，否则用户的文件会显示在没有行号、锁定 buffer 的窗口里
+  if win and api.nvim_win_is_valid(win) then release_to_editor(win, bar.editor_options) end
   if bar.buf and api.nvim_buf_is_valid(bar.buf) then
     pcall(api.nvim_buf_delete, bar.buf, { force = true })
   end
@@ -155,6 +194,7 @@ function M.sync(parent, bar, has_map_view)
   local width = math.min(track_width + cfg.right_offset, available_width)
 
   if not (bar.win and api.nvim_win_is_valid(bar.win)) then
+    bar.editor_options = capture_editor_options(parent)
     bar.win = api.nvim_open_win(bar.buf, false, {
       win = parent,
       split = 'right',
